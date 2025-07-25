@@ -1,8 +1,9 @@
 defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   @moduledoc """
-  Automatically formats Elixir files after Claude Code edits them.
+  Checks if Elixir files need formatting after Claude Code edits them.
 
-  This hook runs after Write, Edit, and MultiEdit operations on .ex and .exs files.
+  This hook runs after Write, Edit, and MultiEdit operations on .ex and .exs files,
+  and alerts when formatting is needed without actually modifying the files.
   """
 
   @behaviour Claude.Hooks.Hook.Behaviour
@@ -22,7 +23,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
 
   @impl Claude.Hooks.Hook.Behaviour
   def description do
-    "Automatically formats Elixir files after Claude edits them"
+    "Checks if Elixir files need formatting after Claude edits them"
   end
 
   @impl Claude.Hooks.Hook.Behaviour
@@ -69,17 +70,22 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
     try do
       File.cd!(project_dir)
 
-      case System.cmd("mix", ["format", file_path], stderr_to_stdout: true) do
+      case System.cmd("mix", ["format", "--check-formatted", file_path], stderr_to_stdout: true) do
         {_output, 0} ->
           :ok
 
-        {output, _exit_code} ->
-          IO.puts(:stderr, "Mix format failed: #{output}")
+        {output, exit_code} ->
+          if exit_code == 1 do
+            IO.puts(:stderr, "⚠️  File needs formatting: #{file_path}")
+          else
+            IO.puts(:stderr, "Mix format check failed: #{output}")
+          end
+
           :ok
       end
     rescue
       error ->
-        IO.puts(:stderr, "Format error: #{inspect(error)}")
+        IO.puts(:stderr, "Format check error: #{inspect(error)}")
         :ok
     after
       File.cd!(original_dir)
