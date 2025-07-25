@@ -33,7 +33,8 @@ defmodule Claude.MixProject do
   defp deps do
     [
       {:jason, "~> 1.4"},
-      {:mimic, "~> 1.7", only: :test}
+      {:mimic, "~> 1.7", only: :test},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
