@@ -68,7 +68,8 @@ defmodule Claude.Hooks do
 
   @hooks [
     Claude.Hooks.PostToolUse.ElixirFormatter,
-    Claude.Hooks.PostToolUse.CompilationChecker
+    Claude.Hooks.PostToolUse.CompilationChecker,
+    Claude.Hooks.PreToolUse.PreCommitCheck
   ]
 
   @doc """
