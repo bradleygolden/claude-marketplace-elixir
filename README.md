@@ -103,8 +103,25 @@ error: undefined variable "nam"
 
 ## Current Features
 
-✅ **Auto-formatting** - Runs `mix format` after Write/Edit/MultiEdit operations
-✅ **Compilation checking** - Runs `mix compile --warnings-as-errors` to catch issues immediately
+### Supported Hooks
+
+✅ **ElixirFormatter** (Post-tool-use)
+- Checks if Elixir files need formatting after edits
+- Runs after Write/Edit/MultiEdit operations on `.ex`/`.exs` files
+- Shows warnings when formatting is needed
+- Non-blocking: provides feedback without interrupting workflow
+
+✅ **CompilationChecker** (Post-tool-use)
+- Checks for compilation errors and warnings after edits
+- Runs after Write/Edit/MultiEdit operations on `.ex`/`.exs` files
+- Uses `mix compile --warnings-as-errors` to ensure code quality
+- Non-blocking: displays issues but doesn't prevent operations
+
+✅ **PreCommitCheck** (Pre-tool-use)
+- **Blocking hook** that validates code before git commits
+- Ensures all files are formatted before committing
+- Verifies code compiles without errors or warnings
+- Prevents commits if formatting or compilation issues exist
 
 ## Coming Soon
 
