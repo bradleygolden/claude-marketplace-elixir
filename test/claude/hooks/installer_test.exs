@@ -22,24 +22,25 @@ defmodule Claude.Hooks.InstallerTest do
         assert File.exists?(settings_path)
 
         settings = File.read!(settings_path) |> Jason.decode!()
-        assert %{"PostToolUse" => post_tool_use} = settings
 
-        # Check PostToolUse has both hooks
-        assert %{"hooks" => hooks} = post_tool_use
-        assert length(hooks) == 2
+        assert %{"hooks" => hooks} = settings
 
-        # Check for formatter hook
-        assert Enum.any?(hooks, fn hook ->
+        assert %{"PostToolUse" => post_tool_use} = hooks
+        assert is_list(post_tool_use)
+        assert length(post_tool_use) == 1
+
+        [matcher_obj] = post_tool_use
+        assert %{"matcher" => ".*", "hooks" => hook_list} = matcher_obj
+        assert length(hook_list) == 2
+
+        assert Enum.any?(hook_list, fn hook ->
                  hook["command"] =~ "mix claude hooks run post_tool_use.elixir_formatter" &&
-                   hook["type"] == "command" &&
-                   hook["matcher"] == ".*"
+                   hook["type"] == "command"
                end)
 
-        # Check for compilation checker hook
-        assert Enum.any?(hooks, fn hook ->
+        assert Enum.any?(hook_list, fn hook ->
                  hook["command"] =~ "mix claude hooks run post_tool_use.compilation_checker" &&
-                   hook["type"] == "command" &&
-                   hook["matcher"] == ".*"
+                   hook["type"] == "command"
                end)
       end)
     end
@@ -49,11 +50,15 @@ defmodule Claude.Hooks.InstallerTest do
         stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
         File.mkdir_p!(".claude")
 
-        # Create existing settings with custom hook
         existing_settings = %{
-          "PostToolUse" => %{
-            "hooks" => [
-              %{"command" => "echo 'custom hook'", "type" => "command"}
+          "hooks" => %{
+            "PostToolUse" => [
+              %{
+                "matcher" => ".*",
+                "hooks" => [
+                  %{"command" => "echo 'custom hook'", "type" => "command"}
+                ]
+              }
             ]
           }
         }
@@ -64,22 +69,23 @@ defmodule Claude.Hooks.InstallerTest do
         assert {:ok, _message} = Hooks.install()
 
         settings = File.read!(settings_path) |> Jason.decode!()
-        post_hooks = get_in(settings, ["PostToolUse", "hooks"]) || []
+        post_tool_use = get_in(settings, ["hooks", "PostToolUse"]) || []
 
-        # Should have custom hook plus all Claude hooks
+        assert length(post_tool_use) == 1
+
+        [matcher_obj] = post_tool_use
+        post_hooks = matcher_obj["hooks"] || []
+
         assert length(post_hooks) == 3
 
-        # One should be the custom hook
         assert Enum.any?(post_hooks, fn hook ->
                  hook["command"] == "echo 'custom hook'"
                end)
 
-        # One should be Claude's format hook
         assert Enum.any?(post_hooks, fn hook ->
                  hook["command"] =~ "mix claude hooks run post_tool_use.elixir_formatter"
                end)
 
-        # One should be Claude's compilation checker hook
         assert Enum.any?(post_hooks, fn hook ->
                  hook["command"] =~ "mix claude hooks run post_tool_use.compilation_checker"
                end)
@@ -113,7 +119,7 @@ defmodule Claude.Hooks.InstallerTest do
         custom_hook = %{"command" => "echo 'custom hook'", "type" => "command"}
 
         updated_settings =
-          update_in(settings, ["PostToolUse", "hooks"], fn hooks ->
+          update_in(settings, ["hooks", "PostToolUse", Access.at(0), "hooks"], fn hooks ->
             [custom_hook | hooks]
           end)
 
@@ -121,9 +127,16 @@ defmodule Claude.Hooks.InstallerTest do
 
         assert {:ok, _message} = Hooks.uninstall()
 
-        # Check custom hook remains
         settings = File.read!(settings_path) |> Jason.decode!()
-        post_hooks = get_in(settings, ["PostToolUse", "hooks"]) || []
+        post_tool_use = get_in(settings, ["hooks", "PostToolUse"]) || []
+
+        post_hooks =
+          if length(post_tool_use) > 0 do
+            [matcher_obj] = post_tool_use
+            matcher_obj["hooks"] || []
+          else
+            []
+          end
 
         assert Enum.any?(post_hooks, fn hook ->
                  hook["command"] == "echo 'custom hook'"
