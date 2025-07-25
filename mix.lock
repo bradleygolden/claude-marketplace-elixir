@@ -1,0 +1,5 @@
+%{
+  "ham": {:hex, :ham, "0.3.0", "7cd031b4a55fba219c11553e7b13ba73bd86eab4034518445eff1e038cb9a44d", [:mix], [], "hexpm", "7d6c6b73d7a6a83233876cc1b06a4d9b5de05562b228effda4532f9a49852bf6"},
+  "jason": {:hex, :jason, "1.4.4", "b9226785a9aa77b6857ca22832cffa5d5011a667207eb2a0ad56adb5db443b8a", [:mix], [{:decimal, "~> 1.0 or ~> 2.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm", "c5eb0cab91f094599f94d55bc63409236a8ec69a21a67814529e8d5f6cc90b3b"},
+  "mimic": {:hex, :mimic, "1.12.0", "34c9d1fb8e756df09ca5f96861d273f2bb01063df1a6a51a4c101f9ad7f07a9c", [:mix], [{:ham, "~> 0.2", [hex: :ham, repo: "hexpm", optional: false]}], "hexpm", "eaa43d495d6f3bc8099b28886e05a1b09a2a6be083f6385c3abc17599e5e2c43"},
+}
