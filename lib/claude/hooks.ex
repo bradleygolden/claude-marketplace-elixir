@@ -134,46 +134,36 @@ defmodule Claude.Hooks do
 
   defp add_all_hooks do
     Settings.update(fn settings ->
-      # Ensure settings has the root "hooks" object
       settings = Map.put_new(settings, "hooks", %{})
-
-      # First remove any existing Claude hooks to ensure clean installation
       claude_commands = Enum.map(@hooks, fn hook -> hook.config().command end)
       settings = remove_claude_hooks_from_settings(settings, claude_commands)
 
-      # Group hooks by event type and matcher
       hooks_by_event_and_matcher =
         @hooks
         |> Enum.group_by(fn hook_module ->
-          # Extract event type from module name (e.g., PostToolUse)
           event_type =
             hook_module
             |> Module.split()
             |> Enum.at(2)
 
-          # Get the matcher from the hook config
           matcher = hook_module.config().matcher
 
           {event_type, matcher}
         end)
 
-      # Build the new structure
       updated_hooks = get_in(settings, ["hooks"]) || %{}
 
       new_hooks =
         Enum.reduce(hooks_by_event_and_matcher, updated_hooks, fn {{event_type, matcher},
                                                                    hook_modules},
                                                                   acc ->
-          # Get existing matchers for this event type
           existing_matchers = Map.get(acc, event_type, [])
 
-          # Find if we already have a matcher object for this pattern
           matcher_index =
             Enum.find_index(existing_matchers, fn m ->
               Map.get(m, "matcher") == matcher
             end)
 
-          # Create hook configs without the matcher field
           hook_configs =
             Enum.map(hook_modules, fn hook_module ->
               config = hook_module.config()
@@ -185,7 +175,6 @@ defmodule Claude.Hooks do
             end)
 
           if matcher_index do
-            # Update existing matcher object
             updated_matchers =
               List.update_at(existing_matchers, matcher_index, fn matcher_obj ->
                 existing_hooks = Map.get(matcher_obj, "hooks", [])
@@ -194,7 +183,6 @@ defmodule Claude.Hooks do
 
             Map.put(acc, event_type, updated_matchers)
           else
-            # Create new matcher object
             new_matcher_obj = %{
               "matcher" => matcher,
               "hooks" => hook_configs
