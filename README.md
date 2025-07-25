@@ -33,14 +33,10 @@ Add `claude` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:claude, "~> 0.1.0", only: [:dev, :test], runtime: false}
+    {:claude, "~> 0.1.0", only: :dev, runtime: false}
   ]
 end
 ```
-
-This configuration ensures:
-- `only: [:dev, :test]` - The dependency is only available in development and test environments
-- `runtime: false` - It won't be included in production releases
 
 ## Usage
 
