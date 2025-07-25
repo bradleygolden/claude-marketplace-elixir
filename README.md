@@ -33,7 +33,7 @@ Add `claude` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:claude, "~> 0.1.0"}
+    {:claude, "~> 0.1.0", only: :dev, runtime: false}
   ]
 end
 ```
