@@ -32,46 +32,85 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
   end
 
   describe "process/2" do
-    test "formats Elixir files when using Edit tool" do
+    test "checks formatting for Elixir files when using Edit tool" do
       file_path = Path.join(@test_dir, "test.ex")
 
-      File.write!(file_path, """
+      original_content = """
       defmodule Test do
       def hello(  x,y  ) do
         x+y
       end
       end
-      """)
+      """
+
+      File.write!(file_path, original_content)
 
       json_params = Jason.encode!(%{"file_path" => file_path})
 
-      assert :ok = ElixirFormatter.run("Edit", json_params)
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run("Edit", json_params)
+        end)
 
-      formatted_content = File.read!(file_path)
-      assert formatted_content =~ "def hello(x, y) do"
-      assert formatted_content =~ ~r/^\s+x \+ y$/m
+      assert File.read!(file_path) == original_content
+      assert output =~ "File needs formatting: #{file_path}"
     end
 
-    test "formats .exs files" do
+    test "checks formatting for .exs files" do
       file_path = Path.join(@test_dir, "test.exs")
-      File.write!(file_path, "  list  = [ 1,2,  3 ]")
+      original_content = "  list  = [ 1,2,  3 ]"
+      File.write!(file_path, original_content)
 
       json_params = Jason.encode!(%{"file_path" => file_path})
 
-      assert :ok = ElixirFormatter.run("Write", json_params)
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run("Write", json_params)
+        end)
 
-      assert File.read!(file_path) == "list = [1, 2, 3]\n"
+      assert File.read!(file_path) == original_content
+      assert output =~ "File needs formatting: #{file_path}"
     end
 
     test "works with MultiEdit tool" do
       file_path = Path.join(@test_dir, "multi.ex")
-      File.write!(file_path, "defmodule  Multi  do\nend")
+      original_content = "defmodule  Multi  do\nend"
+      File.write!(file_path, original_content)
 
       json_params = Jason.encode!(%{"file_path" => file_path})
 
-      assert :ok = ElixirFormatter.run("MultiEdit", json_params)
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run("MultiEdit", json_params)
+        end)
 
-      assert File.read!(file_path) == "defmodule Multi do\nend\n"
+      assert File.read!(file_path) == original_content
+      assert output =~ "File needs formatting: #{file_path}"
+    end
+
+    test "does not show warning for properly formatted files" do
+      file_path = Path.join(@test_dir, "formatted.ex")
+
+      properly_formatted = """
+      defmodule Formatted do
+        def hello(x, y) do
+          x + y
+        end
+      end
+      """
+
+      File.write!(file_path, properly_formatted)
+
+      json_params = Jason.encode!(%{"file_path" => file_path})
+
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run("Edit", json_params)
+        end)
+
+      assert File.read!(file_path) == properly_formatted
+      refute output =~ "File needs formatting"
+      assert output == ""
     end
 
     test "ignores non-Elixir files" do
@@ -83,7 +122,6 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
 
       assert :ok = ElixirFormatter.run("Edit", json_params)
 
-      # Content should remain unchanged
       assert File.read!(file_path) == original
     end
 
@@ -96,7 +134,6 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
 
       assert :ok = ElixirFormatter.run("Read", json_params)
 
-      # Content should remain unchanged
       assert File.read!(file_path) == original
     end
 
@@ -111,19 +148,22 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
     end
 
     test "uses CLAUDE_PROJECT_DIR when available" do
-      # Set CLAUDE_PROJECT_DIR
       System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
 
-      # Create file in a subdirectory
       File.mkdir_p!("lib")
       file_path = Path.join(@test_dir, "lib/test.ex")
-      File.write!(file_path, "defmodule  Test  do\nend")
+      original_content = "defmodule  Test  do\nend"
+      File.write!(file_path, original_content)
 
       json_params = Jason.encode!(%{"file_path" => file_path})
 
-      assert :ok = ElixirFormatter.run("Edit", json_params)
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run("Edit", json_params)
+        end)
 
-      assert File.read!(file_path) == "defmodule Test do\nend\n"
+      assert File.read!(file_path) == original_content
+      assert output =~ "File needs formatting: #{file_path}"
 
       System.delete_env("CLAUDE_PROJECT_DIR")
     end
