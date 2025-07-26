@@ -12,7 +12,9 @@ if Code.ensure_loaded?(Igniter) do
     It sets up Claude Code integration for your Elixir project by:
 
     1. Installing all Claude hooks for auto-formatting and compilation checking
-    2. Ensuring your project is properly configured for Claude Code integration
+    2. Adding usage_rules dependency for better LLM integration
+    3. Syncing usage rules to CLAUDE.md for enhanced code assistance
+    4. Ensuring your project is properly configured for Claude Code integration
 
     ## Example
 
@@ -36,7 +38,9 @@ if Code.ensure_loaded?(Igniter) do
     @impl Igniter.Mix.Task
     def igniter(igniter) do
       igniter
+      |> Igniter.Project.Deps.add_dep({:usage_rules, "~> 0.1", only: [:dev]}, on_exists: :skip)
       |> Igniter.compose_task("claude.hooks.install", [])
+      |> Igniter.compose_task("claude.usage_rules.sync", [])
     end
 
     @impl Igniter.Mix.Task
