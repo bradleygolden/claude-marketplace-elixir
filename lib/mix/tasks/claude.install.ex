@@ -31,14 +31,14 @@ if Code.ensure_loaded?(Igniter) do
         group: :claude,
         # *other* dependencies to add
         # i.e `{:foo, "~> 2.0"}`
-        adds_deps: [{:claude, "~> 0.1", only: :dev, runtime: false}],
+        adds_deps: [{:claude, "~> 0.1"}],
         # *other* dependencies to add and call their associated installers, if they exist
         # i.e `{:foo, "~> 2.0"}`
         installs: [],
         # An example invocation
         example: "mix igniter.install claude",
         # A list of environments that this should be installed in.
-        only: nil,
+        only: :dev,
         # a list of positional arguments, i.e `[:file]`
         positional: [],
         # Other tasks your task composes using `Igniter.compose_task`, passing in the CLI argv
@@ -51,7 +51,9 @@ if Code.ensure_loaded?(Igniter) do
         # CLI aliases
         aliases: [],
         # A list of options in the schema that are required
-        required: []
+        required: [],
+        # Installer dependency options
+        dep_opts: [runtime: false]
       }
     end
 
