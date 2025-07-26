@@ -70,22 +70,25 @@ else
     @moduledoc """
     Setup Claude for your Elixir project.
 
-    This task requires Igniter to be installed.
+    This is a fallback task when Igniter is not available.
+    For the best experience, install Igniter and use `mix igniter.install claude`.
+
+    ## Usage
+
+        mix claude.install
+
+    ## What it does
+
+    Installs all available Claude hooks including:
+    - Auto-formatting for Elixir files after edits
+    - Compilation checking to catch errors immediately
     """
 
     use Mix.Task
 
-    @impl Mix.Task
-    def run(_argv) do
-      Mix.shell().error("""
-      The task 'claude.install' requires igniter to be run.
-
-      Please install igniter and try again.
-
-      For more information, see: https://hexdocs.pm/igniter
-      """)
-
-      exit({:shutdown, 1})
+    def run(_args) do
+      Mix.Task.run("compile", ["--no-deps-check"])
+      Mix.Task.run("claude", ["hooks", "install"])
     end
   end
 end
