@@ -183,9 +183,11 @@ The GitHub Action will automatically create a release when you push the tag.
 
 ### Version Guidelines
 
+Since this project uses zero-based versioning (0.x.y):
+
 - **Patch** (0.1.0 → 0.1.1): Bug fixes, minor improvements
-- **Minor** (0.1.0 → 0.2.0): New features, backwards compatible
-- **Major** (0.1.0 → 1.0.0): Breaking changes
+- **Minor** (0.1.0 → 0.2.0): New features, may include breaking changes
+- **Major** (0.x.y → 1.0.0): First stable release (not used until v1.0.0)
 
 ## License
 
