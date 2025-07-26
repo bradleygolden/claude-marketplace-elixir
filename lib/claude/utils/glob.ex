@@ -37,7 +37,6 @@ defmodule Claude.Utils.Glob do
   end
   
   defp escape_special_chars(pattern) do
-    # Escape regex special chars except glob syntax
     pattern
     |> String.replace(".", "\\.")
     |> String.replace("+", "\\+")
@@ -52,12 +51,10 @@ defmodule Claude.Utils.Glob do
   
   defp convert_glob_syntax(pattern) do
     pattern
-    # Handle ** before * to avoid conflicts
     |> String.replace("**", "DOUBLE_STAR_PLACEHOLDER")
     |> String.replace("*", "[^/]*")
     |> String.replace("DOUBLE_STAR_PLACEHOLDER", ".*")
     |> String.replace("?", ".")
-    # Character classes
     |> String.replace(~r/\[!([^\]]+)\]/, "[^\\1]")
     |> String.replace(~r/\[\^([^\]]+)\]/, "[^\\1]")
   end

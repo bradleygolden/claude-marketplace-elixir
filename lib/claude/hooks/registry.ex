@@ -156,8 +156,6 @@ defmodule Claude.Hooks.Registry do
     end
   end
 
-  # Use cached config loading if the cache process is available,
-  # otherwise fall back to direct loading
   defp load_config do
     if Process.whereis(Claude.Config.Cache) do
       Claude.Config.Cache.get()

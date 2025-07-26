@@ -295,7 +295,6 @@ defmodule Claude.Hooks do
     end
   end
 
-  # Use cached config loading if available
   defp load_config do
     if Process.whereis(Claude.Config.Cache) do
       Claude.Config.Cache.get()

@@ -9,7 +9,7 @@ defmodule Claude.Config.Cache do
   use GenServer
   
   @cache_name __MODULE__
-  @check_interval 5_000 # Check for file changes every 5 seconds
+  @check_interval 5_000
   
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: @cache_name)
@@ -21,7 +21,6 @@ defmodule Claude.Config.Cache do
   def get do
     case Process.whereis(@cache_name) do
       nil ->
-        # Cache process not running, load directly
         Claude.Config.load()
         
       _pid ->
@@ -38,11 +37,9 @@ defmodule Claude.Config.Cache do
     end
   end
   
-  # GenServer callbacks
   
   @impl true
   def init(_opts) do
-    # Schedule periodic file change checks
     Process.send_after(self(), :check_file_change, @check_interval)
     
     state = %{
@@ -72,7 +69,6 @@ defmodule Claude.Config.Cache do
     {:noreply, new_state}
   end
   
-  # Private helpers
   
   defp ensure_loaded(%{config: nil} = state) do
     load_config(state)
@@ -83,7 +79,6 @@ defmodule Claude.Config.Cache do
   end
   
   defp load_config(state) do
-    # Use default max_depth for now, can be made configurable later
     case Claude.Config.find_config_file() do
       {:ok, path} ->
         case File.stat(path) do
@@ -98,7 +93,6 @@ defmodule Claude.Config.Cache do
             end
             
           _ ->
-            # File doesn't exist, try loading anyway
             case Claude.Config.load() do
               {:ok, config} ->
                 new_state = %{state | config: config, last_modified: nil, config_path: nil}
@@ -110,13 +104,11 @@ defmodule Claude.Config.Cache do
         end
         
       _ ->
-        # No config file found
         {{:error, "No .claude.exs file found"}, state}
     end
   end
   
   defp check_and_reload_if_changed(%{config_path: nil} = state) do
-    # No config file loaded yet, try to load
     case load_config(state) do
       {_result, new_state} -> new_state
     end
@@ -125,13 +117,11 @@ defmodule Claude.Config.Cache do
   defp check_and_reload_if_changed(%{config_path: path, last_modified: last_mtime} = state) do
     case File.stat(path) do
       {:ok, %{mtime: current_mtime}} when current_mtime != last_mtime ->
-        # File has changed, reload
         case load_config(state) do
           {_result, new_state} -> new_state
         end
         
       _ ->
-        # File unchanged or doesn't exist anymore
         state
     end
   end

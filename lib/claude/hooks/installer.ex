@@ -134,8 +134,6 @@ defmodule Claude.Hooks.Installer do
     |> Enum.join("\n")
   end
 
-  # Private functions
-
   defp remove_claude_hooks(settings, claude_commands) do
     hooks = Map.get(settings, "hooks", %{})
 
