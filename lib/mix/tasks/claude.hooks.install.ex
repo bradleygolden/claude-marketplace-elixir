@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Claude.Hooks.Install do
   Installs all available Claude hooks including:
   - Auto-formatting for Elixir files after edits
   - Compilation checking to catch errors immediately
-  - Pre-commit validation
+  - Pre-commit validation for formatting, compilation, and dependencies
 
   ## Usage
 
