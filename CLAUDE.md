@@ -83,6 +83,7 @@ All hooks implement the `Claude.Hooks.Hook.Behaviour` which requires:
 Current hooks:
 - **ElixirFormatter** - Automatically formats .ex/.exs files after edits
 - **CompilationChecker** - Checks for compilation errors after edits
+- **PreCommitCheck** - Validates formatting, compilation, and unused dependencies before commits
 
 ### CLI Structure
 

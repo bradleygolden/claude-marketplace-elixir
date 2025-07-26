@@ -121,7 +121,8 @@ error: undefined variable "nam"
 - **Blocking hook** that validates code before git commits
 - Ensures all files are formatted before committing
 - Verifies code compiles without errors or warnings
-- Prevents commits if formatting or compilation issues exist
+- Checks for unused dependencies in mix.lock
+- Prevents commits if formatting, compilation, or dependency issues exist
 
 ## Coming Soon
 
