@@ -13,6 +13,7 @@ defmodule Claude.Hooks.Registry do
   @builtin_hooks [
     Claude.Hooks.PostToolUse.ElixirFormatter,
     Claude.Hooks.PostToolUse.CompilationChecker,
+    Claude.Hooks.PostToolUse.RelatedFilesChecker,
     Claude.Hooks.PreToolUse.PreCommitCheck
   ]
 
@@ -39,7 +40,7 @@ defmodule Claude.Hooks.Registry do
   Returns user-defined hooks from configuration.
   """
   def custom_hooks do
-    case Config.load() do
+    case load_config() do
       {:ok, config} ->
         config
         |> Map.get(:hooks, [])
@@ -91,7 +92,7 @@ defmodule Claude.Hooks.Registry do
   This includes any user-specific configuration from `.claude.exs`.
   """
   def hook_config(module) do
-    case Config.load() do
+    case load_config() do
       {:ok, config} ->
         config
         |> Map.get(:hooks, [])
@@ -113,7 +114,7 @@ defmodule Claude.Hooks.Registry do
   then falls back to inferring from the module name.
   """
   def event_type_for(module) do
-    case Config.load() do
+    case load_config() do
       {:ok, config} ->
         config
         |> Map.get(:hooks, [])
@@ -132,7 +133,7 @@ defmodule Claude.Hooks.Registry do
   Returns full hook information for a module, including custom configuration.
   """
   def hook_info(module) do
-    case Config.load() do
+    case load_config() do
       {:ok, config} ->
         config
         |> Map.get(:hooks, [])
@@ -152,6 +153,16 @@ defmodule Claude.Hooks.Registry do
 
       {:error, _} ->
         %{module: module, enabled: true, event_type: Hook.event_type(module), config: %{}}
+    end
+  end
+
+  # Use cached config loading if the cache process is available,
+  # otherwise fall back to direct loading
+  defp load_config do
+    if Process.whereis(Claude.Config.Cache) do
+      Claude.Config.Cache.get()
+    else
+      Config.load()
     end
   end
 end

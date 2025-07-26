@@ -156,17 +156,12 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesChecker do
 
   defp match_pattern?(file_path, pattern) do
     cond do
-      String.contains?(pattern, "*") ->
-        # Convert glob pattern to regex
-        regex_pattern = pattern
-        |> String.replace("**", ".*")
-        |> String.replace("*", "[^/]*")
-        |> Regex.compile!()
-        
-        Regex.match?(regex_pattern, file_path)
+      contains_glob?(pattern) ->
+        # Use our glob utility for pattern matching
+        Claude.Utils.Glob.match?(file_path, pattern)
         
       true ->
-        # Exact match or contains
+        # Exact match or contains for non-glob patterns
         file_path == pattern || String.contains?(file_path, pattern)
     end
   end

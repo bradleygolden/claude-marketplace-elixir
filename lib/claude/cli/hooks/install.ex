@@ -4,6 +4,7 @@ defmodule Claude.CLI.Hooks.Install do
   """
 
   alias Claude.Hooks
+  alias Claude.Hooks.Registry
   alias Claude.Core.Project
   alias Claude.Utils.Shell
 
@@ -18,7 +19,7 @@ defmodule Claude.CLI.Hooks.Install do
         Shell.blank()
         Shell.info("Enabled hooks:")
 
-        Hooks.all_hooks()
+        Registry.all_hooks()
         |> Enum.each(fn hook_module ->
           Shell.bullet(hook_module.description())
         end)

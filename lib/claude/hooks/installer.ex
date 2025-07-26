@@ -7,7 +7,7 @@ defmodule Claude.Hooks.Installer do
   across different interfaces (CLI, Igniter tasks, etc.).
   """
 
-  alias Claude.Hooks
+  alias Claude.Hooks.Registry
 
   @doc """
   Installs all Claude hooks into the given settings map.
@@ -39,11 +39,11 @@ defmodule Claude.Hooks.Installer do
   @spec install_hooks(map()) :: map()
   def install_hooks(settings) when is_map(settings) do
     settings = Map.put_new(settings, "hooks", %{})
-    claude_commands = Enum.map(Hooks.all_hooks(), fn hook -> hook.config().command end)
+    claude_commands = Enum.map(Registry.all_hooks(), fn hook -> hook.config().command end)
     settings = remove_claude_hooks(settings, claude_commands)
 
     hooks_by_event_and_matcher =
-      Hooks.all_hooks()
+      Registry.all_hooks()
       |> Enum.group_by(fn hook_module ->
         event_type =
           hook_module
@@ -113,7 +113,7 @@ defmodule Claude.Hooks.Installer do
   """
   @spec remove_all_hooks(map()) :: map()
   def remove_all_hooks(settings) when is_map(settings) do
-    claude_commands = Enum.map(Hooks.all_hooks(), fn hook -> hook.config().command end)
+    claude_commands = Enum.map(Registry.all_hooks(), fn hook -> hook.config().command end)
     remove_claude_hooks(settings, claude_commands)
   end
 
@@ -127,7 +127,7 @@ defmodule Claude.Hooks.Installer do
   """
   @spec format_hooks_list() :: String.t()
   def format_hooks_list do
-    Hooks.all_hooks()
+    Registry.all_hooks()
     |> Enum.map(fn hook_module ->
       "  • #{hook_module.description()}"
     end)
