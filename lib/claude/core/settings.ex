@@ -7,6 +7,7 @@ defmodule Claude.Core.Settings do
   alias Claude.Core.Project
 
   @settings_filename "settings.json"
+  @claude_exs_filename ".claude.exs"
 
   @doc """
   Returns the path to the settings.json file.
@@ -16,10 +17,32 @@ defmodule Claude.Core.Settings do
   end
 
   @doc """
-  Reads settings from the JSON file.
+  Reads settings from the JSON file and merges with .claude.exs if it exists.
   Returns {:ok, map} or {:error, reason}.
   """
   def read do
+    json_settings = read_json_settings()
+    exs_settings = read_exs_settings()
+
+    case {json_settings, exs_settings} do
+      {{:ok, json}, {:ok, exs}} ->
+        # Deep merge with .claude.exs taking precedence
+        {:ok, deep_merge(json, exs)}
+
+      {{:ok, json}, _} ->
+        {:ok, json}
+
+      {{:error, :enoent}, {:ok, exs}} ->
+        # Only use .claude.exs if JSON file doesn't exist
+        {:ok, exs}
+
+      {{:error, reason}, _} ->
+        # For other JSON errors (invalid_json, permission errors), return the error
+        {:error, reason}
+    end
+  end
+
+  defp read_json_settings do
     case File.read(path()) do
       {:ok, content} ->
         case Jason.decode(content) do
@@ -33,6 +56,60 @@ defmodule Claude.Core.Settings do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp read_exs_settings do
+    exs_path = Path.join(File.cwd!(), @claude_exs_filename)
+
+    case File.read(exs_path) do
+      {:ok, content} ->
+        try do
+          {result, _binding} = Code.eval_string(content, [], file: exs_path)
+
+          case result do
+            map when is_map(map) ->
+              # Convert atom keys to strings for consistency
+              {:ok, stringify_keys(map)}
+
+            _ ->
+              {:error, :invalid_exs_format}
+          end
+        rescue
+          error ->
+            # Log but don't fail on .claude.exs errors
+            IO.warn("Error reading .claude.exs: #{inspect(error)}")
+            {:ok, %{}}
+        end
+
+      {:error, :enoent} ->
+        {:ok, %{}}
+
+      {:error, _reason} ->
+        # Don't fail on .claude.exs read errors
+        {:ok, %{}}
+    end
+  end
+
+  defp stringify_keys(map) when is_map(map) do
+    map
+    |> Enum.map(fn
+      {k, v} when is_atom(k) -> {Atom.to_string(k), stringify_keys(v)}
+      {k, v} -> {k, stringify_keys(v)}
+    end)
+    |> Map.new()
+  end
+
+  defp stringify_keys(list) when is_list(list) do
+    Enum.map(list, &stringify_keys/1)
+  end
+
+  defp stringify_keys(value), do: value
+
+  defp deep_merge(left, right) do
+    Map.merge(left, right, fn
+      _k, l, r when is_map(l) and is_map(r) -> deep_merge(l, r)
+      _k, _l, r -> r
+    end)
   end
 
   @doc """
