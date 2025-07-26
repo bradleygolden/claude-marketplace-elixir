@@ -71,7 +71,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesChecker do
 
   defp apply_builtin_rules(file_path, related) do
     cond do
-      # When modifying a lib file, suggest its test file
       String.starts_with?(file_path, "lib/") && String.ends_with?(file_path, ".ex") ->
         test_path = file_path
         |> String.replace_prefix("lib/", "test/")
@@ -79,7 +78,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesChecker do
         
         [{test_path, "corresponding test file"} | related]
       
-      # When modifying a test file, suggest its implementation file
       String.starts_with?(file_path, "test/") && String.ends_with?(file_path, "_test.exs") ->
         impl_path = file_path
         |> String.replace_prefix("test/", "lib/")
@@ -87,23 +85,19 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesChecker do
         
         [{impl_path, "implementation file"} | related]
       
-      # When modifying hooks.ex, suggest checking registry.ex
       String.ends_with?(file_path, "lib/claude/hooks.ex") ->
         [{"lib/claude/hooks/registry.ex", "hook registry might need updates"} | related]
       
-      # When modifying a hook implementation, suggest updating documentation
       String.contains?(file_path, "/hooks/") && String.ends_with?(file_path, ".ex") ->
         related
         |> maybe_add("README.md", "documentation might need updates")
         |> maybe_add("test/claude/hooks/registry_test.exs", "registry tests might need updates")
       
-      # When modifying configuration, suggest checking dependent modules
       String.ends_with?(file_path, "lib/claude/config.ex") ->
         related
         |> maybe_add("lib/claude/hooks/registry.ex", "uses configuration")
         |> maybe_add("test/claude/config_test.exs", "configuration tests")
       
-      # When modifying CLI files, suggest checking help documentation
       String.contains?(file_path, "/cli/") && String.ends_with?(file_path, ".ex") ->
         maybe_add(related, "lib/claude/cli/help.ex", "help text might need updates")
       
@@ -156,17 +150,12 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesChecker do
 
   defp match_pattern?(file_path, pattern) do
     cond do
-      String.contains?(pattern, "*") ->
-        # Convert glob pattern to regex
-        regex_pattern = pattern
-        |> String.replace("**", ".*")
-        |> String.replace("*", "[^/]*")
-        |> Regex.compile!()
-        
-        Regex.match?(regex_pattern, file_path)
+      contains_glob?(pattern) ->
+        # Use our glob utility for pattern matching
+        Claude.Utils.Glob.match?(file_path, pattern)
         
       true ->
-        # Exact match or contains
+        # Exact match or contains for non-glob patterns
         file_path == pattern || String.contains?(file_path, pattern)
     end
   end

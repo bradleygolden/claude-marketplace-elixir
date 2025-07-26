@@ -92,31 +92,20 @@ defmodule Claude.Hooks do
     @callback description() :: String.t()
   end
 
-  @hooks [
-    Claude.Hooks.PostToolUse.ElixirFormatter,
-    Claude.Hooks.PostToolUse.CompilationChecker,
-    Claude.Hooks.PreToolUse.PreCommitCheck
-  ]
-
-  @doc """
-  Returns all available hook modules.
-  """
-  def all_hooks, do: @hooks
-
   @doc """
   Finds a hook module by its identifier.
 
   The identifier is derived from the module name, e.g.:
   - Claude.Hooks.PostToolUse.ElixirFormatter -> "post_tool_use.elixir_formatter"
+
+  This function delegates to the Registry for dynamic hook discovery.
   """
-  def find_hook_by_identifier(identifier) do
-    Enum.find(@hooks, fn hook_module ->
-      hook_identifier(hook_module) == identifier
-    end)
-  end
+  defdelegate find_hook_by_identifier(identifier), to: Registry, as: :find_by_identifier
 
   @doc """
   Returns the identifier for a hook module.
+  
+  @deprecated "Use Claude.Hooks.Hook.identifier/1 directly"
   """
   def hook_identifier(hook_module) do
     Hook.identifier(hook_module)
@@ -149,7 +138,7 @@ defmodule Claude.Hooks do
   end
 
   defp validate_custom_hooks do
-    case Config.load() do
+    case load_config() do
       {:ok, config} ->
         config
         |> Map.get(:hooks, [])
@@ -303,6 +292,14 @@ defmodule Claude.Hooks do
       Map.delete(settings, "hooks")
     else
       Map.put(settings, "hooks", updated_hooks)
+    end
+  end
+
+  defp load_config do
+    if Process.whereis(Claude.Config.Cache) do
+      Claude.Config.Cache.get()
+    else
+      Config.load()
     end
   end
 end

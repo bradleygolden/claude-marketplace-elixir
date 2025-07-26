@@ -56,21 +56,30 @@ defmodule Claude.Config do
 
   Searches in the following order:
   1. Project root directory
-  2. Parent directories (up to 3 levels)
+  2. Parent directories (up to `max_depth` levels, default 3)
+  
+  ## Options
+  
+  * `:max_depth` - Maximum number of parent directories to search (default: 3)
   """
-  def find_config_file do
+  def find_config_file(opts \\ []) do
+    max_depth = Keyword.get(opts, :max_depth, 3)
     project_root = Claude.Core.Project.root()
 
-    paths = [
-      Path.join(project_root, ".claude.exs"),
-      Path.join([project_root, "..", ".claude.exs"]),
-      Path.join([project_root, "..", "..", ".claude.exs"])
-    ]
+    paths = build_search_paths(project_root, max_depth)
 
     case Enum.find(paths, &File.exists?/1) do
       nil -> :error
       path -> {:ok, path}
     end
+  end
+  
+  defp build_search_paths(root, max_depth) do
+    0..max_depth
+    |> Enum.map(fn depth ->
+      path_parts = [root] ++ List.duplicate("..", depth) ++ [".claude.exs"]
+      Path.join(path_parts)
+    end)
   end
 
   defp validate_config(config) when is_map(config) do

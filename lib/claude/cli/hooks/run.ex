@@ -45,17 +45,35 @@ defmodule Claude.CLI.Hooks.Run do
     if Code.ensure_loaded?(module) do
       :ok
     else
-      case System.cmd("mix", ["compile", "--force"], stderr_to_stdout: true) do
+      # Try regular compilation first without forcing
+      case System.cmd("mix", ["compile"], stderr_to_stdout: true) do
         {_, 0} ->
           if Code.ensure_loaded?(module) do
             :ok
           else
-            {:error, "Module not found after compilation"}
+            # Only force compilation if the module still isn't loaded
+            force_compile_and_check(module)
           end
 
         {output, _} ->
           {:error, "Compilation failed: #{output}"}
       end
+    end
+  end
+  
+  defp force_compile_and_check(module) do
+    Logger.debug("Module #{module} not found, forcing compilation")
+    
+    case System.cmd("mix", ["compile", "--force"], stderr_to_stdout: true) do
+      {_, 0} ->
+        if Code.ensure_loaded?(module) do
+          :ok
+        else
+          {:error, "Module not found after forced compilation"}
+        end
+
+      {output, _} ->
+        {:error, "Forced compilation failed: #{output}"}
     end
   end
 end
