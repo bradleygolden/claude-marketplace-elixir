@@ -68,4 +68,7 @@ defmodule Mix.Tasks.Claude.Hooks.Install do
     #{Installer.format_hooks_list()}
     """)
   end
+
+  @impl Igniter.Mix.Task
+  def supports_umbrella?, do: false
 end

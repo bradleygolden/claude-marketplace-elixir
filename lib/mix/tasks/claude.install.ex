@@ -38,6 +38,9 @@ if Code.ensure_loaded?(Igniter) do
       igniter
       |> Igniter.compose_task("claude.hooks.install", [])
     end
+
+    @impl Igniter.Mix.Task
+    def supports_umbrella?, do: false
   end
 else
   defmodule Mix.Tasks.Claude.Install do
