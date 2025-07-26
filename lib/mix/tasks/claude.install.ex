@@ -1,20 +1,9 @@
-defmodule Mix.Tasks.Claude.Install.Docs do
-  @moduledoc false
+if Code.ensure_loaded?(Igniter) do
+  defmodule Mix.Tasks.Claude.Install do
+    @shortdoc "Setup Claude for your Elixir project"
 
-  @spec short_doc() :: String.t()
-  def short_doc do
-    "Setup Claude for your Elixir project"
-  end
-
-  @spec example() :: String.t()
-  def example do
-    "mix igniter.install claude"
-  end
-
-  @spec long_doc() :: String.t()
-  def long_doc do
-    """
-    #{short_doc()}
+    @moduledoc """
+    Setup Claude for your Elixir project.
 
     This task is automatically run when you execute:
 
@@ -28,17 +17,9 @@ defmodule Mix.Tasks.Claude.Install.Docs do
     ## Example
 
     ```sh
-    #{example()}
+    mix igniter.install claude
     ```
     """
-  end
-end
-
-if Code.ensure_loaded?(Igniter) do
-  defmodule Mix.Tasks.Claude.Install do
-    @shortdoc "#{__MODULE__.Docs.short_doc()}"
-
-    @moduledoc __MODULE__.Docs.long_doc()
 
     use Igniter.Mix.Task
 
@@ -55,7 +36,7 @@ if Code.ensure_loaded?(Igniter) do
         # i.e `{:foo, "~> 2.0"}`
         installs: [],
         # An example invocation
-        example: __MODULE__.Docs.example(),
+        example: "mix igniter.install claude",
         # A list of environments that this should be installed in.
         only: nil,
         # a list of positional arguments, i.e `[:file]`
@@ -84,9 +65,13 @@ if Code.ensure_loaded?(Igniter) do
   end
 else
   defmodule Mix.Tasks.Claude.Install do
-    @shortdoc "#{__MODULE__.Docs.short_doc()} | Install `igniter` to use"
+    @shortdoc "Setup Claude for your Elixir project"
 
-    @moduledoc __MODULE__.Docs.long_doc()
+    @moduledoc """
+    Setup Claude for your Elixir project.
+
+    This task requires Igniter to be installed.
+    """
 
     use Mix.Task
 
