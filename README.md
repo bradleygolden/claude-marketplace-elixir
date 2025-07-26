@@ -145,6 +145,50 @@ We welcome contributions! The codebase follows standard Elixir conventions:
 - Run tests: `mix test`
 - Format code: `mix format`
 
+## Releasing
+
+### Release Process
+
+1. **Update Version**
+   - Edit `mix.exs` and update the `@version` module attribute
+   - Example: change `@version "0.1.0"` to `@version "0.2.0"`
+
+2. **Update Changelog**
+   - Add a new section to `CHANGELOG.md` with the version and date
+   - List all changes under Added/Changed/Fixed/Removed sections
+
+3. **Commit Changes**
+   ```bash
+   git add mix.exs CHANGELOG.md
+   git commit -m "Release v0.2.0"
+   ```
+
+4. **Create Git Tag**
+   ```bash
+   git tag -a v0.2.0 -m "Version 0.2.0"
+   ```
+
+5. **Push to GitHub**
+   ```bash
+   git push origin main
+   git push origin v0.2.0
+   ```
+
+6. **Publish to Hex**
+   ```bash
+   mix hex.publish
+   ```
+
+The GitHub Action will automatically create a release when you push the tag.
+
+### Version Guidelines
+
+Since this project uses zero-based versioning (0.x.y):
+
+- **Patch** (0.1.0 → 0.1.1): Bug fixes, minor improvements
+- **Minor** (0.1.0 → 0.2.0): New features, may include breaking changes
+- **Major** (0.x.y → 1.0.0): First stable release (not used until v1.0.0)
+
 ## License
 
 MIT

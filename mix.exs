@@ -46,7 +46,9 @@ defmodule Claude.MixProject do
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/bradleygolden/claude"
-      }
+      },
+      maintainers: ["Bradley Golden"],
+      files: ~w(lib .formatter.exs mix.exs README.md LICENSE CHANGELOG.md)
     ]
   end
 
