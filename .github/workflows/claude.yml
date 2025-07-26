@@ -30,35 +30,40 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.18'
+          otp-version: '26'
+
+      - name: Cache Mix dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+            ~/.hex
+            ~/.mix
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/mix.exs') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}-
+            ${{ runner.os }}-mix-
+
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v0.0.44
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
           
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
+          allowed_tools: "Bash(mix deps.get),Bash(mix compile),Bash(mix compile --warnings-as-errors),Bash(mix test),Bash(mix format),Bash(mix deps.update),Bash(mix deps.clean),Bash(mix clean),Bash(mix test --trace),Bash(mix test --max-failures),Bash(mix credo),Bash(mix help),Bash(mix claude.install),Bash(mix claude.uninstall),Bash(mix claude hooks run)"
           
-          # Optional: Customize the trigger phrase (default: @claude)
-          # trigger_phrase: "/claude"
-          
-          # Optional: Trigger when specific user is assigned to an issue
-          # assignee_trigger: "claude-bot"
-          
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
-          
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
-          
-          # Optional: Custom environment variables for Claude
-          # claude_env: |
-          #   NODE_ENV: test
+          custom_instructions: |
+            This is an Elixir project. Always use:
+            - mix format for code formatting
+            - mix test for running tests
+            - mix compile --warnings-as-errors for compilation
+            Follow the project's CLAUDE.md guidelines.
 
