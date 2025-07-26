@@ -26,41 +26,16 @@ if Code.ensure_loaded?(Igniter) do
     @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
       %Igniter.Mix.Task.Info{
-        # Groups allow for overlapping arguments for tasks by the same author
-        # See the generators guide for more.
         group: :claude,
-        # *other* dependencies to add
-        # i.e `{:foo, "~> 2.0"}`
-        adds_deps: [{:claude, "~> 0.1"}],
-        # *other* dependencies to add and call their associated installers, if they exist
-        # i.e `{:foo, "~> 2.0"}`
-        installs: [],
-        # An example invocation
         example: "mix igniter.install claude",
-        # A list of environments that this should be installed in.
-        only: :dev,
-        # a list of positional arguments, i.e `[:file]`
-        positional: [],
-        # Other tasks your task composes using `Igniter.compose_task`, passing in the CLI argv
-        # This ensures your option schema includes options from nested tasks
-        composes: [],
-        # `OptionParser` schema
-        schema: [],
-        # Default values for the options in the `schema`
-        defaults: [],
-        # CLI aliases
-        aliases: [],
-        # A list of options in the schema that are required
-        required: [],
-        # Installer dependency options
+        only: [:dev],
+        composes: ["claude"],
         dep_opts: [runtime: false]
       }
     end
 
     @impl Igniter.Mix.Task
     def igniter(igniter) do
-      # Install the hooks by composing the existing task
-      # This ensures the hooks are properly set up in .claude/settings.json
       igniter
       |> Igniter.compose_task("claude", ["hooks", "install"])
     end
