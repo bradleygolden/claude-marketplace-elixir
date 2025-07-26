@@ -189,6 +189,8 @@ defmodule MyApp.Hooks.TodoChecker do
 end
 ```
 
+For a complete, production-ready example, see `Claude.Hooks.PostToolUse.RelatedFilesChecker` in this library's source code.
+
 ### Hook Configuration
 
 Hooks can receive configuration from `.claude.exs`:
@@ -198,6 +200,49 @@ Hooks can receive configuration from `.claude.exs`:
 config = Claude.Hooks.Registry.hook_config(__MODULE__)
 pattern = Map.get(config, :todo_pattern, ~r/TODO/)
 ```
+
+### Glob Pattern Support
+
+The built-in `RelatedFilesChecker` hook and custom hooks can use glob patterns to dynamically find related files. This is useful for suggesting files that might need updates when certain files change.
+
+```elixir
+# .claude.exs
+%{
+  hooks: [
+    %{
+      module: Claude.Hooks.PostToolUse.RelatedFilesChecker,
+      enabled: true,
+      config: %{
+        rules: [
+          # When any lib file changes, suggest running all test files
+          %{
+            pattern: "lib/**/*.ex",
+            suggests: [
+              %{file: "test/**/*_test.exs", reason: "related test files might need updates"}
+            ]
+          },
+          # When config.ex changes, suggest checking all files in the project
+          %{
+            pattern: "lib/claude/config.ex",
+            suggests: [
+              %{file: "lib/claude/**/*.ex", reason: "files that might use Config module"}
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Supported glob patterns:
+- `*` - Match any characters except `/`
+- `**` - Match any characters including `/` (recursive)
+- `?` - Match single character
+- `[abc]` - Match character set
+- `{foo,bar}` - Match alternatives
+
+When a glob pattern is used in the `suggests` field, all matching files will be suggested as related files that might need review or updates.
 
 ### Event Types
 
@@ -219,11 +264,9 @@ Available event types:
 
 If `event_type` is not specified, it will be inferred from your module's namespace (e.g., a module under `MyApp.Hooks.PostToolUse.*` will default to "PostToolUse")
 
-### Example Hooks
+### Real-World Example
 
-See the `examples/custom_hooks/` directory for complete examples:
-- `todo_checker.ex` - Warns about TODO comments in edited files
-- `copyright_header.ex` - Adds copyright headers to new files
+The `RelatedFilesChecker` hook (included in this library) demonstrates how to create custom hooks. It suggests related files that might need updates when certain files are modified. Check out `lib/claude/hooks/post_tool_use/related_files_checker.ex` to see a complete implementation.
 
 ## Contributing
 

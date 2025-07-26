@@ -13,6 +13,15 @@
           }
         ],
         "matcher": ".*"
+      },
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.related_files_checker \"$1\" \"$2\"",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|MultiEdit|Write"
       }
     ],
     "PreToolUse": [
