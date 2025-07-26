@@ -29,7 +29,6 @@ if Code.ensure_loaded?(Igniter) do
         group: :claude,
         example: "mix igniter.install claude",
         only: [:dev],
-        composes: ["claude"],
         dep_opts: [runtime: false]
       }
     end
@@ -37,7 +36,7 @@ if Code.ensure_loaded?(Igniter) do
     @impl Igniter.Mix.Task
     def igniter(igniter) do
       igniter
-      |> Igniter.compose_task("claude", ["hooks", "install"])
+      |> Igniter.compose_task("claude.hooks.install", [])
     end
   end
 else

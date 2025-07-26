@@ -1,179 +1,250 @@
 defmodule Claude.Hooks.InstallerTest do
-  use ExUnit.Case, async: false
-  use Mimic
+  use ExUnit.Case, async: true
 
-  import Claude.TestHelpers
+  alias Claude.Hooks.Installer
 
-  alias Claude.Hooks
-  alias Claude.Core.Project
+  describe "install_hooks/1" do
+    test "installs all hooks into empty settings" do
+      settings = %{}
 
-  setup :verify_on_exit!
+      result = Installer.install_hooks(settings)
 
-  describe "install/0" do
-    test "creates settings file with all hooks when none exists" do
-      in_tmp(fn tmp_dir ->
-        # Mock Project.claude_path to ensure we use the test directory
-        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
-        File.mkdir_p!(".claude")
+      assert %{"hooks" => hooks} = result
+      assert %{"PostToolUse" => post_tool_use} = hooks
+      assert %{"PreToolUse" => pre_tool_use} = hooks
 
-        assert {:ok, _message} = Hooks.install()
+      # Check PostToolUse hooks
+      assert [%{"matcher" => ".*", "hooks" => post_hooks}] = post_tool_use
+      assert length(post_hooks) == 2
 
-        settings_path = Path.join(".claude", "settings.json")
-        assert File.exists?(settings_path)
+      assert Enum.any?(post_hooks, fn hook ->
+               hook["command"] =~ "post_tool_use.elixir_formatter" &&
+                 hook["type"] == "command"
+             end)
 
-        settings = File.read!(settings_path) |> Jason.decode!()
+      assert Enum.any?(post_hooks, fn hook ->
+               hook["command"] =~ "post_tool_use.compilation_checker" &&
+                 hook["type"] == "command"
+             end)
 
-        assert %{"hooks" => hooks} = settings
+      # Check PreToolUse hooks
+      assert [%{"matcher" => "Bash", "hooks" => pre_hooks}] = pre_tool_use
+      assert length(pre_hooks) == 1
 
-        assert %{"PostToolUse" => post_tool_use} = hooks
-        assert is_list(post_tool_use)
-        assert length(post_tool_use) == 1
-
-        [matcher_obj] = post_tool_use
-        assert %{"matcher" => ".*", "hooks" => hook_list} = matcher_obj
-        assert length(hook_list) == 2
-
-        assert Enum.any?(hook_list, fn hook ->
-                 hook["command"] =~ "mix claude hooks run post_tool_use.elixir_formatter" &&
-                   hook["type"] == "command"
-               end)
-
-        assert Enum.any?(hook_list, fn hook ->
-                 hook["command"] =~ "mix claude hooks run post_tool_use.compilation_checker" &&
-                   hook["type"] == "command"
-               end)
-      end)
+      assert Enum.any?(pre_hooks, fn hook ->
+               hook["command"] =~ "pre_tool_use.pre_commit_check" &&
+                 hook["type"] == "command"
+             end)
     end
 
-    test "preserves existing hooks when installing" do
-      in_tmp(fn tmp_dir ->
-        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
-        File.mkdir_p!(".claude")
-
-        existing_settings = %{
-          "hooks" => %{
-            "PostToolUse" => [
-              %{
-                "matcher" => ".*",
-                "hooks" => [
-                  %{"command" => "echo 'custom hook'", "type" => "command"}
-                ]
-              }
-            ]
-          }
+    test "preserves existing non-Claude hooks" do
+      settings = %{
+        "hooks" => %{
+          "PostToolUse" => [
+            %{
+              "matcher" => ".*",
+              "hooks" => [
+                %{"command" => "echo 'custom hook'", "type" => "command"}
+              ]
+            }
+          ]
         }
+      }
 
-        settings_path = Path.join(".claude", "settings.json")
-        File.write!(settings_path, Jason.encode!(existing_settings, pretty: true))
+      result = Installer.install_hooks(settings)
 
-        assert {:ok, _message} = Hooks.install()
+      post_tool_use = get_in(result, ["hooks", "PostToolUse"])
+      assert [%{"matcher" => ".*", "hooks" => hooks}] = post_tool_use
 
-        settings = File.read!(settings_path) |> Jason.decode!()
-        post_tool_use = get_in(settings, ["hooks", "PostToolUse"]) || []
+      # Should have custom hook + 2 Claude hooks
+      assert length(hooks) == 3
 
-        assert length(post_tool_use) == 1
-
-        [matcher_obj] = post_tool_use
-        post_hooks = matcher_obj["hooks"] || []
-
-        assert length(post_hooks) == 3
-
-        assert Enum.any?(post_hooks, fn hook ->
-                 hook["command"] == "echo 'custom hook'"
-               end)
-
-        assert Enum.any?(post_hooks, fn hook ->
-                 hook["command"] =~ "mix claude hooks run post_tool_use.elixir_formatter"
-               end)
-
-        assert Enum.any?(post_hooks, fn hook ->
-                 hook["command"] =~ "mix claude hooks run post_tool_use.compilation_checker"
-               end)
-      end)
+      assert Enum.any?(hooks, fn hook ->
+               hook["command"] == "echo 'custom hook'"
+             end)
     end
 
-    test "creates .claude directory if it doesn't exist" do
-      in_tmp(fn tmp_dir ->
-        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
-        refute File.exists?(".claude")
+    test "replaces existing Claude hooks" do
+      # Use an actual Claude hook command to test replacement
+      old_command =
+        "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter \"$1\" \"$2\""
 
-        assert {:ok, _message} = Hooks.install()
+      settings = %{
+        "hooks" => %{
+          "PostToolUse" => [
+            %{
+              "matcher" => ".*",
+              "hooks" => [
+                # This is an old version of the formatter hook that should be replaced
+                %{"command" => old_command, "type" => "command"},
+                %{"command" => "echo 'custom'", "type" => "command"}
+              ]
+            }
+          ]
+        }
+      }
 
-        assert File.exists?(".claude")
-        assert File.exists?(Path.join(".claude", "settings.json"))
-      end)
+      result = Installer.install_hooks(settings)
+
+      post_tool_use = get_in(result, ["hooks", "PostToolUse"])
+      assert [%{"matcher" => ".*", "hooks" => hooks}] = post_tool_use
+
+      # Should have exactly 3 hooks: custom + 2 Claude hooks (no duplicates)
+      assert length(hooks) == 3
+
+      # Count formatter hooks - should be exactly 1
+      formatter_hooks =
+        Enum.filter(hooks, fn hook ->
+          hook["command"] =~ "post_tool_use.elixir_formatter"
+        end)
+
+      assert length(formatter_hooks) == 1
+
+      # Should have new Claude hooks
+      assert Enum.any?(hooks, fn hook ->
+               hook["command"] =~ "post_tool_use.elixir_formatter"
+             end)
+
+      assert Enum.any?(hooks, fn hook ->
+               hook["command"] =~ "post_tool_use.compilation_checker"
+             end)
+
+      # Should still have custom hook
+      assert Enum.any?(hooks, fn hook ->
+               hook["command"] == "echo 'custom'"
+             end)
+    end
+
+    test "handles multiple matchers correctly" do
+      settings = %{
+        "hooks" => %{
+          "PostToolUse" => [
+            %{
+              "matcher" => "*.ex",
+              "hooks" => [
+                %{"command" => "echo 'elixir file'", "type" => "command"}
+              ]
+            }
+          ]
+        }
+      }
+
+      result = Installer.install_hooks(settings)
+
+      post_tool_use = get_in(result, ["hooks", "PostToolUse"])
+
+      # Should have both matchers
+      assert length(post_tool_use) == 2
+
+      # Find the .* matcher
+      assert Enum.any?(post_tool_use, fn matcher_obj ->
+               matcher_obj["matcher"] == ".*" &&
+                 length(matcher_obj["hooks"]) == 2
+             end)
+
+      # Find the *.ex matcher
+      assert Enum.any?(post_tool_use, fn matcher_obj ->
+               matcher_obj["matcher"] == "*.ex" &&
+                 length(matcher_obj["hooks"]) == 1 &&
+                 hd(matcher_obj["hooks"])["command"] == "echo 'elixir file'"
+             end)
     end
   end
 
-  describe "uninstall/0" do
-    test "removes only Claude hooks" do
-      in_tmp(fn tmp_dir ->
-        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
-        File.mkdir_p!(".claude")
+  describe "remove_all_hooks/1" do
+    test "removes all Claude hooks" do
+      settings = %{
+        "hooks" => %{
+          "PostToolUse" => [
+            %{
+              "matcher" => ".*",
+              "hooks" => [
+                %{
+                  "command" =>
+                    "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter \"$1\" \"$2\"",
+                  "type" => "command"
+                },
+                %{"command" => "echo 'custom'", "type" => "command"}
+              ]
+            }
+          ]
+        }
+      }
 
-        assert {:ok, _message} = Hooks.install()
+      result = Installer.remove_all_hooks(settings)
 
-        settings_path = Path.join(".claude", "settings.json")
-        settings = File.read!(settings_path) |> Jason.decode!()
+      # Should still have hooks key
+      assert %{"hooks" => _hooks} = result
 
-        custom_hook = %{"command" => "echo 'custom hook'", "type" => "command"}
-
-        updated_settings =
-          update_in(settings, ["hooks", "PostToolUse", Access.at(0), "hooks"], fn hooks ->
-            [custom_hook | hooks]
-          end)
-
-        File.write!(settings_path, Jason.encode!(updated_settings, pretty: true))
-
-        assert {:ok, _message} = Hooks.uninstall()
-
-        settings = File.read!(settings_path) |> Jason.decode!()
-        post_tool_use = get_in(settings, ["hooks", "PostToolUse"]) || []
-
-        post_hooks =
-          if length(post_tool_use) > 0 do
-            [matcher_obj] = post_tool_use
-            matcher_obj["hooks"] || []
-          else
-            []
-          end
-
-        assert Enum.any?(post_hooks, fn hook ->
-                 hook["command"] == "echo 'custom hook'"
-               end)
-
-        refute Enum.any?(post_hooks, fn hook ->
-                 hook["command"] =~ "mix claude hooks run post_tool_use.elixir_formatter"
-               end)
-      end)
+      # Should only have custom hook
+      post_tool_use = get_in(result, ["hooks", "PostToolUse"])
+      assert [%{"matcher" => ".*", "hooks" => [hook]}] = post_tool_use
+      assert hook["command"] == "echo 'custom'"
     end
 
-    test "removes empty hook arrays" do
-      in_tmp(fn tmp_dir ->
-        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
-        File.mkdir_p!(".claude")
+    test "removes hooks key when no hooks remain" do
+      settings = %{
+        "hooks" => %{
+          "PostToolUse" => [
+            %{
+              "matcher" => ".*",
+              "hooks" => [
+                %{
+                  "command" =>
+                    "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter \"$1\" \"$2\"",
+                  "type" => "command"
+                }
+              ]
+            }
+          ]
+        }
+      }
 
-        # Create settings with only Claude hooks
-        assert {:ok, _message} = Hooks.install()
+      result = Installer.remove_all_hooks(settings)
 
-        # When only Claude hooks exist, uninstall removes the file
-        assert {:ok, _message} = Hooks.uninstall()
-
-        settings_path = Path.join(".claude", "settings.json")
-
-        # Settings file should be removed when only Claude hooks existed
-        refute File.exists?(settings_path)
-      end)
+      # Should remove hooks key entirely
+      refute Map.has_key?(result, "hooks")
     end
 
-    test "returns error when no Claude hooks exist" do
-      in_tmp(fn tmp_dir ->
-        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
-        File.mkdir_p!(".claude")
+    test "handles empty settings" do
+      assert %{} = Installer.remove_all_hooks(%{})
+    end
 
-        # Uninstall should succeed even if no hooks exist
-        assert {:ok, _message} = Hooks.uninstall()
-      end)
+    test "preserves other settings keys" do
+      settings = %{
+        "other_setting" => "value",
+        "hooks" => %{}
+      }
+
+      result = Installer.remove_all_hooks(settings)
+
+      assert %{"other_setting" => "value"} = result
+      refute Map.has_key?(result, "hooks")
+    end
+  end
+
+  describe "format_hooks_list/0" do
+    test "formats hooks with bullet points" do
+      formatted = Installer.format_hooks_list()
+
+      lines = String.split(formatted, "\n")
+      assert length(lines) == 3
+
+      assert Enum.all?(lines, fn line ->
+               String.starts_with?(line, "  • ")
+             end)
+
+      assert Enum.any?(lines, fn line ->
+               line =~ "formatting"
+             end)
+
+      assert Enum.any?(lines, fn line ->
+               line =~ "compilation"
+             end)
+
+      assert Enum.any?(lines, fn line ->
+               line =~ "commit"
+             end)
     end
   end
 end
