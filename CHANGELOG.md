@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Pre-commit hook now validates for unused dependencies in mix.lock
 - Automatic `usage_rules` integration in igniter install process:
+  - Adds `usage_rules` dependency to user's project automatically
+  - Syncs usage rules from all dependencies to CLAUDE.md
+  - Links to usage rules in deps folder for better context management
+  - New `mix claude.usage_rules.sync` task for manual synchronization
 
 ## [0.1.0] - 2025-07-25
 
