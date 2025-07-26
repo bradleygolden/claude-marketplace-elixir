@@ -1,5 +1,5 @@
 defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
-  use ExUnit.Case, async: false
+  use Claude.Test.ClaudeCodeCase, async: false
 
   alias Claude.Hooks.PostToolUse.CompilationChecker
 
@@ -36,7 +36,7 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
     {:ok, test_dir: @test_dir}
   end
 
-  describe "run/2" do
+  describe "run/1" do
     test "passes when Elixir file compiles successfully" do
       file_path = Path.join(@test_dir, "lib/test.ex")
 
@@ -48,10 +48,14 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       end
       """)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       assert capture_io(:stderr, fn ->
-               assert :ok = CompilationChecker.run("Edit", json_params)
+               assert :ok = CompilationChecker.run(stdin_json)
              end) == ""
     end
 
@@ -66,11 +70,15 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       end
       """)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       output =
         capture_io(:stderr, fn ->
-          assert :ok = CompilationChecker.run("Edit", json_params)
+          assert :ok = CompilationChecker.run(stdin_json)
         end)
 
       assert output =~ "Compilation issues detected"
@@ -89,11 +97,15 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       end
       """)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       output =
         capture_io(:stderr, fn ->
-          assert :ok = CompilationChecker.run("Edit", json_params)
+          assert :ok = CompilationChecker.run(stdin_json)
         end)
 
       assert output =~ "Compilation issues detected"
@@ -107,10 +119,14 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       IO.puts("Hello, World!")
       """)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Write",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       assert capture_io(:stderr, fn ->
-               assert :ok = CompilationChecker.run("Write", json_params)
+               assert :ok = CompilationChecker.run(stdin_json)
              end) == ""
     end
 
@@ -123,10 +139,14 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       end
       """)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "MultiEdit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       assert capture_io(:stderr, fn ->
-               assert :ok = CompilationChecker.run("MultiEdit", json_params)
+               assert :ok = CompilationChecker.run(stdin_json)
              end) == ""
     end
 
@@ -134,28 +154,64 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       file_path = Path.join(@test_dir, "test.js")
       File.write!(file_path, "console.log('hello');")
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
-      assert :ok = CompilationChecker.run("Edit", json_params)
+      output =
+        capture_io(:stderr, fn ->
+          assert :ok = CompilationChecker.run(stdin_json)
+        end)
+
+      assert output == ""
     end
 
     test "ignores non-edit tools" do
       file_path = Path.join(@test_dir, "lib/read.ex")
       File.write!(file_path, "defmodule Read, do: def test, do: :ok")
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Read",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
-      assert :ok = CompilationChecker.run("Read", json_params)
+      output =
+        capture_io(:stderr, fn ->
+          assert :ok = CompilationChecker.run(stdin_json)
+        end)
+
+      assert output == ""
     end
 
-    test "handles missing file_path gracefully" do
-      json_params = Jason.encode!(%{"other_param" => "value"})
+    test "handles missing file_path in tool_input gracefully" do
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"other_param" => "value"}
+        })
 
-      assert :ok = CompilationChecker.run("Edit", json_params)
+      output =
+        capture_io(:stderr, fn ->
+          assert :ok = CompilationChecker.run(stdin_json)
+        end)
+
+      assert output == ""
     end
 
-    test "handles invalid JSON gracefully" do
-      assert :ok = CompilationChecker.run("Edit", "invalid json")
+    test "handles invalid JSON input gracefully" do
+      output =
+        capture_io(:stderr, fn ->
+          assert :ok = CompilationChecker.run("invalid json")
+        end)
+
+      assert output == ""
+    end
+
+    test "handles :eof input gracefully" do
+      assert :ok = CompilationChecker.run(:eof)
     end
 
     test "uses CLAUDE_PROJECT_DIR when available" do
@@ -170,17 +226,15 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       end
       """)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       assert capture_io(:stderr, fn ->
-               assert :ok = CompilationChecker.run("Edit", json_params)
+               assert :ok = CompilationChecker.run(stdin_json)
              end) == ""
-
-      System.delete_env("CLAUDE_PROJECT_DIR")
     end
-  end
-
-  defp capture_io(:stderr, fun) do
-    ExUnit.CaptureIO.capture_io(:stderr, fun)
   end
 end

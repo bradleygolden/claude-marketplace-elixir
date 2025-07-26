@@ -1,5 +1,5 @@
 defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
-  use ExUnit.Case, async: false
+  use Claude.Test.ClaudeCodeCase, async: false
 
   alias Claude.Hooks.PostToolUse.ElixirFormatter
 
@@ -10,6 +10,8 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
     File.mkdir_p!(@test_dir)
     original_cwd = File.cwd!()
     File.cd!(@test_dir)
+
+    System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
 
     File.write!("mix.exs", """
     defmodule TestProject.MixProject do
@@ -24,6 +26,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
     File.write!(".formatter.exs", "[inputs: [\"**/*.{ex,exs}\"]]")
 
     on_exit(fn ->
+      System.delete_env("CLAUDE_PROJECT_DIR")
       File.cd!(original_cwd)
       File.rm_rf!(@test_dir)
     end)
@@ -31,7 +34,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
     {:ok, test_dir: @test_dir}
   end
 
-  describe "process/2" do
+  describe "run/1" do
     test "checks formatting for Elixir files when using Edit tool" do
       file_path = Path.join(@test_dir, "test.ex")
 
@@ -45,11 +48,15 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
 
       File.write!(file_path, original_content)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       output =
         ExUnit.CaptureIO.capture_io(:stderr, fn ->
-          assert :ok = ElixirFormatter.run("Edit", json_params)
+          assert :ok = ElixirFormatter.run(stdin_json)
         end)
 
       assert File.read!(file_path) == original_content
@@ -61,11 +68,15 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       original_content = "  list  = [ 1,2,  3 ]"
       File.write!(file_path, original_content)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Write",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       output =
         ExUnit.CaptureIO.capture_io(:stderr, fn ->
-          assert :ok = ElixirFormatter.run("Write", json_params)
+          assert :ok = ElixirFormatter.run(stdin_json)
         end)
 
       assert File.read!(file_path) == original_content
@@ -77,11 +88,15 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       original_content = "defmodule  Multi  do\nend"
       File.write!(file_path, original_content)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "MultiEdit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       output =
         ExUnit.CaptureIO.capture_io(:stderr, fn ->
-          assert :ok = ElixirFormatter.run("MultiEdit", json_params)
+          assert :ok = ElixirFormatter.run(stdin_json)
         end)
 
       assert File.read!(file_path) == original_content
@@ -101,11 +116,15 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
 
       File.write!(file_path, properly_formatted)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       output =
         ExUnit.CaptureIO.capture_io(:stderr, fn ->
-          assert :ok = ElixirFormatter.run("Edit", json_params)
+          assert :ok = ElixirFormatter.run(stdin_json)
         end)
 
       assert File.read!(file_path) == properly_formatted
@@ -118,9 +137,13 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       original = "function  hello(  x  )  { return x; }"
       File.write!(file_path, original)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
-      assert :ok = ElixirFormatter.run("Edit", json_params)
+      assert :ok = ElixirFormatter.run(stdin_json)
 
       assert File.read!(file_path) == original
     end
@@ -130,21 +153,43 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       original = "defmodule  Read  do\nend"
       File.write!(file_path, original)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Read",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
-      assert :ok = ElixirFormatter.run("Read", json_params)
+      assert :ok = ElixirFormatter.run(stdin_json)
 
       assert File.read!(file_path) == original
     end
 
-    test "handles missing file_path gracefully" do
-      json_params = Jason.encode!(%{"other_param" => "value"})
+    test "handles missing file_path in tool_input gracefully" do
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"other_param" => "value"}
+        })
 
-      assert :ok = ElixirFormatter.run("Edit", json_params)
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
+
+      assert output == ""
     end
 
-    test "handles invalid JSON gracefully" do
-      assert :ok = ElixirFormatter.run("Edit", "invalid json")
+    test "handles invalid JSON input gracefully" do
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run("invalid json")
+        end)
+
+      assert output == ""
+    end
+
+    test "handles :eof input gracefully" do
+      assert :ok = ElixirFormatter.run(:eof)
     end
 
     test "uses CLAUDE_PROJECT_DIR when available" do
@@ -155,17 +200,42 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       original_content = "defmodule  Test  do\nend"
       File.write!(file_path, original_content)
 
-      json_params = Jason.encode!(%{"file_path" => file_path})
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"file_path" => file_path}
+        })
 
       output =
         ExUnit.CaptureIO.capture_io(:stderr, fn ->
-          assert :ok = ElixirFormatter.run("Edit", json_params)
+          assert :ok = ElixirFormatter.run(stdin_json)
         end)
 
       assert File.read!(file_path) == original_content
       assert output =~ "File needs formatting: #{file_path}"
+    end
 
-      System.delete_env("CLAUDE_PROJECT_DIR")
+    test "handles empty tool_input gracefully" do
+      file_path = Path.join(@test_dir, "test.ex")
+
+      File.write!(file_path, """
+      defmodule  Test  do
+        def hello,  do:  :world
+      end
+      """)
+
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{}
+        })
+
+      output =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
+
+      assert output == ""
     end
   end
 end

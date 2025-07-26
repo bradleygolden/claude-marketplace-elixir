@@ -151,7 +151,12 @@ defmodule Claude.Hooks.Installer do
               filtered_hooks =
                 hooks_list
                 |> Enum.reject(fn hook ->
-                  Map.get(hook, "command") in claude_commands
+                  command = Map.get(hook, "command", "")
+
+                  Enum.any?(claude_commands, fn claude_cmd ->
+                    command == claude_cmd or
+                      String.contains?(command, "mix claude hooks run")
+                  end)
                 end)
 
               if filtered_hooks == [] do

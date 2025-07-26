@@ -48,17 +48,16 @@ defmodule Claude.Hooks do
     @callback config() :: Claude.Hooks.Hook.t()
 
     @doc """
-    Executes the hook logic.
+    Executes the hook logic with stdin JSON input.
 
     ## Parameters
-    - `event_type` - The type of event that triggered this hook (e.g., "Write", "Edit")
-    - `file_path` - The path to the file being processed
+    - `json_input` - The raw JSON string from stdin containing the full hook data
 
     ## Return values
     - `:ok` - Hook executed successfully
     - `{:error, reason}` - Hook execution failed
     """
-    @callback run(event_type :: String.t(), file_path :: String.t()) :: :ok | {:error, term()}
+    @callback run(json_input :: String.t()) :: :ok | {:error, term()}
 
     @doc """
     Returns a human-readable description of what this hook does.
@@ -225,7 +224,12 @@ defmodule Claude.Hooks do
               filtered_hooks =
                 hooks_list
                 |> Enum.reject(fn hook ->
-                  Map.get(hook, "command") in claude_commands
+                  command = Map.get(hook, "command", "")
+
+                  Enum.any?(claude_commands, fn claude_cmd ->
+                    command == claude_cmd or
+                      String.contains?(command, "mix claude hooks run")
+                  end)
                 end)
 
               if filtered_hooks == [] do

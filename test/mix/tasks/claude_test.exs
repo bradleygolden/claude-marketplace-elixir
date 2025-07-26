@@ -1,7 +1,5 @@
 defmodule Mix.Tasks.ClaudeTest do
-  use ExUnit.Case, async: true
-
-  import ExUnit.CaptureIO
+  use Claude.Test.ClaudeCodeCase
 
   describe "run/1" do
     test "delegates to CLI with arguments" do

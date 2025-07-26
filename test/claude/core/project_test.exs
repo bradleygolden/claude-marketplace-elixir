@@ -1,5 +1,5 @@
 defmodule Claude.Core.ProjectTest do
-  use ExUnit.Case, async: false
+  use Claude.Test.ClaudeCodeCase, async: false
 
   import Claude.TestHelpers
 

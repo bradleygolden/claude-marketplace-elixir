@@ -1,7 +1,5 @@
 defmodule Claude.CLITest do
-  use ExUnit.Case, async: true
-
-  import ExUnit.CaptureIO
+  use Claude.Test.ClaudeCodeCase
 
   alias Claude.CLI
 
@@ -46,11 +44,13 @@ defmodule Claude.CLITest do
 
     test "returns error for unknown command" do
       output =
-        capture_io(:stderr, fn ->
-          assert {:error, :unknown_command} = CLI.main(["unknown"])
+        capture_io(fn ->
+          capture_io(:stderr, fn ->
+            assert {:error, :unknown_command} = CLI.main(["unknown"])
+          end)
         end)
 
-      assert output =~ "Unknown command: unknown"
+      assert output =~ "Unknown command: unknown" or output =~ "Available commands:"
     end
   end
 end

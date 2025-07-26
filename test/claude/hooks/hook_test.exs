@@ -1,5 +1,5 @@
 defmodule Claude.Hooks.HookTest do
-  use ExUnit.Case, async: true
+  use Claude.Test.ClaudeCodeCase
 
   alias Claude.Hooks.Hook
 

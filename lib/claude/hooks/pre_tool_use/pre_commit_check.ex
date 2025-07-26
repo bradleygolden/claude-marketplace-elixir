@@ -25,10 +25,12 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   end
 
   @impl Claude.Hooks.Hook.Behaviour
-  def run(_tool_name, _json_params) do
-    input = IO.read(:stdio, :eof)
+  def run(:eof) do
+    System.halt(0)
+  end
 
-    case Jason.decode(input) do
+  def run(json_input) when is_binary(json_input) do
+    case Jason.decode(json_input) do
       {:ok, hook_data} ->
         handle_hook_input(hook_data)
 

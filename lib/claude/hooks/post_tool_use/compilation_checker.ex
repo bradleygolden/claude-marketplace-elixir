@@ -14,8 +14,7 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
   def config do
     %Claude.Hooks.Hook{
       type: "command",
-      command:
-        "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.compilation_checker \"$1\" \"$2\"",
+      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.compilation_checker",
       matcher: ".*"
     }
   end
@@ -26,17 +25,25 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
   end
 
   @impl Claude.Hooks.Hook.Behaviour
-  def run(tool_name, json_params) do
-    with :ok <- validate_tool(tool_name),
-         {:ok, file_path} <- extract_file_path(json_params),
-         :ok <- validate_elixir_file(file_path) do
-      check_compilation(file_path)
-    else
-      {:skip, _reason} ->
-        :ok
+  def run(:eof), do: :ok
 
-      {:error, reason} ->
-        IO.puts(:stderr, "Claude compilation check error: #{reason}")
+  def run(json_input) when is_binary(json_input) do
+    case Jason.decode(json_input) do
+      {:ok, %{"tool_name" => tool_name, "tool_input" => tool_input}} ->
+        with :ok <- validate_tool(tool_name),
+             {:ok, file_path} <- extract_tool_input_file_path(tool_input),
+             :ok <- validate_elixir_file(file_path) do
+          check_compilation(file_path)
+        else
+          {:skip, _reason} ->
+            :ok
+
+          {:error, reason} ->
+            IO.puts(:stderr, "Claude compilation check error: #{reason}")
+            :ok
+        end
+
+      _ ->
         :ok
     end
   end
@@ -44,14 +51,12 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
   defp validate_tool(tool_name) when tool_name in @edit_tools, do: :ok
   defp validate_tool(_), do: {:skip, :not_edit_tool}
 
-  defp extract_file_path(json_string) do
-    case Jason.decode(json_string) do
-      {:ok, %{"file_path" => file_path}} when is_binary(file_path) ->
-        {:ok, file_path}
+  defp extract_tool_input_file_path(%{"file_path" => file_path}) when is_binary(file_path) do
+    {:ok, file_path}
+  end
 
-      _ ->
-        {:skip, :no_file_path}
-    end
+  defp extract_tool_input_file_path(_) do
+    {:skip, :no_file_path}
   end
 
   defp validate_elixir_file(file_path) do

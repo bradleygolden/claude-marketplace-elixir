@@ -1,6 +1,5 @@
 defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
-  use ExUnit.Case, async: false
-  import ExUnit.CaptureIO
+  use Claude.Test.ClaudeCodeCase
 
   alias Claude.Hooks.PreToolUse.PreCommitCheck
 
@@ -12,7 +11,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     original_cwd = File.cwd!()
     File.cd!(@test_dir)
 
-    # Set up a minimal Elixir project
     File.write!("mix.exs", """
     defmodule TestProject.MixProject do
       use Mix.Project
@@ -55,7 +53,15 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
   end
 
-  describe "run/2 - git commit detection" do
+  describe "run/1 - :eof input" do
+    test "handles :eof input by exiting with code 0" do
+      expect(System, :halt, fn 0 -> :ok end)
+
+      PreCommitCheck.run(:eof)
+    end
+  end
+
+  describe "run/1 - git commit detection" do
     test "detects and validates git commit commands" do
       System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
 
@@ -80,10 +86,10 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       input_json = Jason.encode!(hook_input)
 
+      stub(System, :halt, fn 0 -> :ok end)
+
       assert capture_io([input: input_json], fn ->
-               assert_raise SystemExit, fn ->
-                 PreCommitCheck.run("Bash", "unused")
-               end
+               PreCommitCheck.run(input_json)
              end) =~ "Pre-commit validation triggered"
     end
 
@@ -97,18 +103,18 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       input_json = Jason.encode!(hook_input)
 
+      stub(System, :halt, fn 0 -> :ok end)
+
       assert capture_io([input: input_json], fn ->
-               assert_raise SystemExit, fn ->
-                 PreCommitCheck.run("Bash", "unused")
-               end
+               PreCommitCheck.run(input_json)
              end) == ""
     end
 
     test "handles invalid JSON gracefully" do
-      assert capture_io([input: "invalid json", capture_prompt: false], fn ->
-               assert_raise SystemExit, fn ->
-                 PreCommitCheck.run("Bash", "unused")
-               end
+      stub(System, :halt, fn 1 -> :ok end)
+
+      assert capture_io(:stderr, fn ->
+               PreCommitCheck.run("invalid json")
              end) =~ "Failed to parse hook input JSON"
     end
 
@@ -119,15 +125,14 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       input_json = Jason.encode!(hook_input)
 
+      stub(System, :halt, fn 0 -> :ok end)
+
       assert capture_io([input: input_json], fn ->
-               assert_raise SystemExit, fn ->
-                 PreCommitCheck.run("Bash", "unused")
-               end
+               PreCommitCheck.run(input_json)
              end) == ""
     end
   end
 
-  # Integration tests that test the validation logic without System.halt
   describe "validation logic" do
     setup do
       System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
@@ -304,11 +309,11 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
         "tool_input" => %{"command" => "git commit -m 'good commit'"}
       }
 
+      stub(System, :halt, fn 0 -> :ok end)
+
       output =
         capture_io([input: Jason.encode!(hook_input)], fn ->
-          assert_raise SystemExit, fn ->
-            PreCommitCheck.run("Bash", "")
-          end
+          PreCommitCheck.run(Jason.encode!(hook_input))
         end)
 
       assert output =~ "Pre-commit validation triggered"
@@ -331,15 +336,19 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
         "tool_input" => %{"command" => "git commit -m 'bad formatting'"}
       }
 
-      output =
-        capture_io([input: Jason.encode!(hook_input), capture_prompt: false], fn ->
-          assert_raise SystemExit, fn ->
-            PreCommitCheck.run("Bash", "")
-          end
+      stub(System, :halt, fn 2 -> :ok end)
+
+      stdout =
+        capture_io(fn ->
+          stderr =
+            capture_io(:stderr, fn ->
+              PreCommitCheck.run(Jason.encode!(hook_input))
+            end)
+
+          assert stderr =~ "❌ Formatting check failed!"
         end)
 
-      assert output =~ "Pre-commit validation triggered"
-      assert output =~ "❌ Formatting check failed!"
+      assert stdout =~ "Pre-commit validation triggered"
     end
   end
 end
