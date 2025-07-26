@@ -5,10 +5,9 @@ on:
     types: [opened, synchronize]
     # Optional: Only run on specific file changes
     # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    #   - "lib/**/*.ex"
+    #   - "lib/**/*.exs"
+    #   - "test/**/*.exs"
 
 jobs:
   claude-review:
@@ -31,6 +30,22 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.18'
+          otp-version: '26'
+
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@beta
@@ -52,7 +67,7 @@ jobs:
             Be constructive and helpful in your feedback.
 
           # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
-          # use_sticky_comment: true
+          use_sticky_comment: true
           
           # Optional: Customize review based on file types
           # direct_prompt: |
@@ -69,7 +84,7 @@ jobs:
           #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
           
           # Optional: Add specific tools for running tests or linting
-          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+          allowed_tools: "Bash(mix deps.get),Bash(mix compile),Bash(mix compile --warnings-as-errors),Bash(mix test),Bash(mix format)"
           
           # Optional: Skip review for certain conditions
           # if: |
