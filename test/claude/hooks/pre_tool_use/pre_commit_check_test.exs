@@ -57,7 +57,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
   describe "run/2 - git commit detection" do
     test "detects and validates git commit commands" do
-      # Create properly formatted code
       System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
 
       File.write!("lib/good.ex", """
@@ -68,7 +67,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      # Format the file
       System.cmd("mix", ["format"], cd: @test_dir)
 
       hook_input = %{
@@ -80,11 +78,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
         }
       }
 
-      # Simulate stdin input
       input_json = Jason.encode!(hook_input)
 
-      # Since the hook reads from stdin and exits, we need to test it differently
-      # We'll test the internal functions instead
       assert capture_io([input: input_json], fn ->
                assert_raise SystemExit, fn ->
                  PreCommitCheck.run("Bash", "unused")
@@ -140,7 +135,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "passes when code is properly formatted and compiles" do
-      # Write properly formatted code
       File.write!("lib/good_code.ex", """
       defmodule GoodCode do
         def hello(name) do
@@ -149,13 +143,10 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      # Run mix format to ensure it's formatted
       System.cmd("mix", ["format"], cd: @test_dir)
 
-      # Check that both formatting and compilation would pass
       output =
         capture_io(fn ->
-          # Test formatting check
           {output, exit_code} =
             System.cmd("mix", ["format", "--check-formatted"],
               stderr_to_stdout: true,
@@ -165,7 +156,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           assert exit_code == 0
           IO.puts(output)
 
-          # Test compilation check
           {output, exit_code} =
             System.cmd("mix", ["compile", "--warnings-as-errors"],
               stderr_to_stdout: true,
@@ -181,7 +171,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "fails when code has formatting issues" do
-      # Write poorly formatted code
       File.write!("lib/bad_format.ex", """
       defmodule BadFormat do
       def hello(  name  ) do
@@ -198,7 +187,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "fails when code has compilation errors" do
-      # Write code with compilation error
       File.write!("lib/bad_compile.ex", """
       defmodule BadCompile do
         def hello(name) do
@@ -218,7 +206,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "fails when code has warnings with --warnings-as-errors" do
-      # Write code with unused variable warning
       File.write!("lib/warning_code.ex", """
       defmodule WarningCode do
         def hello(name, unused) do
@@ -238,7 +225,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "passes when no unused dependencies exist" do
-      # Create a minimal mix.lock with only used dependencies
       File.write!("mix.lock", """
       %{}
       """)
@@ -254,8 +240,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "fails when unused dependencies are detected" do
-      # Create a mix.lock with an unused dependency
-      # This simulates having a dependency in mix.lock that's not in mix.exs
       File.write!("mix.lock", """
       %{
         "unused_dep": {:hex, :unused_dep, "1.0.0", "abc123", [:mix], [], "hexpm", "def456"}
@@ -268,7 +252,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           cd: @test_dir
         )
 
-      # The command should fail when unused deps are found
       assert exit_code != 0
       assert output =~ "unused_dep"
     end
@@ -284,7 +267,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "handles empty project directory" do
-      # Clean up all files
       File.rm_rf!(@test_dir)
       File.mkdir_p!(@test_dir)
       File.cd!(@test_dir)
@@ -292,7 +274,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       {output, _exit_code} =
         System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true, cd: @test_dir)
 
-      # Mix format will fail when there's no .formatter.exs or Mix project
       assert output =~ "Expected one or more files" or
                output =~ "Could not find a Mix.Project" or
                output =~ ".formatter.exs"
@@ -306,7 +287,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "exits with code 0 when validation passes" do
-      # Write good code
       File.write!("lib/valid.ex", """
       defmodule Valid do
         def greet(name) do
@@ -317,7 +297,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       System.cmd("mix", ["format"], cd: @test_dir)
 
-      # Create an empty mix.lock to ensure no unused dependencies
       File.write!("mix.lock", "%{}")
 
       hook_input = %{
@@ -325,7 +304,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
         "tool_input" => %{"command" => "git commit -m 'good commit'"}
       }
 
-      # We can't easily test System.halt directly, but we can verify the flow
       output =
         capture_io([input: Jason.encode!(hook_input)], fn ->
           assert_raise SystemExit, fn ->
@@ -340,7 +318,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "exits with code 2 when formatting fails" do
-      # Write poorly formatted code
       File.write!("lib/bad.ex", """
       defmodule Bad do
       def greet(  name  ) do

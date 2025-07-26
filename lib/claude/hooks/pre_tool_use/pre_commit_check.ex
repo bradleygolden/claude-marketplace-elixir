@@ -26,7 +26,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
   @impl Claude.Hooks.Hook.Behaviour
   def run(_tool_name, _json_params) do
-    # Read the hook input from stdin as per the documentation
     input = IO.read(:stdio, :eof)
 
     case Jason.decode(input) do
@@ -52,24 +51,20 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
         case validate_commit() do
           :ok ->
-            # Allow the commit
             System.halt(0)
 
           {:error, _reason} ->
-            # Block the commit - exit code 2 tells Claude to block the tool call
             System.halt(2)
         end
       after
         File.cd!(original_dir)
       end
     else
-      # Not a git commit, allow the command
       System.halt(0)
     end
   end
 
   defp handle_hook_input(_) do
-    # Not a Bash tool or missing expected fields, allow it
     System.halt(0)
   end
 
