@@ -53,7 +53,7 @@ defmodule Claude.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md", "CHANGELOG.md", "CLAUDE.md"],
+      extras: ["README.md", "CHANGELOG.md"],
       source_ref: "v#{@version}",
       source_url: "https://github.com/bradleygolden/claude"
     ]
