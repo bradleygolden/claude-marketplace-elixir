@@ -48,7 +48,10 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
   describe "description/0" do
     test "returns a description" do
-      assert PreCommitCheck.description() =~ "formatting and compilation"
+      description = PreCommitCheck.description()
+      assert description =~ "formatting"
+      assert description =~ "compilation"
+      assert description =~ "dependencies"
     end
   end
 
@@ -233,6 +236,42 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       assert exit_code != 0
       assert output =~ "unused"
     end
+
+    test "passes when no unused dependencies exist" do
+      # Create a minimal mix.lock with only used dependencies
+      File.write!("mix.lock", """
+      %{}
+      """)
+
+      {output, exit_code} =
+        System.cmd("mix", ["deps.unlock", "--check-unused"],
+          stderr_to_stdout: true,
+          cd: @test_dir
+        )
+
+      assert exit_code == 0
+      refute output =~ "Unused dependencies"
+    end
+
+    test "fails when unused dependencies are detected" do
+      # Create a mix.lock with an unused dependency
+      # This simulates having a dependency in mix.lock that's not in mix.exs
+      File.write!("mix.lock", """
+      %{
+        "unused_dep": {:hex, :unused_dep, "1.0.0", "abc123", [:mix], [], "hexpm", "def456"}
+      }
+      """)
+
+      {output, exit_code} =
+        System.cmd("mix", ["deps.unlock", "--check-unused"],
+          stderr_to_stdout: true,
+          cd: @test_dir
+        )
+
+      # The command should fail when unused deps are found
+      assert exit_code != 0
+      assert output =~ "unused_dep"
+    end
   end
 
   describe "edge cases" do
@@ -278,6 +317,9 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       System.cmd("mix", ["format"], cd: @test_dir)
 
+      # Create an empty mix.lock to ensure no unused dependencies
+      File.write!("mix.lock", "%{}")
+
       hook_input = %{
         "tool_name" => "Bash",
         "tool_input" => %{"command" => "git commit -m 'good commit'"}
@@ -294,6 +336,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       assert output =~ "Pre-commit validation triggered"
       assert output =~ "✓ Code formatting is correct"
       assert output =~ "✓ Compilation successful"
+      assert output =~ "✓ No unused dependencies found"
     end
 
     test "exits with code 2 when formatting fails" do

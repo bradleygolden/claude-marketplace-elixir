@@ -1,10 +1,11 @@
 defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   @moduledoc """
-  Pre-commit hook that validates formatting and compilation before allowing commits.
+  Pre-commit hook that validates formatting, compilation, and dependencies before allowing commits.
 
   This hook runs before commit operations and blocks the commit if:
   - Any Elixir files are not properly formatted
   - The project has compilation errors or warnings
+  - There are unused dependencies in mix.lock
   """
 
   @behaviour Claude.Hooks.Hook.Behaviour
@@ -20,7 +21,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
   @impl Claude.Hooks.Hook.Behaviour
   def description do
-    "Validates formatting and compilation before allowing commits"
+    "Validates formatting, compilation, and dependencies before allowing commits"
   end
 
   @impl Claude.Hooks.Hook.Behaviour
@@ -74,7 +75,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
   defp validate_commit do
     with :ok <- check_formatting(),
-         :ok <- check_compilation() do
+         :ok <- check_compilation(),
+         :ok <- check_unused_dependencies() do
       :ok
     end
   end
@@ -108,6 +110,22 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
         IO.puts(:stderr, output)
         IO.puts(:stderr, "\nPlease fix compilation errors and warnings before committing.")
         {:error, :compilation_failed}
+    end
+  end
+
+  defp check_unused_dependencies do
+    IO.puts("Checking for unused dependencies...")
+
+    case System.cmd("mix", ["deps.unlock", "--check-unused"], stderr_to_stdout: true) do
+      {_output, 0} ->
+        IO.puts("✓ No unused dependencies found")
+        :ok
+
+      {output, _exit_code} ->
+        IO.puts(:stderr, "\n❌ Unused dependencies detected!")
+        IO.puts(:stderr, output)
+        IO.puts(:stderr, "\nPlease run 'mix deps.unlock --unused' to remove unused dependencies.")
+        {:error, :unused_dependencies}
     end
   end
 end
