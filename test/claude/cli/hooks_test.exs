@@ -1,5 +1,5 @@
 defmodule Claude.CLI.HooksTest do
-  use ExUnit.Case, async: false
+  use Claude.Test.ClaudeCodeCase, async: false
   use Mimic
 
   import ExUnit.CaptureIO

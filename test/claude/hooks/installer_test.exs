@@ -1,5 +1,5 @@
 defmodule Claude.Hooks.InstallerTest do
-  use ExUnit.Case, async: true
+  use Claude.Test.ClaudeCodeCase
 
   alias Claude.Hooks.Installer
 
@@ -13,7 +13,6 @@ defmodule Claude.Hooks.InstallerTest do
       assert %{"PostToolUse" => post_tool_use} = hooks
       assert %{"PreToolUse" => pre_tool_use} = hooks
 
-      # Check PostToolUse hooks
       assert [%{"matcher" => ".*", "hooks" => post_hooks}] = post_tool_use
       assert length(post_hooks) == 2
 
@@ -27,7 +26,6 @@ defmodule Claude.Hooks.InstallerTest do
                  hook["type"] == "command"
              end)
 
-      # Check PreToolUse hooks
       assert [%{"matcher" => "Bash", "hooks" => pre_hooks}] = pre_tool_use
       assert length(pre_hooks) == 1
 
@@ -56,7 +54,6 @@ defmodule Claude.Hooks.InstallerTest do
       post_tool_use = get_in(result, ["hooks", "PostToolUse"])
       assert [%{"matcher" => ".*", "hooks" => hooks}] = post_tool_use
 
-      # Should have custom hook + 2 Claude hooks
       assert length(hooks) == 3
 
       assert Enum.any?(hooks, fn hook ->
@@ -65,7 +62,6 @@ defmodule Claude.Hooks.InstallerTest do
     end
 
     test "replaces existing Claude hooks" do
-      # Use an actual Claude hook command to test replacement
       old_command =
         "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter \"$1\" \"$2\""
 
@@ -75,7 +71,6 @@ defmodule Claude.Hooks.InstallerTest do
             %{
               "matcher" => ".*",
               "hooks" => [
-                # This is an old version of the formatter hook that should be replaced
                 %{"command" => old_command, "type" => "command"},
                 %{"command" => "echo 'custom'", "type" => "command"}
               ]
@@ -89,10 +84,8 @@ defmodule Claude.Hooks.InstallerTest do
       post_tool_use = get_in(result, ["hooks", "PostToolUse"])
       assert [%{"matcher" => ".*", "hooks" => hooks}] = post_tool_use
 
-      # Should have exactly 3 hooks: custom + 2 Claude hooks (no duplicates)
       assert length(hooks) == 3
 
-      # Count formatter hooks - should be exactly 1
       formatter_hooks =
         Enum.filter(hooks, fn hook ->
           hook["command"] =~ "post_tool_use.elixir_formatter"
@@ -100,7 +93,6 @@ defmodule Claude.Hooks.InstallerTest do
 
       assert length(formatter_hooks) == 1
 
-      # Should have new Claude hooks
       assert Enum.any?(hooks, fn hook ->
                hook["command"] =~ "post_tool_use.elixir_formatter"
              end)
@@ -109,7 +101,6 @@ defmodule Claude.Hooks.InstallerTest do
                hook["command"] =~ "post_tool_use.compilation_checker"
              end)
 
-      # Should still have custom hook
       assert Enum.any?(hooks, fn hook ->
                hook["command"] == "echo 'custom'"
              end)
@@ -133,16 +124,13 @@ defmodule Claude.Hooks.InstallerTest do
 
       post_tool_use = get_in(result, ["hooks", "PostToolUse"])
 
-      # Should have both matchers
       assert length(post_tool_use) == 2
 
-      # Find the .* matcher
       assert Enum.any?(post_tool_use, fn matcher_obj ->
                matcher_obj["matcher"] == ".*" &&
                  length(matcher_obj["hooks"]) == 2
              end)
 
-      # Find the *.ex matcher
       assert Enum.any?(post_tool_use, fn matcher_obj ->
                matcher_obj["matcher"] == "*.ex" &&
                  length(matcher_obj["hooks"]) == 1 &&
@@ -173,10 +161,8 @@ defmodule Claude.Hooks.InstallerTest do
 
       result = Installer.remove_all_hooks(settings)
 
-      # Should still have hooks key
       assert %{"hooks" => _hooks} = result
 
-      # Should only have custom hook
       post_tool_use = get_in(result, ["hooks", "PostToolUse"])
       assert [%{"matcher" => ".*", "hooks" => [hook]}] = post_tool_use
       assert hook["command"] == "echo 'custom'"
@@ -202,7 +188,6 @@ defmodule Claude.Hooks.InstallerTest do
 
       result = Installer.remove_all_hooks(settings)
 
-      # Should remove hooks key entirely
       refute Map.has_key?(result, "hooks")
     end
 

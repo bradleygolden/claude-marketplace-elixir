@@ -1,5 +1,5 @@
 defmodule Claude.Core.SettingsTest do
-  use ExUnit.Case, async: false
+  use Claude.Test.ClaudeCodeCase, async: false
   use Mimic
 
   import Claude.TestHelpers
@@ -58,7 +58,6 @@ defmodule Claude.Core.SettingsTest do
 
         assert {:error, :eacces} = Settings.read()
 
-        # Clean up
         File.chmod!(settings_path, 0o644)
       end)
     end

@@ -1,4 +1,4 @@
 defmodule ClaudeTest do
-  use ExUnit.Case
+  use Claude.Test.ClaudeCodeCase
   doctest Claude
 end

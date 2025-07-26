@@ -4,11 +4,11 @@
       {
         "hooks": [
           {
-            "command": "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter \"$1\" \"$2\"",
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter",
             "type": "command"
           },
           {
-            "command": "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.compilation_checker \"$1\" \"$2\"",
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.compilation_checker",
             "type": "command"
           }
         ],
