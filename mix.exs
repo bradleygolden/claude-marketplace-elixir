@@ -14,7 +14,8 @@ defmodule Claude.MixProject do
       deps: deps(),
       description: @description,
       package: package(),
-      elixirc_paths: elixirc_paths(Mix.env())
+      elixirc_paths: elixirc_paths(Mix.env()),
+      docs: docs()
     ]
   end
 
@@ -46,6 +47,15 @@ defmodule Claude.MixProject do
       links: %{
         "GitHub" => "https://github.com/bradleygolden/claude"
       }
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md", "CHANGELOG.md"],
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/bradleygolden/claude"
     ]
   end
 end
