@@ -1,0 +1,45 @@
+# Example .claude.exs configuration file
+# 
+# This file allows you to configure Claude hooks for your project,
+# including custom hooks defined in your codebase.
+#
+# Place this file in your project root as `.claude.exs`
+
+%{
+  enabled: true,
+
+  hooks: [
+    %{
+      module: MyApp.Hooks.TodoChecker,
+      
+      enabled: true,
+      
+      event_type: "PostToolUse",
+      
+      config: %{
+        todo_pattern: ~r/TODO|FIXME|HACK/,
+        fail_on_todos: false
+      }
+    },
+    
+    %{
+      module: MyApp.Hooks.CopyrightHeader,
+      enabled: true,
+      event_type: "PostToolUse",
+      config: %{
+        copyright_text: "Copyright (c) 2024 MyCompany",
+        file_patterns: ["lib/**/*.ex", "test/**/*.exs"]
+      }
+    },
+    
+    %{
+      module: MyApp.Hooks.CommitValidator,
+      enabled: true,
+      event_type: "PreToolUse",
+      config: %{
+        require_issue_number: true,
+        max_commit_size: 1000
+      }
+    }
+  ]
+}

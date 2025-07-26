@@ -11,20 +11,51 @@ defmodule Claude.CLI.Hooks.Run do
   """
 
   alias Claude.Hooks
+  require Logger
 
   def run([hook_identifier, event_type, json_params]) do
     case Hooks.find_hook_by_identifier(hook_identifier) do
       nil ->
-        # Unknown hook, exit silently
+        Logger.debug("Hook not found: #{hook_identifier}")
         :ok
 
       hook_module ->
-        hook_module.run(event_type, json_params)
+        case ensure_module_loaded(hook_module) do
+          :ok ->
+            try do
+              hook_module.run(event_type, json_params)
+            rescue
+              e ->
+                Logger.error("Hook #{hook_identifier} failed: #{Exception.message(e)}")
+                :ok
+            end
+
+          {:error, reason} ->
+            Logger.error("Failed to load hook module #{hook_module}: #{reason}")
+            :ok
+        end
     end
   end
 
   def run(_args) do
-    # Invalid arguments, just exit silently
     :ok
+  end
+
+  defp ensure_module_loaded(module) do
+    if Code.ensure_loaded?(module) do
+      :ok
+    else
+      case System.cmd("mix", ["compile", "--force"], stderr_to_stdout: true) do
+        {_, 0} ->
+          if Code.ensure_loaded?(module) do
+            :ok
+          else
+            {:error, "Module not found after compilation"}
+          end
+
+        {output, _} ->
+          {:error, "Compilation failed: #{output}"}
+      end
+    end
   end
 end

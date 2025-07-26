@@ -4,6 +4,8 @@ defmodule Claude.Hooks do
   """
 
   alias Claude.Core.Settings
+  alias Claude.Hooks.Registry
+  alias Claude.Config
 
   defmodule Hook do
     @moduledoc """
@@ -26,6 +28,30 @@ defmodule Claude.Hooks do
     """
     def new(attrs) do
       struct!(__MODULE__, attrs)
+    end
+
+    @doc """
+    Returns the event type for a hook module.
+
+    Extracts from module name: Claude.Hooks.PostToolUse.Foo -> "PostToolUse"
+    """
+    def event_type(hook_module) do
+      hook_module
+      |> Module.split()
+      |> Enum.at(2)
+    end
+
+    @doc """
+    Returns the identifier for a hook module.
+
+    Converts module name to identifier: Claude.Hooks.PostToolUse.Foo -> "post_tool_use.foo"
+    """
+    def identifier(hook_module) do
+      hook_module
+      |> Module.split()
+      |> Enum.drop(2)
+      |> Enum.map(&Macro.underscore/1)
+      |> Enum.join(".")
     end
   end
 
@@ -93,23 +119,59 @@ defmodule Claude.Hooks do
   Returns the identifier for a hook module.
   """
   def hook_identifier(hook_module) do
-    hook_module
-    |> Module.split()
-    |> Enum.drop(2)
-    |> Enum.map(&Macro.underscore/1)
-    |> Enum.join(".")
+    Hook.identifier(hook_module)
   end
 
   @doc """
   Installs all Claude hooks to the project's settings.json.
   """
   def install do
+    # Validate custom hooks before installation
+    validate_custom_hooks()
+
     case add_all_hooks() do
       :ok ->
-        {:ok, "Claude hooks installed successfully in .claude/settings.json"}
+        hook_count = length(Registry.all_hooks())
+        custom_count = length(Registry.custom_hooks())
+
+        message =
+          if custom_count > 0 do
+            "Claude hooks installed successfully in .claude/settings.json (#{hook_count} total, #{custom_count} custom)"
+          else
+            "Claude hooks installed successfully in .claude/settings.json"
+          end
+
+        {:ok, message}
 
       {:error, reason} ->
         {:error, "Failed to install hooks: #{inspect(reason)}"}
+    end
+  end
+
+  defp validate_custom_hooks do
+    case Config.load() do
+      {:ok, config} ->
+        config
+        |> Map.get(:hooks, [])
+        |> Enum.each(fn hook_config ->
+          module = hook_config[:module]
+
+          cond do
+            !is_atom(module) ->
+              IO.warn("Invalid hook module: #{inspect(module)} - must be an atom")
+
+            !Registry.hook_module?(module) ->
+              IO.warn(
+                "Hook module #{module} does not implement Claude.Hooks.Hook.Behaviour or is not available"
+              )
+
+            true ->
+              :ok
+          end
+        end)
+
+      {:error, reason} ->
+        IO.warn("Failed to load .claude.exs: #{reason}")
     end
   end
 
@@ -136,21 +198,10 @@ defmodule Claude.Hooks do
   defp add_all_hooks do
     Settings.update(fn settings ->
       settings = Map.put_new(settings, "hooks", %{})
-      claude_commands = Enum.map(@hooks, fn hook -> hook.config().command end)
+      claude_commands = Enum.map(Registry.all_hooks(), fn hook -> hook.config().command end)
       settings = remove_claude_hooks_from_settings(settings, claude_commands)
 
-      hooks_by_event_and_matcher =
-        @hooks
-        |> Enum.group_by(fn hook_module ->
-          event_type =
-            hook_module
-            |> Module.split()
-            |> Enum.at(2)
-
-          matcher = hook_module.config().matcher
-
-          {event_type, matcher}
-        end)
+      hooks_by_event_and_matcher = Registry.group_by_event_and_matcher(Registry.all_hooks())
 
       updated_hooks = get_in(settings, ["hooks"]) || %{}
 
@@ -199,7 +250,7 @@ defmodule Claude.Hooks do
 
   defp remove_all_hooks do
     with {:ok, settings} <- Settings.read() do
-      claude_commands = Enum.map(@hooks, fn hook -> hook.config().command end)
+      claude_commands = Enum.map(Registry.all_hooks(), fn hook -> hook.config().command end)
       updated = remove_claude_hooks_from_settings(settings, claude_commands)
 
       if updated == %{} do

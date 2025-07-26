@@ -45,12 +45,19 @@ defmodule Claude.CLITest do
     end
 
     test "returns error for unknown command" do
-      output =
-        capture_io(:stderr, fn ->
-          assert {:error, :unknown_command} = CLI.main(["unknown"])
+      # Capture stdout to prevent help message from leaking
+      stdout_output =
+        capture_io(fn ->
+          stderr_output =
+            capture_io(:stderr, fn ->
+              assert {:error, :unknown_command} = CLI.main(["unknown"])
+            end)
+
+          assert stderr_output =~ "Unknown command: unknown"
         end)
 
-      assert output =~ "Unknown command: unknown"
+      # The help message is shown on stdout
+      assert stdout_output =~ "Available commands:"
     end
   end
 end

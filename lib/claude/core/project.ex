@@ -13,7 +13,10 @@ defmodule Claude.Core.Project do
     Path.join(root(), @claude_dir)
   end
 
-  defp root do
+  @doc """
+  Returns the root directory of the current project.
+  """
+  def root do
     File.cwd!()
   end
 end

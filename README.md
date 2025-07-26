@@ -138,6 +138,93 @@ This library uses [Claude Code Hooks](https://docs.anthropic.com/en/docs/claude-
 
 The hook system is built on Elixir behaviours, making it easy to extend with your own custom hooks.
 
+## Creating Custom Hooks
+
+You can extend Claude with your own custom hooks by creating a `.claude.exs` file in your project root:
+
+```elixir
+# .claude.exs
+%{
+  enabled: true,
+  hooks: [
+    %{
+      module: MyApp.Hooks.TodoChecker,
+      enabled: true,
+      config: %{
+        todo_pattern: ~r/TODO|FIXME|HACK/,
+        fail_on_todos: false
+      }
+    }
+  ]
+}
+```
+
+### Writing a Custom Hook
+
+Custom hooks must implement the `Claude.Hooks.Hook.Behaviour`:
+
+```elixir
+defmodule MyApp.Hooks.TodoChecker do
+  @behaviour Claude.Hooks.Hook.Behaviour
+
+  @impl true
+  def config do
+    %Claude.Hooks.Hook{
+      type: "command",
+      command: "mix claude hooks run post_tool_use.todo_checker",
+      matcher: "Edit|MultiEdit|Write"
+    }
+  end
+
+  @impl true
+  def description do
+    "Checks for TODO comments in edited files"
+  end
+
+  @impl true
+  def run(tool_name, json_params) do
+    # Your hook logic here
+    :ok
+  end
+end
+```
+
+### Hook Configuration
+
+Hooks can receive configuration from `.claude.exs`:
+
+```elixir
+# In your hook's run/2 function:
+config = Claude.Hooks.Registry.hook_config(__MODULE__)
+pattern = Map.get(config, :todo_pattern, ~r/TODO/)
+```
+
+### Event Types
+
+You can configure when your hook runs by setting the `event_type` in `.claude.exs`:
+
+```elixir
+%{
+  module: MyApp.Hooks.CustomHook,
+  enabled: true,
+  event_type: "PreToolUse",  # Specify when the hook runs
+  config: %{...}
+}
+```
+
+Available event types:
+- **PostToolUse** - Runs after Claude uses a tool (Edit, Write, etc.)
+- **PreToolUse** - Runs before Claude uses a tool
+- **UserPromptSubmit** - Runs when the user submits a prompt
+
+If `event_type` is not specified, it will be inferred from your module's namespace (e.g., a module under `MyApp.Hooks.PostToolUse.*` will default to "PostToolUse")
+
+### Example Hooks
+
+See the `examples/custom_hooks/` directory for complete examples:
+- `todo_checker.ex` - Warns about TODO comments in edited files
+- `copyright_header.ex` - Adds copyright headers to new files
+
 ## Contributing
 
 We welcome contributions! The codebase follows standard Elixir conventions:

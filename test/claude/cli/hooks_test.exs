@@ -71,12 +71,19 @@ defmodule Claude.CLI.HooksTest do
     end
 
     test "returns error for unknown subcommand" do
-      output =
-        capture_io(:stderr, fn ->
-          assert {:error, :unknown_subcommand} = Hooks.run(["unknown"])
+      # Capture stdout to prevent help message from leaking
+      stdout_output =
+        capture_io(fn ->
+          stderr_output =
+            capture_io(:stderr, fn ->
+              assert {:error, :unknown_subcommand} = Hooks.run(["unknown"])
+            end)
+
+          assert stderr_output =~ "Unknown hooks command: unknown"
         end)
 
-      assert output =~ "Unknown hooks command: unknown"
+      # The help message is shown on stdout
+      assert stdout_output =~ "Claude Hooks"
     end
   end
 end

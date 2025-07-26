@@ -147,23 +147,23 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       output =
         capture_io(fn ->
-          {output, exit_code} =
+          # Test formatting check
+          {_output, exit_code} =
             System.cmd("mix", ["format", "--check-formatted"],
               stderr_to_stdout: true,
               cd: @test_dir
             )
 
           assert exit_code == 0
-          IO.puts(output)
 
-          {output, exit_code} =
+          # Test compilation check
+          {_output, exit_code} =
             System.cmd("mix", ["compile", "--warnings-as-errors"],
               stderr_to_stdout: true,
               cd: @test_dir
             )
 
           assert exit_code == 0
-          IO.puts(output)
         end)
 
       refute output =~ "Formatting check failed"
@@ -331,11 +331,19 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
         "tool_input" => %{"command" => "git commit -m 'bad formatting'"}
       }
 
+      # Capture stdout
       output =
         capture_io([input: Jason.encode!(hook_input), capture_prompt: false], fn ->
-          assert_raise SystemExit, fn ->
-            PreCommitCheck.run("Bash", "")
-          end
+          # Capture stderr separately to prevent it from leaking
+          stderr_output =
+            capture_io(:stderr, fn ->
+              assert_raise SystemExit, fn ->
+                PreCommitCheck.run("Bash", "")
+              end
+            end)
+
+          # Print stderr to stdout so we can check it
+          IO.write(stderr_output)
         end)
 
       assert output =~ "Pre-commit validation triggered"
