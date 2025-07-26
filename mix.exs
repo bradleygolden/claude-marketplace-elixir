@@ -34,7 +34,8 @@ defmodule Claude.MixProject do
     [
       {:jason, "~> 1.4"},
       {:mimic, "~> 1.7", only: :test},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:igniter, "~> 0.6", optional: true}
     ]
   end
 
