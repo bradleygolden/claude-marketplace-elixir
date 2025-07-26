@@ -28,28 +28,27 @@ With this library:
 
 ## Installation
 
-Add `claude` to your list of dependencies in `mix.exs`:
+Claude uses [Igniter](https://hexdocs.pm/igniter/readme.html#for-end-users) for installation. First, ensure you have Igniter installed.
 
-```elixir
-def deps do
-  [
-    {:claude, "~> 0.1.0", only: :dev, runtime: false}
-  ]
-end
+Then install Claude in your project:
+
+```bash
+mix igniter.install claude
 ```
+
+This will:
+- Add `claude` to your dependencies
+- Install all Claude hooks
+
+*Note: Installing Claude without igniter will result in an incomplete setup*
 
 ## Usage
 
-Install Claude hooks (one time per project):
-```bash
-mix claude.install
-```
-
-That's it. Claude will now automatically:
+Once installed, Claude will automatically:
 - Format every Elixir file it edits
 - Check for compilation errors after each edit
 
-To uninstall:
+To uninstall the hooks:
 ```bash
 mix claude.uninstall
 ```

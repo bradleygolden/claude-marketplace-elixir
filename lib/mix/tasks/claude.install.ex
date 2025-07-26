@@ -1,29 +1,48 @@
-defmodule Mix.Tasks.Claude.Install do
-  use Mix.Task
+if Code.ensure_loaded?(Igniter) do
+  defmodule Mix.Tasks.Claude.Install do
+    use Igniter.Mix.Task
 
-  @shortdoc "Install all Claude hooks (convenience task)"
+    @shortdoc "Setup Claude for your Elixir project"
 
-  @moduledoc """
-  Convenience task to quickly install Claude hooks for your Elixir project.
+    @moduledoc """
+    Setup Claude for your Elixir project.
 
-  This is equivalent to running:
-      mix claude hooks install
+    This task is automatically run when you execute:
 
-  ## Usage
+        mix igniter.install claude
+    """
 
-      mix claude.install
+    @impl Igniter.Mix.Task
+    def info(_argv, _composing_task) do
+      %Igniter.Mix.Task.Info{
+        schema: [],
+        positional: []
+      }
+    end
 
-  ## What it does
+    @impl Igniter.Mix.Task
+    def igniter(igniter) do
+      igniter
+      |> Igniter.Project.Deps.add_dep({:claude, "~> 0.1"}, only: :dev, runtime: false)
+      |> Igniter.compose_task("claude", ["hooks", "install"])
+    end
+  end
+else
+  defmodule Mix.Tasks.Claude.Install do
+    use Mix.Task
 
-  Installs all available Claude hooks including:
-  - Auto-formatting for Elixir files after edits
-  - Compilation checking to catch errors immediately
+    @shortdoc "Setup Claude for your Elixir project"
 
-  Future hooks will be automatically included when available.
-  """
+    def run(_) do
+      Mix.shell().error("""
+      The task 'claude.install' requires igniter to be run.
 
-  def run(_args) do
-    Mix.Task.run("compile", ["--no-deps-check"])
-    Mix.Task.run("claude", ["hooks", "install"])
+      Please install igniter and try again.
+
+      For more information, see: https://hexdocs.pm/igniter
+      """)
+
+      exit({:shutdown, 1})
+    end
   end
 end
