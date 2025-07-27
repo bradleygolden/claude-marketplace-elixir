@@ -13,7 +13,13 @@ defmodule Claude.Core.Project do
     Path.join(root(), @claude_dir)
   end
 
-  defp root do
+  @doc """
+  Returns the root path of the current project.
+  Defaults to the current working directory but can be overridden.
+  """
+  def root do
+    # For now, use File.cwd! but this provides a single place to change
+    # the logic for finding project root (e.g., looking for mix.exs)
     File.cwd!()
   end
 end

@@ -2,6 +2,14 @@ defmodule Claude.Core.Settings do
   @moduledoc """
   Generic settings management for Claude configuration files.
   Handles JSON-based settings that can be used by any feature.
+
+  ## Security Notice
+
+  This module evaluates `.claude.exs` files using `Code.eval_string/3`. Only load
+  `.claude.exs` files from trusted sources, as they can execute arbitrary Elixir code.
+
+  The `.claude.exs` file is intended for project-specific configuration and should
+  be added to `.gitignore` if it contains sensitive information.
   """
 
   alias Claude.Core.Project
@@ -59,11 +67,14 @@ defmodule Claude.Core.Settings do
   end
 
   defp read_exs_settings do
-    exs_path = Path.join(File.cwd!(), @claude_exs_filename)
+    exs_path = Path.join(Project.root(), @claude_exs_filename)
 
     case File.read(exs_path) do
       {:ok, content} ->
         try do
+          # SECURITY: This evaluates arbitrary Elixir code. Only use with trusted files.
+          # The empty binding [] prevents access to current variables, but the evaluated
+          # code can still call any Elixir function.
           {result, _binding} = Code.eval_string(content, [], file: exs_path)
 
           case result do
@@ -75,9 +86,17 @@ defmodule Claude.Core.Settings do
               {:error, :invalid_exs_format}
           end
         rescue
+          error in [SyntaxError, TokenMissingError, CompileError] ->
+            # Log syntax errors with helpful context
+            IO.warn("Syntax error in .claude.exs at #{exs_path}: #{Exception.message(error)}")
+            {:ok, %{}}
+
           error ->
-            # Log but don't fail on .claude.exs errors
-            IO.warn("Error reading .claude.exs: #{inspect(error)}")
+            # Log other errors with full details for debugging
+            IO.warn(
+              "Error evaluating .claude.exs: #{inspect(error)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
+            )
+
             {:ok, %{}}
         end
 

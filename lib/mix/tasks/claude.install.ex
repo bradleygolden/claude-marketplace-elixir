@@ -26,6 +26,7 @@ defmodule Mix.Tasks.Claude.Install do
   use Igniter.Mix.Task
 
   alias Claude.Core.ConfigTemplate
+  alias Claude.Core.Project
 
   @impl Igniter.Mix.Task
   def info(_argv, _composing_task) do
@@ -39,7 +40,7 @@ defmodule Mix.Tasks.Claude.Install do
 
   @impl Igniter.Mix.Task
   def igniter(igniter) do
-    claude_exs_path = Path.join(File.cwd!(), ".claude.exs")
+    claude_exs_path = Path.join(Project.root(), ".claude.exs")
     relative_exs_path = Path.relative_to_cwd(claude_exs_path)
 
     igniter
