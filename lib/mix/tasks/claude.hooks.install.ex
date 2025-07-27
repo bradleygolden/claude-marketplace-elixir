@@ -40,13 +40,13 @@ defmodule Mix.Tasks.Claude.Hooks.Install do
   @impl Igniter.Mix.Task
   def igniter(igniter) do
     settings_path = Path.join(Project.claude_path(), "settings.json")
-    relative_path = Path.relative_to_cwd(settings_path)
+    relative_settings_path = Path.relative_to_cwd(settings_path)
 
     initial_settings = Installer.install_hooks(%{})
     initial_content = Jason.encode!(initial_settings, pretty: true) <> "\n"
 
     igniter
-    |> Igniter.create_or_update_file(relative_path, initial_content, fn source ->
+    |> Igniter.create_or_update_file(relative_settings_path, initial_content, fn source ->
       content = Rewrite.Source.get(source, :content)
 
       new_content =
@@ -62,7 +62,7 @@ defmodule Mix.Tasks.Claude.Hooks.Install do
       Rewrite.Source.update(source, :content, new_content)
     end)
     |> Igniter.add_notice("""
-    Claude hooks have been installed to #{relative_path}
+    Claude hooks have been installed to #{relative_settings_path}
 
     Enabled hooks:
     #{Installer.format_hooks_list()}

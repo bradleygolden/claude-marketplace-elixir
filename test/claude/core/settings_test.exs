@@ -254,4 +254,145 @@ defmodule Claude.Core.SettingsTest do
       assert Settings.empty?(%{"hooks" => %{"PostToolUse" => []}}) == false
     end
   end
+
+  describe "read/0 with .claude.exs" do
+    test "reads and merges .claude.exs with settings.json" do
+      in_tmp(fn tmp_dir ->
+        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+        File.mkdir_p!(Path.join(tmp_dir, ".claude"))
+
+        # Write settings.json
+        json_settings = %{"json_key" => "json_value", "shared" => "from_json"}
+        File.write!(Path.join(tmp_dir, ".claude/settings.json"), Jason.encode!(json_settings))
+
+        # Write .claude.exs
+        exs_content = """
+        %{
+          exs_key: "exs_value",
+          shared: "from_exs"
+        }
+        """
+
+        File.write!(Path.join(tmp_dir, ".claude.exs"), exs_content)
+
+        # Change to tmp_dir so .claude.exs is found
+        original_cwd = File.cwd!()
+        File.cd!(tmp_dir)
+
+        try do
+          assert {:ok, settings} = Settings.read()
+          assert settings["json_key"] == "json_value"
+          assert settings["exs_key"] == "exs_value"
+          # .claude.exs takes precedence
+          assert settings["shared"] == "from_exs"
+        after
+          File.cd!(original_cwd)
+        end
+      end)
+    end
+
+    test "works with only .claude.exs file" do
+      in_tmp(fn tmp_dir ->
+        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+
+        # Write only .claude.exs
+        exs_content = """
+        %{
+          test_key: "test_value"
+        }
+        """
+
+        File.write!(Path.join(tmp_dir, ".claude.exs"), exs_content)
+
+        original_cwd = File.cwd!()
+        File.cd!(tmp_dir)
+
+        try do
+          assert {:ok, settings} = Settings.read()
+          assert settings["test_key"] == "test_value"
+        after
+          File.cd!(original_cwd)
+        end
+      end)
+    end
+
+    test "handles invalid .claude.exs gracefully" do
+      in_tmp(fn tmp_dir ->
+        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+        File.mkdir_p!(Path.join(tmp_dir, ".claude"))
+
+        # Write valid settings.json
+        json_settings = %{"json_key" => "json_value"}
+        File.write!(Path.join(tmp_dir, ".claude/settings.json"), Jason.encode!(json_settings))
+
+        # Write invalid .claude.exs
+        File.write!(Path.join(tmp_dir, ".claude.exs"), "invalid elixir code {{")
+
+        original_cwd = File.cwd!()
+        File.cd!(tmp_dir)
+
+        try do
+          # Should still read JSON settings and log warning
+          assert {:ok, settings} = Settings.read()
+          assert settings["json_key"] == "json_value"
+        after
+          File.cd!(original_cwd)
+        end
+      end)
+    end
+
+    test "handles .claude.exs returning non-map" do
+      in_tmp(fn tmp_dir ->
+        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+        File.mkdir_p!(Path.join(tmp_dir, ".claude"))
+
+        # Write valid settings.json
+        json_settings = %{"json_key" => "json_value"}
+        File.write!(Path.join(tmp_dir, ".claude/settings.json"), Jason.encode!(json_settings))
+
+        # Write .claude.exs that returns a list
+        File.write!(Path.join(tmp_dir, ".claude.exs"), "[1, 2, 3]")
+
+        original_cwd = File.cwd!()
+        File.cd!(tmp_dir)
+
+        try do
+          # Should ignore invalid .claude.exs and use JSON
+          assert {:ok, settings} = Settings.read()
+          assert settings["json_key"] == "json_value"
+        after
+          File.cd!(original_cwd)
+        end
+      end)
+    end
+
+    test "converts atom keys to strings in .claude.exs" do
+      in_tmp(fn tmp_dir ->
+        stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+
+        # Write .claude.exs with atom keys
+        exs_content = """
+        %{
+          atom_key: "value",
+          nested: %{
+            another_atom: "nested_value"
+          }
+        }
+        """
+
+        File.write!(Path.join(tmp_dir, ".claude.exs"), exs_content)
+
+        original_cwd = File.cwd!()
+        File.cd!(tmp_dir)
+
+        try do
+          assert {:ok, settings} = Settings.read()
+          assert settings["atom_key"] == "value"
+          assert settings["nested"]["another_atom"] == "nested_value"
+        after
+          File.cd!(original_cwd)
+        end
+      end)
+    end
+  end
 end
