@@ -44,9 +44,13 @@ defmodule Claude.Hooks.Events.PostToolUse do
       raw_tool_input = attrs["tool_input"] || %{}
 
       parsed_tool_input =
-        case ToolInputs.parse_tool_input(tool_name, raw_tool_input) do
-          {:ok, input} -> input
-          _ -> raw_tool_input
+        if is_binary(tool_name) do
+          case ToolInputs.parse_tool_input(tool_name, raw_tool_input) do
+            {:ok, input} -> input
+            _ -> raw_tool_input
+          end
+        else
+          raw_tool_input
         end
 
       %__MODULE__{
@@ -116,7 +120,6 @@ defmodule Claude.Hooks.Events.PostToolUse do
     def allow do
       %__MODULE__{}
     end
-
   end
 
   defimpl Jason.Encoder, for: Output do

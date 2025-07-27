@@ -115,7 +115,6 @@ defmodule Claude.Hooks.Events.UserPromptSubmit do
         }
       }
     end
-
   end
 
   defimpl Jason.Encoder, for: Output do

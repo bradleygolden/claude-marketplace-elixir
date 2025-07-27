@@ -80,7 +80,6 @@ defmodule Claude.Hooks.Events.Common do
       %__MODULE__{exit_code: exit_code, stderr: stderr}
     end
 
-
     @doc """
     Writes the output to appropriate streams and exits with the code.
     """

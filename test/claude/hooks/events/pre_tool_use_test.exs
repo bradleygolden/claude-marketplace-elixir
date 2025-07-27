@@ -119,7 +119,9 @@ defmodule Claude.Hooks.Events.PreToolUseTest do
       output = PreToolUse.Output.allow("Auto-approved for read operations")
 
       assert output.hook_specific_output.permission_decision == :allow
-      assert output.hook_specific_output.permission_decision_reason == "Auto-approved for read operations"
+
+      assert output.hook_specific_output.permission_decision_reason ==
+               "Auto-approved for read operations"
     end
 
     test "deny/1 creates deny decision output" do
@@ -127,7 +129,9 @@ defmodule Claude.Hooks.Events.PreToolUseTest do
 
       assert output.continue == true
       assert output.hook_specific_output.permission_decision == :deny
-      assert output.hook_specific_output.permission_decision_reason == "Dangerous operation detected"
+
+      assert output.hook_specific_output.permission_decision_reason ==
+               "Dangerous operation detected"
     end
 
     test "ask/0 creates ask decision output" do

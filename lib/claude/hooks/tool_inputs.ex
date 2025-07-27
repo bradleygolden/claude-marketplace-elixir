@@ -422,7 +422,6 @@ defmodule Claude.Hooks.ToolInputs do
       "WebFetch" -> {:ok, WebFetch.new(tool_input)}
       "WebSearch" -> {:ok, WebSearch.new(tool_input)}
       "TodoWrite" -> {:ok, TodoWrite.new(tool_input)}
-      # Return raw map for unknown tools
       _ -> {:ok, tool_input}
     end
   end

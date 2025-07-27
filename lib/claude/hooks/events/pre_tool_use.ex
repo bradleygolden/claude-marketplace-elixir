@@ -35,9 +35,13 @@ defmodule Claude.Hooks.Events.PreToolUse do
       raw_tool_input = attrs["tool_input"] || %{}
 
       parsed_tool_input =
-        case ToolInputs.parse_tool_input(tool_name, raw_tool_input) do
-          {:ok, input} -> input
-          _ -> raw_tool_input
+        if is_binary(tool_name) do
+          case ToolInputs.parse_tool_input(tool_name, raw_tool_input) do
+            {:ok, input} -> input
+            _ -> raw_tool_input
+          end
+        else
+          raw_tool_input
         end
 
       %__MODULE__{
@@ -131,7 +135,6 @@ defmodule Claude.Hooks.Events.PreToolUse do
         }
       }
     end
-
   end
 
   defimpl Jason.Encoder, for: Output do
@@ -144,11 +147,16 @@ defmodule Claude.Hooks.Events.PreToolUse do
       |> then(fn map ->
         if map["hookSpecificOutput"] do
           original_hook_output = map["hookSpecificOutput"]
-          hook_output = original_hook_output
-          |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-          |> Map.new()
-          |> Map.put("permissionDecision", to_string(original_hook_output["permissionDecision"]))
-          
+
+          hook_output =
+            original_hook_output
+            |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+            |> Map.new()
+            |> Map.put(
+              "permissionDecision",
+              to_string(original_hook_output["permissionDecision"])
+            )
+
           Map.put(map, "hookSpecificOutput", hook_output)
         else
           map

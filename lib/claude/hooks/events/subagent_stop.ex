@@ -46,7 +46,6 @@ defmodule Claude.Hooks.Events.SubagentStop do
     end
   end
 
-  # SubagentStop uses the same output structure as Stop
   defmodule Output do
     @moduledoc """
     Output structure for SubagentStop hooks.
@@ -85,7 +84,6 @@ defmodule Claude.Hooks.Events.SubagentStop do
     def allow do
       %__MODULE__{}
     end
-
   end
 
   defimpl Jason.Encoder, for: Output do

@@ -45,8 +45,6 @@ defmodule Claude.Hooks.Events.Notification do
     end
   end
 
-  # Notification hooks typically use SimpleOutput or basic exit codes
-  # No specific output structure needed
   defmodule Output do
     defdelegate success(stdout \\ nil), to: Claude.Hooks.Events.Common.SimpleOutput
     defdelegate error(stderr, exit_code \\ 1), to: Claude.Hooks.Events.Common.SimpleOutput

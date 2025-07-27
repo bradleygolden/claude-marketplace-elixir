@@ -7,8 +7,7 @@ defmodule Claude.Hooks.HookTest do
     test "creates a hook struct with all fields" do
       attrs = %{
         type: "command",
-        command: "mix format",
-        matcher: "*.ex"
+        command: "mix format"
       }
 
       hook = Hook.new(attrs)
@@ -16,14 +15,12 @@ defmodule Claude.Hooks.HookTest do
       assert %Hook{} = hook
       assert hook.type == "command"
       assert hook.command == "mix format"
-      assert hook.matcher == "*.ex"
     end
 
     test "creates a hook struct with keyword list" do
       attrs = [
         type: "command",
-        command: "mix test",
-        matcher: "*.exs"
+        command: "mix test"
       ]
 
       hook = Hook.new(attrs)
@@ -31,7 +28,6 @@ defmodule Claude.Hooks.HookTest do
       assert %Hook{} = hook
       assert hook.type == "command"
       assert hook.command == "mix test"
-      assert hook.matcher == "*.exs"
     end
 
     test "raises when invalid fields are provided" do
@@ -41,12 +37,11 @@ defmodule Claude.Hooks.HookTest do
     end
 
     test "allows nil values for fields" do
-      hook = Hook.new(%{type: nil, command: nil, matcher: nil})
+      hook = Hook.new(%{type: nil, command: nil})
 
       assert %Hook{} = hook
       assert hook.type == nil
       assert hook.command == nil
-      assert hook.matcher == nil
     end
   end
 
@@ -55,8 +50,7 @@ defmodule Claude.Hooks.HookTest do
       hook =
         Hook.new(%{
           type: "command",
-          command: "echo 'hello'",
-          matcher: ".*"
+          command: "echo 'hello'"
         })
 
       json = Jason.encode!(hook)
@@ -64,8 +58,7 @@ defmodule Claude.Hooks.HookTest do
 
       assert decoded == %{
                "type" => "command",
-               "command" => "echo 'hello'",
-               "matcher" => ".*"
+               "command" => "echo 'hello'"
              }
     end
 
@@ -73,8 +66,7 @@ defmodule Claude.Hooks.HookTest do
       hook =
         Hook.new(%{
           type: "command",
-          command: "mix compile",
-          matcher: "*.ex"
+          command: "mix compile"
         })
 
       structure = %{
@@ -91,8 +83,7 @@ defmodule Claude.Hooks.HookTest do
                  "hooks" => [
                    %{
                      "type" => "command",
-                     "command" => "mix compile",
-                     "matcher" => "*.ex"
+                     "command" => "mix compile"
                    }
                  ]
                }

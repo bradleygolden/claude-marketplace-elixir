@@ -39,7 +39,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       config = PreCommitCheck.config()
 
       assert config.type == "command"
-      assert config.matcher == "Bash"
       assert config.command =~ "mix claude hooks run pre_tool_use.pre_commit_check"
     end
   end

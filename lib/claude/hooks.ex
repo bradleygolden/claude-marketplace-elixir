@@ -4,6 +4,7 @@ defmodule Claude.Hooks do
   """
 
   alias Claude.Core.Settings
+  alias Claude.Settings, as: SettingsStruct
 
   defmodule Hook do
     @moduledoc """
@@ -13,12 +14,11 @@ defmodule Claude.Hooks do
     """
 
     @derive Jason.Encoder
-    defstruct [:type, :command, :matcher]
+    defstruct [:type, :command]
 
     @type t :: %__MODULE__{
             type: String.t(),
-            command: String.t(),
-            matcher: String.t()
+            command: String.t()
           }
 
     @doc """
@@ -70,6 +70,12 @@ defmodule Claude.Hooks do
     Claude.Hooks.PostToolUse.CompilationChecker,
     Claude.Hooks.PreToolUse.PreCommitCheck
   ]
+
+  @hook_matchers %{
+    Claude.Hooks.PostToolUse.ElixirFormatter => ".*",
+    Claude.Hooks.PostToolUse.CompilationChecker => ".*",
+    Claude.Hooks.PreToolUse.PreCommitCheck => "Bash"
+  }
 
   @doc """
   Returns all available hook modules.
@@ -133,10 +139,14 @@ defmodule Claude.Hooks do
   end
 
   defp add_all_hooks do
-    Settings.update(fn settings ->
-      settings = Map.put_new(settings, "hooks", %{})
+    Settings.update(fn settings_map ->
+      settings_struct = SettingsStruct.new(settings_map)
+
+      existing_hooks = settings_struct.hooks || %{}
+
       claude_commands = Enum.map(@hooks, fn hook -> hook.config().command end)
-      settings = remove_claude_hooks_from_settings(settings, claude_commands)
+
+      cleaned_hooks = remove_claude_hooks_from_hooks_config(existing_hooks, claude_commands)
 
       hooks_by_event_and_matcher =
         @hooks
@@ -146,15 +156,13 @@ defmodule Claude.Hooks do
             |> Module.split()
             |> Enum.at(2)
 
-          matcher = hook_module.config().matcher
+          matcher = Map.get(@hook_matchers, hook_module, ".*")
 
           {event_type, matcher}
         end)
 
-      updated_hooks = get_in(settings, ["hooks"]) || %{}
-
       new_hooks =
-        Enum.reduce(hooks_by_event_and_matcher, updated_hooks, fn {{event_type, matcher},
+        Enum.reduce(hooks_by_event_and_matcher, cleaned_hooks, fn {{event_type, matcher},
                                                                    hook_modules},
                                                                   acc ->
           existing_matchers = Map.get(acc, event_type, [])
@@ -192,7 +200,7 @@ defmodule Claude.Hooks do
           end
         end)
 
-      Map.put(settings, "hooks", new_hooks)
+      Map.put(settings_map, "hooks", new_hooks)
     end)
   end
 
@@ -209,48 +217,55 @@ defmodule Claude.Hooks do
     end
   end
 
+  defp remove_claude_hooks_from_hooks_config(hooks_config, claude_commands) do
+    hooks_config
+    |> Enum.map(fn
+      {event_type, matchers} when is_list(matchers) ->
+        updated_matchers =
+          matchers
+          |> Enum.map(fn matcher_obj ->
+            hooks_list = Map.get(matcher_obj, "hooks", [])
+
+            filtered_hooks =
+              hooks_list
+              |> Enum.reject(fn hook ->
+                command =
+                  case hook do
+                    %Claude.Hooks.Hook{command: cmd} -> cmd
+                    %{"command" => cmd} -> cmd
+                    _ -> ""
+                  end
+
+                Enum.any?(claude_commands, fn claude_cmd ->
+                  command == claude_cmd or
+                    String.contains?(command, "mix claude hooks run")
+                end)
+              end)
+
+            if filtered_hooks == [] do
+              :remove
+            else
+              Map.put(matcher_obj, "hooks", filtered_hooks)
+            end
+          end)
+          |> Enum.reject(&(&1 == :remove))
+
+        if updated_matchers == [] do
+          {event_type, :remove}
+        else
+          {event_type, updated_matchers}
+        end
+
+      {event_type, other} ->
+        {event_type, other}
+    end)
+    |> Enum.reject(fn {_, value} -> value == :remove end)
+    |> Map.new()
+  end
+
   defp remove_claude_hooks_from_settings(settings, claude_commands) do
     hooks = Map.get(settings, "hooks", %{})
-
-    updated_hooks =
-      hooks
-      |> Enum.map(fn
-        {event_type, matchers} when is_list(matchers) ->
-          updated_matchers =
-            matchers
-            |> Enum.map(fn matcher_obj ->
-              hooks_list = Map.get(matcher_obj, "hooks", [])
-
-              filtered_hooks =
-                hooks_list
-                |> Enum.reject(fn hook ->
-                  command = Map.get(hook, "command", "")
-
-                  Enum.any?(claude_commands, fn claude_cmd ->
-                    command == claude_cmd or
-                      String.contains?(command, "mix claude hooks run")
-                  end)
-                end)
-
-              if filtered_hooks == [] do
-                :remove
-              else
-                Map.put(matcher_obj, "hooks", filtered_hooks)
-              end
-            end)
-            |> Enum.reject(&(&1 == :remove))
-
-          if updated_matchers == [] do
-            {event_type, :remove}
-          else
-            {event_type, updated_matchers}
-          end
-
-        {event_type, other} ->
-          {event_type, other}
-      end)
-      |> Enum.reject(fn {_, value} -> value == :remove end)
-      |> Map.new()
+    updated_hooks = remove_claude_hooks_from_hooks_config(hooks, claude_commands)
 
     if updated_hooks == %{} do
       Map.delete(settings, "hooks")
