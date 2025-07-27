@@ -57,7 +57,10 @@ defmodule Claude.Hooks.InstallerTest do
       assert length(hooks) == 3
 
       assert Enum.any?(hooks, fn hook ->
-               hook["command"] == "echo 'custom hook'"
+               case hook do
+                 %Claude.Hooks.Hook{command: cmd} -> cmd
+                 %{"command" => cmd} -> cmd
+               end == "echo 'custom hook'"
              end)
     end
 
@@ -86,23 +89,30 @@ defmodule Claude.Hooks.InstallerTest do
 
       assert length(hooks) == 3
 
+      get_command = fn hook ->
+        case hook do
+          %Claude.Hooks.Hook{command: cmd} -> cmd
+          %{"command" => cmd} -> cmd
+        end
+      end
+
       formatter_hooks =
         Enum.filter(hooks, fn hook ->
-          hook["command"] =~ "post_tool_use.elixir_formatter"
+          get_command.(hook) =~ "post_tool_use.elixir_formatter"
         end)
 
       assert length(formatter_hooks) == 1
 
       assert Enum.any?(hooks, fn hook ->
-               hook["command"] =~ "post_tool_use.elixir_formatter"
+               get_command.(hook) =~ "post_tool_use.elixir_formatter"
              end)
 
       assert Enum.any?(hooks, fn hook ->
-               hook["command"] =~ "post_tool_use.compilation_checker"
+               get_command.(hook) =~ "post_tool_use.compilation_checker"
              end)
 
       assert Enum.any?(hooks, fn hook ->
-               hook["command"] == "echo 'custom'"
+               get_command.(hook) == "echo 'custom'"
              end)
     end
 
@@ -134,7 +144,10 @@ defmodule Claude.Hooks.InstallerTest do
       assert Enum.any?(post_tool_use, fn matcher_obj ->
                matcher_obj["matcher"] == "*.ex" &&
                  length(matcher_obj["hooks"]) == 1 &&
-                 hd(matcher_obj["hooks"])["command"] == "echo 'elixir file'"
+                 case hd(matcher_obj["hooks"]) do
+                   %Claude.Hooks.Hook{command: cmd} -> cmd
+                   %{"command" => cmd} -> cmd
+                 end == "echo 'elixir file'"
              end)
     end
   end

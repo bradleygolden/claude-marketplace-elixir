@@ -39,21 +39,23 @@ defmodule Claude.SettingsTest do
       assert [pre_tool_use_matcher] = settings.hooks["PreToolUse"]
       assert pre_tool_use_matcher["matcher"] == "*.ex"
       assert [hook] = pre_tool_use_matcher["hooks"]
-      assert %Hook{type: "shell", command: "echo 'Pre-tool use for Elixir files'", matcher: nil} = hook
+
+      assert %Hook{type: "shell", command: "echo 'Pre-tool use for Elixir files'"} = hook
 
       # Check PostToolUse hooks  
       assert length(settings.hooks["PostToolUse"]) == 2
-      
+
       [ex_matcher, exs_matcher] = settings.hooks["PostToolUse"]
-      
+
       assert ex_matcher["matcher"] == "*.ex"
       assert [format_hook, compile_hook] = ex_matcher["hooks"]
-      assert %Hook{type: "shell", command: "mix format", matcher: nil} = format_hook
-      assert %Hook{type: "shell", command: "mix compile --warnings-as-errors", matcher: nil} = compile_hook
-      
+      assert %Hook{type: "shell", command: "mix format"} = format_hook
+
+      assert %Hook{type: "shell", command: "mix compile --warnings-as-errors"} = compile_hook
+
       assert exs_matcher["matcher"] == "*.exs"
       assert [exs_format_hook] = exs_matcher["hooks"]
-      assert %Hook{type: "shell", command: "mix format", matcher: nil} = exs_format_hook
+      assert %Hook{type: "shell", command: "mix format"} = exs_format_hook
     end
 
     test "handles empty map" do
@@ -80,12 +82,12 @@ defmodule Claude.SettingsTest do
       # Check PreToolUse hooks are converted to complex format
       pre_hooks = settings.hooks["PreToolUse"]
       assert length(pre_hooks) == 2
-      
+
       bash_matcher = Enum.find(pre_hooks, fn m -> m["matcher"] == "Bash" end)
       assert bash_matcher
       assert [bash_hook] = bash_matcher["hooks"]
       assert %Hook{type: "command", command: "echo 'Running command...'"} = bash_hook
-      
+
       write_matcher = Enum.find(pre_hooks, fn m -> m["matcher"] == "Write" end)
       assert write_matcher
       assert [write_hook] = write_matcher["hooks"]
@@ -94,7 +96,7 @@ defmodule Claude.SettingsTest do
       # Check PostToolUse hooks
       post_hooks = settings.hooks["PostToolUse"]
       assert length(post_hooks) == 1
-      
+
       [edit_matcher] = post_hooks
       assert edit_matcher["matcher"] == "Edit"
       assert [edit_hook] = edit_matcher["hooks"]
@@ -121,7 +123,7 @@ defmodule Claude.SettingsTest do
       assert [matcher] = settings.hooks["PreToolUse"]
       assert matcher["matcher"] == "*.ex"
       assert [hook] = matcher["hooks"]
-      assert %Hook{type: "shell", command: "echo 'test'", matcher: nil} = hook
+      assert %Hook{type: "shell", command: "echo 'test'"} = hook
       assert Map.keys(Map.from_struct(settings)) == [:hooks]
     end
   end
@@ -144,18 +146,17 @@ defmodule Claude.SettingsTest do
       """
 
       assert {:ok, settings} = Settings.from_json(json)
-      
+
       assert [matcher] = settings.hooks["PostToolUse"]
       assert matcher["matcher"] == "*.ex"
       assert [hook] = matcher["hooks"]
-      assert %Hook{type: "shell", command: "mix format", matcher: nil} = hook
+      assert %Hook{type: "shell", command: "mix format"} = hook
     end
 
     test "returns error for invalid JSON" do
       assert {:error, _} = Settings.from_json("invalid json")
     end
   end
-
 
   describe "Jason.Encoder" do
     test "encodes struct to JSON maintaining structure" do
@@ -190,7 +191,7 @@ defmodule Claude.SettingsTest do
         hooks: %{
           "PostToolUse" => [
             %{
-              "matcher" => "*.ex", 
+              "matcher" => "*.ex",
               "hooks" => [
                 Hook.new(%{type: "shell", command: "mix format"}),
                 Hook.new(%{type: "shell", command: "mix compile"})
@@ -232,13 +233,13 @@ defmodule Claude.SettingsTest do
           }
         }
       }
-      
+
       settings = Settings.new(attrs)
-      
+
       # Encode and decode
       json = Jason.encode!(settings)
       decoded = Jason.decode!(json)
-      
+
       # Should be encoded as complex format
       assert decoded["hooks"]["PreToolUse"] == [
                %{

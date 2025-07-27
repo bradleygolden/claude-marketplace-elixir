@@ -17,14 +17,18 @@ defmodule Claude.Hooks.OutputsTest do
       output = Events.PreToolUse.Output.deny("Dangerous operation detected")
 
       assert output.hook_specific_output.permission_decision == :deny
-      assert output.hook_specific_output.permission_decision_reason == "Dangerous operation detected"
+
+      assert output.hook_specific_output.permission_decision_reason ==
+               "Dangerous operation detected"
     end
 
     test "creates ask output" do
       output = Events.PreToolUse.Output.ask("User confirmation required")
 
       assert output.hook_specific_output.permission_decision == :ask
-      assert output.hook_specific_output.permission_decision_reason == "User confirmation required"
+
+      assert output.hook_specific_output.permission_decision_reason ==
+               "User confirmation required"
     end
 
     test "converts to JSON with permission decision" do

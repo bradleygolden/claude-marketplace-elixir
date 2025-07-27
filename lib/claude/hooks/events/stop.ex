@@ -84,7 +84,6 @@ defmodule Claude.Hooks.Events.Stop do
     def allow do
       %__MODULE__{}
     end
-
   end
 
   defimpl Jason.Encoder, for: Output do

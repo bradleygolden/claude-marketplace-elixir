@@ -21,6 +21,7 @@ defmodule Claude.Core.JsonUtils do
     case String.split(string, "_") do
       [head | tail] ->
         head <> Enum.map_join(tail, "", &String.capitalize/1)
+
       [] ->
         string
     end

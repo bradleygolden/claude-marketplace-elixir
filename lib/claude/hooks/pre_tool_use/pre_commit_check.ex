@@ -14,8 +14,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   def config do
     %Claude.Hooks.Hook{
       type: "command",
-      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run pre_tool_use.pre_commit_check",
-      matcher: "Bash"
+      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run pre_tool_use.pre_commit_check"
     }
   end
 
@@ -30,9 +29,9 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   end
 
   def run(json_input) when is_binary(json_input) do
-    case Jason.decode(json_input) do
-      {:ok, hook_data} ->
-        handle_hook_input(hook_data)
+    case Claude.Hooks.Events.PreToolUse.Input.from_json(json_input) do
+      {:ok, %Claude.Hooks.Events.PreToolUse.Input{} = input} ->
+        handle_hook_input(input)
 
       {:error, _} ->
         IO.puts(:stderr, "Failed to parse hook input JSON")
@@ -40,7 +39,10 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
     end
   end
 
-  defp handle_hook_input(%{"tool_name" => "Bash", "tool_input" => %{"command" => command}})
+  defp handle_hook_input(%Claude.Hooks.Events.PreToolUse.Input{
+         tool_name: "Bash",
+         tool_input: %Claude.Hooks.ToolInputs.Bash{command: command}
+       })
        when is_binary(command) do
     if String.contains?(command, "git commit") do
       IO.puts("Pre-commit validation triggered for: #{command}")

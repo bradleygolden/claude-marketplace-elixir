@@ -116,7 +116,6 @@ defmodule Claude.HooksTest do
         assert %Hook{} = config
         assert config.type
         assert config.command
-        assert config.matcher
 
         description = hook_module.description()
         assert is_binary(description)

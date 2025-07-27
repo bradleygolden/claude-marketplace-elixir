@@ -15,8 +15,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   def config do
     %Claude.Hooks.Hook{
       type: "command",
-      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter",
-      matcher: ".*"
+      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter"
     }
   end
 
@@ -29,10 +28,10 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   def run(:eof), do: :ok
 
   def run(json_input) when is_binary(json_input) do
-    case Jason.decode(json_input) do
-      {:ok, %{"tool_name" => tool_name, "tool_input" => tool_input}} ->
-        with :ok <- validate_tool(tool_name),
-             {:ok, file_path} <- extract_tool_input_file_path(tool_input),
+    case Claude.Hooks.Events.PostToolUse.Input.from_json(json_input) do
+      {:ok, %Claude.Hooks.Events.PostToolUse.Input{} = input} ->
+        with :ok <- validate_tool(input.tool_name),
+             {:ok, file_path} <- extract_file_path(input.tool_input),
              :ok <- validate_elixir_file(file_path) do
           format_file(file_path)
         else
@@ -44,7 +43,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
             :ok
         end
 
-      _ ->
+      {:error, _} ->
         :ok
     end
   end
@@ -52,11 +51,29 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   defp validate_tool(tool_name) when tool_name in @edit_tools, do: :ok
   defp validate_tool(_), do: {:skip, :not_edit_tool}
 
-  defp extract_tool_input_file_path(%{"file_path" => file_path}) when is_binary(file_path) do
+  defp extract_file_path(%Claude.Hooks.ToolInputs.Edit{file_path: file_path})
+       when is_binary(file_path) do
     {:ok, file_path}
   end
 
-  defp extract_tool_input_file_path(_) do
+  defp extract_file_path(%Claude.Hooks.ToolInputs.Write{file_path: file_path})
+       when is_binary(file_path) do
+    {:ok, file_path}
+  end
+
+  defp extract_file_path(%Claude.Hooks.ToolInputs.MultiEdit{file_path: file_path})
+       when is_binary(file_path) do
+    {:ok, file_path}
+  end
+
+  defp extract_file_path(%{} = raw_map) do
+    case Map.get(raw_map, "file_path") do
+      file_path when is_binary(file_path) -> {:ok, file_path}
+      _ -> {:skip, :no_file_path}
+    end
+  end
+
+  defp extract_file_path(_) do
     {:skip, :no_file_path}
   end
 
