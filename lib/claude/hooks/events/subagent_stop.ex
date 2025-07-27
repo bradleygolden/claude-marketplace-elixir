@@ -1,0 +1,108 @@
+defmodule Claude.Hooks.Events.SubagentStop do
+  @moduledoc """
+  SubagentStop hook event structures.
+
+  Runs when a Claude Code sub agent (Task tool call) has finished responding.
+  """
+
+  alias Claude.Core.JsonUtils
+
+  defmodule Input do
+    @moduledoc """
+    Input data for SubagentStop hook events.
+
+    Note: SubagentStop events do not include a cwd field.
+    """
+    @derive Jason.Encoder
+    defstruct [:session_id, :transcript_path, :hook_event_name, :stop_hook_active]
+
+    @type t :: %__MODULE__{
+            session_id: String.t(),
+            transcript_path: String.t(),
+            hook_event_name: String.t(),
+            stop_hook_active: boolean()
+          }
+
+    @doc """
+    Creates a new SubagentStop Input struct from a map.
+    """
+    def new(attrs) when is_map(attrs) do
+      %__MODULE__{
+        session_id: attrs["session_id"],
+        transcript_path: attrs["transcript_path"],
+        hook_event_name: attrs["hook_event_name"] || "SubagentStop",
+        stop_hook_active: attrs["stop_hook_active"] || false
+      }
+    end
+
+    @doc """
+    Parses JSON string into SubagentStop Input struct.
+    """
+    def from_json(json) when is_binary(json) do
+      case Jason.decode(json) do
+        {:ok, data} -> {:ok, new(data)}
+        {:error, _} = error -> error
+      end
+    end
+  end
+
+  # SubagentStop uses the same output structure as Stop
+  defmodule Output do
+    @moduledoc """
+    Output structure for SubagentStop hooks.
+
+    Can prevent the subagent from stopping and provide instructions to continue.
+    """
+    defstruct continue: true,
+              stop_reason: nil,
+              suppress_output: false,
+              decision: nil,
+              reason: nil
+
+    @type decision :: :block | nil
+
+    @type t :: %__MODULE__{
+            continue: boolean(),
+            stop_reason: String.t() | nil,
+            suppress_output: boolean(),
+            decision: decision(),
+            reason: String.t() | nil
+          }
+
+    @doc """
+    Creates a SubagentStop Output that blocks the subagent from stopping.
+    """
+    def block(reason) do
+      %__MODULE__{
+        decision: :block,
+        reason: reason
+      }
+    end
+
+    @doc """
+    Creates a SubagentStop Output that allows the subagent to stop.
+    """
+    def allow do
+      %__MODULE__{}
+    end
+
+  end
+
+  defimpl Jason.Encoder, for: Output do
+    def encode(%Output{} = output, opts) do
+      output
+      |> Map.from_struct()
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Map.new()
+      |> JsonUtils.to_camel_case()
+      |> then(fn map ->
+        if map["decision"] do
+          Map.put(map, "decision", to_string(map["decision"]))
+        else
+          map
+        end
+      end)
+      |> Jason.Encode.map(opts)
+    end
+  end
+end
