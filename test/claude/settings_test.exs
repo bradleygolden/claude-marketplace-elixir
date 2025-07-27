@@ -156,41 +156,6 @@ defmodule Claude.SettingsTest do
     end
   end
 
-  describe "to_map/1" do
-    test "converts struct to map maintaining structure" do
-      settings = %Settings{
-        hooks: %{
-          "PreToolUse" => [
-            %{
-              "matcher" => "*.ex",
-              "hooks" => [
-                %{"type" => "shell", "command" => "echo 'Starting...'"}
-              ]
-            }
-          ]
-        }
-      }
-
-      map = Settings.to_map(settings)
-
-      assert map["hooks"]["PreToolUse"] == [
-               %{
-                 "matcher" => "*.ex",
-                 "hooks" => [
-                   %{"type" => "shell", "command" => "echo 'Starting...'"}
-                 ]
-               }
-             ]
-    end
-
-    test "removes nil values from output" do
-      settings = %Settings{hooks: nil}
-
-      map = Settings.to_map(settings)
-
-      refute Map.has_key?(map, "hooks")
-    end
-  end
 
   describe "Jason.Encoder" do
     test "encodes struct to JSON maintaining structure" do

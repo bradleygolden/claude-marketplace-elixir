@@ -68,21 +68,6 @@ defmodule Claude.Settings do
     end
   end
 
-  @doc """
-  Converts the struct to a map suitable for JSON encoding.
-  
-  Converts snake_case keys back to camelCase and removes nil values.
-  Hook structs are converted to maps with only type and command fields.
-  """
-  def to_map(%__MODULE__{} = settings) do
-    settings
-    |> Map.from_struct()
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Map.new()
-    |> convert_hooks_to_maps()
-    |> JsonUtils.to_camel_case()
-  end
-
   # Private helpers
 
   defp normalize_keys(map) when is_map(map) do
@@ -154,42 +139,44 @@ defmodule Claude.Settings do
     Hook.new(%{type: "command", command: command})
   end
 
-  defp convert_hooks_to_maps(settings) do
-    case settings[:hooks] do
-      nil -> 
-        settings
-      
-      hooks ->
-        converted_hooks = 
-          hooks
-          |> Enum.map(fn {event_type, matchers} ->
-            converted_matchers = 
-              matchers
-              |> Enum.map(fn matcher ->
-                hooks_list = Map.get(matcher, "hooks", [])
-                converted_hooks_list = Enum.map(hooks_list, &hook_to_map/1)
-                Map.put(matcher, "hooks", converted_hooks_list)
-              end)
-            
-            {event_type, converted_matchers}
-          end)
-          |> Map.new()
-        
-        Map.put(settings, :hooks, converted_hooks)
-    end
-  end
-
-  defp hook_to_map(%Hook{type: type, command: command}) do
-    %{"type" => type, "command" => command}
-  end
-  
-  defp hook_to_map(map) when is_map(map), do: map
-
   defimpl Jason.Encoder do
-    def encode(%Claude.Settings{} = settings, opts) do
-      settings
-      |> Claude.Settings.to_map()
+    def encode(%Claude.Settings{hooks: nil}, opts) do
+      Jason.Encode.map(%{}, opts)
+    end
+
+    def encode(%Claude.Settings{hooks: hooks}, opts) do
+      # Convert hooks to proper JSON structure
+      json_hooks = 
+        hooks
+        |> Enum.map(fn {event_type, matchers} ->
+          json_matchers = 
+            matchers
+            |> Enum.map(fn matcher ->
+              hooks_list = Map.get(matcher, "hooks", [])
+              json_hooks_list = Enum.map(hooks_list, &encode_hook/1)
+              
+              %{
+                "matcher" => Map.get(matcher, "matcher"),
+                "hooks" => json_hooks_list
+              }
+            end)
+          
+          {event_type, json_matchers}
+        end)
+        |> Map.new()
+      
+      # Apply camelCase conversion and encode
+      %{"hooks" => json_hooks}
+      |> JsonUtils.to_camel_case()
       |> Jason.Encode.map(opts)
     end
+
+    # Encode Hook structs with only type and command fields
+    defp encode_hook(%Hook{type: type, command: command}) do
+      %{"type" => type, "command" => command}
+    end
+    
+    # Pass through plain maps as-is
+    defp encode_hook(map) when is_map(map), do: map
   end
 end
