@@ -34,18 +34,15 @@ defmodule Claude.Core.Settings do
 
     case {json_settings, exs_settings} do
       {{:ok, json}, {:ok, exs}} ->
-        # Deep merge with .claude.exs taking precedence
         {:ok, deep_merge(json, exs)}
 
       {{:ok, json}, _} ->
         {:ok, json}
 
       {{:error, :enoent}, {:ok, exs}} ->
-        # Only use .claude.exs if JSON file doesn't exist
         {:ok, exs}
 
       {{:error, reason}, _} ->
-        # For other JSON errors (invalid_json, permission errors), return the error
         {:error, reason}
     end
   end
@@ -79,7 +76,6 @@ defmodule Claude.Core.Settings do
 
           case result do
             map when is_map(map) ->
-              # Convert atom keys to strings for consistency
               {:ok, stringify_keys(map)}
 
             _ ->
@@ -87,12 +83,10 @@ defmodule Claude.Core.Settings do
           end
         rescue
           error in [SyntaxError, TokenMissingError, CompileError] ->
-            # Log syntax errors with helpful context
             IO.warn("Syntax error in .claude.exs at #{exs_path}: #{Exception.message(error)}")
             {:ok, %{}}
 
           error ->
-            # Log other errors with full details for debugging
             IO.warn(
               "Error evaluating .claude.exs: #{inspect(error)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
             )
@@ -104,7 +98,6 @@ defmodule Claude.Core.Settings do
         {:ok, %{}}
 
       {:error, _reason} ->
-        # Don't fail on .claude.exs read errors
         {:ok, %{}}
     end
   end
