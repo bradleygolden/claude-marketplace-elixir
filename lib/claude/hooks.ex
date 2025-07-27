@@ -37,6 +37,27 @@ defmodule Claude.Hooks do
     - `config/0` to return their hook configuration as a %Claude.Hooks.Hook{} struct
     - `run/2` to execute the hook logic
     - `description/0` to provide a human-readable description
+
+    ## Using the macro
+
+    You can use the `use Claude.Hooks.Hook.Behaviour` macro to reduce boilerplate:
+
+        defmodule MyHook do
+          use Claude.Hooks.Hook.Behaviour,
+            event: :post_tool_use,
+            matcher: "Write|Edit",
+            description: "My custom hook"
+
+          def run(input) do
+            # Your hook logic here
+            :ok
+          end
+        end
+
+    The macro automatically:
+    - Implements the behaviour callbacks
+    - Generates the config/0 function
+    - Provides helper functions for common patterns
     """
 
     @doc """
@@ -63,24 +84,57 @@ defmodule Claude.Hooks do
     Returns a human-readable description of what this hook does.
     """
     @callback description() :: String.t()
+
+    defmacro __using__(opts) do
+      quote bind_quoted: [opts: opts] do
+        @behaviour Claude.Hooks.Hook.Behaviour
+
+        @hook_event Keyword.get(opts, :event, :post_tool_use)
+        
+        raw_matcher = Keyword.get(opts, :matcher, :*)
+        @hook_matcher Claude.Hooks.format_matcher(raw_matcher)
+        
+        @hook_description Keyword.get(opts, :description, "")
+
+        @hook_identifier Claude.Hooks.generate_identifier(__MODULE__)
+
+        @impl Claude.Hooks.Hook.Behaviour
+        def config do
+          %Claude.Hooks.Hook{
+            type: "command",
+            command: "mix claude hooks run #{@hook_identifier} $TOOL_NAME \"$TOOL_PARAMS_JSON\""
+          }
+        end
+
+        @impl Claude.Hooks.Hook.Behaviour
+        def description, do: @hook_description
+
+        def __hook_event__, do: @hook_event
+        def __hook_matcher__, do: @hook_matcher
+        def __hook_identifier__, do: @hook_identifier
+
+        @impl Claude.Hooks.Hook.Behaviour
+        def run(json_input) when is_binary(json_input) do
+          if json_input == ":eof" do
+            :ok
+          else
+            :ok
+          end
+        end
+
+        defoverridable config: 0, description: 0, run: 1
+      end
+    end
   end
-
-  @hooks [
-    Claude.Hooks.PostToolUse.ElixirFormatter,
-    Claude.Hooks.PostToolUse.CompilationChecker,
-    Claude.Hooks.PreToolUse.PreCommitCheck
-  ]
-
-  @hook_matchers %{
-    Claude.Hooks.PostToolUse.ElixirFormatter => ".*",
-    Claude.Hooks.PostToolUse.CompilationChecker => ".*",
-    Claude.Hooks.PreToolUse.PreCommitCheck => "Bash"
-  }
 
   @doc """
   Returns all available hook modules.
+
+  This now uses the dynamic registry to discover hooks at runtime.
   """
-  def all_hooks, do: @hooks
+  def all_hooks do
+    Claude.Hooks.Registry.all_hooks()
+  end
 
   @doc """
   Finds a hook module by its identifier.
@@ -89,20 +143,98 @@ defmodule Claude.Hooks do
   - Claude.Hooks.PostToolUse.ElixirFormatter -> "post_tool_use.elixir_formatter"
   """
   def find_hook_by_identifier(identifier) do
-    Enum.find(@hooks, fn hook_module ->
-      hook_identifier(hook_module) == identifier
-    end)
+    Claude.Hooks.Registry.find_by_identifier(identifier)
   end
 
   @doc """
   Returns the identifier for a hook module.
   """
   def hook_identifier(hook_module) do
-    hook_module
+    Claude.Hooks.Registry.hook_identifier(hook_module)
+  end
+
+  @doc """
+  Generates an identifier from a module name.
+
+  Used internally by the Hook.Behaviour macro.
+  """
+  def generate_identifier(module) when is_atom(module) do
+    module
     |> Module.split()
     |> Enum.drop(2)
     |> Enum.map(&Macro.underscore/1)
     |> Enum.join(".")
+  end
+
+  @doc """
+  Converts a matcher specification to Claude Code's expected format.
+  
+  ## Examples
+  
+      iex> Claude.Hooks.format_matcher([:write, :edit])
+      "Write|Edit"
+      
+      iex> Claude.Hooks.format_matcher(:bash)
+      "Bash"
+      
+      iex> Claude.Hooks.format_matcher("Write|Edit")
+      "Write|Edit"
+      
+      iex> Claude.Hooks.format_matcher([:write, :edit, :multi_edit])
+      "Write|Edit|MultiEdit"
+      
+      iex> Claude.Hooks.format_matcher(:*)
+      "*"
+      
+      iex> Claude.Hooks.format_matcher(:manual)
+      "manual"
+      
+      iex> Claude.Hooks.format_matcher(:auto)
+      "auto"
+  """
+  def format_matcher(:*), do: "*"
+  def format_matcher("*"), do: "*"
+  def format_matcher(:manual), do: "manual"
+  def format_matcher(:auto), do: "auto"
+  def format_matcher(matcher) when is_binary(matcher), do: matcher
+  
+  def format_matcher(matcher) when is_atom(matcher) do
+    matcher
+    |> Atom.to_string()
+    |> to_title_case()
+  end
+  
+  def format_matcher(matchers) when is_list(matchers) do
+    matchers
+    |> Enum.map(&format_matcher/1)
+    |> Enum.join("|")
+  end
+  
+  defp to_title_case(string) do
+    string
+    |> String.split("_")
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join()
+  end
+
+  defp get_hook_event_type(hook_module) do
+    if function_exported?(hook_module, :__hook_event__, 0) do
+      hook_module.__hook_event__()
+      |> Atom.to_string()
+      |> then(fn s -> s |> String.split("_") |> Enum.map(&String.capitalize/1) |> Enum.join() end)
+    else
+      hook_module
+      |> Module.split()
+      |> Enum.at(2)
+    end
+  end
+
+  defp get_hook_matcher(hook_module) do
+    if function_exported?(hook_module, :__hook_matcher__, 0) do
+      hook_module.__hook_matcher__()
+    else
+      "*"
+    end
   end
 
   @doc """
@@ -144,20 +276,15 @@ defmodule Claude.Hooks do
 
       existing_hooks = settings_struct.hooks || %{}
 
-      claude_commands = Enum.map(@hooks, fn hook -> hook.config().command end)
+      claude_commands = Enum.map(all_hooks(), fn hook -> hook.config().command end)
 
       cleaned_hooks = remove_claude_hooks_from_hooks_config(existing_hooks, claude_commands)
 
       hooks_by_event_and_matcher =
-        @hooks
+        all_hooks()
         |> Enum.group_by(fn hook_module ->
-          event_type =
-            hook_module
-            |> Module.split()
-            |> Enum.at(2)
-
-          matcher = Map.get(@hook_matchers, hook_module, ".*")
-
+          event_type = get_hook_event_type(hook_module)
+          matcher = get_hook_matcher(hook_module)
           {event_type, matcher}
         end)
 
@@ -206,7 +333,7 @@ defmodule Claude.Hooks do
 
   defp remove_all_hooks do
     with {:ok, settings} <- Settings.read() do
-      claude_commands = Enum.map(@hooks, fn hook -> hook.config().command end)
+      claude_commands = Enum.map(all_hooks(), fn hook -> hook.config().command end)
       updated = remove_claude_hooks_from_settings(settings, claude_commands)
 
       if updated == %{} do

@@ -6,23 +6,15 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   and alerts when formatting is needed without actually modifying the files.
   """
 
-  @behaviour Claude.Hooks.Hook.Behaviour
+  use Claude.Hooks.Hook.Behaviour,
+    event: :post_tool_use,
+    matcher: [:write, :edit, :multi_edit],
+    description: "Checks if Elixir files need formatting after Claude edits them"
+
+  alias Claude.Hooks.Helpers
 
   @edit_tools ["Edit", "Write", "MultiEdit"]
   @elixir_extensions [".ex", ".exs"]
-
-  @impl Claude.Hooks.Hook.Behaviour
-  def config do
-    %Claude.Hooks.Hook{
-      type: "command",
-      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.elixir_formatter"
-    }
-  end
-
-  @impl Claude.Hooks.Hook.Behaviour
-  def description do
-    "Checks if Elixir files need formatting after Claude edits them"
-  end
 
   @impl Claude.Hooks.Hook.Behaviour
   def run(:eof), do: :ok
@@ -39,7 +31,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
             :ok
 
           {:error, reason} ->
-            IO.puts(:stderr, "Claude format hook error: #{reason}")
+            Helpers.print_error("Claude format hook error: #{reason}")
             :ok
         end
 
@@ -78,7 +70,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   end
 
   defp validate_elixir_file(file_path) do
-    if Enum.any?(@elixir_extensions, &String.ends_with?(file_path, &1)) do
+    if Helpers.has_extension?(file_path, @elixir_extensions) do
       :ok
     else
       {:skip, :not_elixir_file}
@@ -86,31 +78,24 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   end
 
   defp format_file(file_path) do
-    project_dir = System.get_env("CLAUDE_PROJECT_DIR") || Path.dirname(file_path)
-    original_dir = File.cwd!()
-
-    try do
-      File.cd!(project_dir)
-
+    Helpers.in_project_dir(file_path, fn ->
       case System.cmd("mix", ["format", "--check-formatted", file_path], stderr_to_stdout: true) do
         {_output, 0} ->
           :ok
 
         {output, exit_code} ->
           if exit_code == 1 do
-            IO.puts(:stderr, "⚠️  File needs formatting: #{file_path}")
+            Helpers.print_warning("File needs formatting: #{file_path}")
           else
-            IO.puts(:stderr, "Mix format check failed: #{output}")
+            Helpers.print_error("Mix format check failed: #{output}")
           end
 
           :ok
       end
-    rescue
-      error ->
-        IO.puts(:stderr, "Format check error: #{inspect(error)}")
-        :ok
-    after
-      File.cd!(original_dir)
-    end
+    end)
+  rescue
+    error ->
+      Helpers.print_error("Format check error: #{inspect(error)}")
+      :ok
   end
 end

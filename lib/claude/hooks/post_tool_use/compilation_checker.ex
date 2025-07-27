@@ -5,23 +5,15 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
   This hook runs after Write, Edit, and MultiEdit operations on .ex and .exs files.
   """
 
-  @behaviour Claude.Hooks.Hook.Behaviour
+  use Claude.Hooks.Hook.Behaviour,
+    event: :post_tool_use,
+    matcher: [:write, :edit, :multi_edit],
+    description: "Checks for compilation errors after Claude edits Elixir files"
+
+  alias Claude.Hooks.Helpers
 
   @edit_tools ["Edit", "Write", "MultiEdit"]
   @elixir_extensions [".ex", ".exs"]
-
-  @impl Claude.Hooks.Hook.Behaviour
-  def config do
-    %Claude.Hooks.Hook{
-      type: "command",
-      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run post_tool_use.compilation_checker"
-    }
-  end
-
-  @impl Claude.Hooks.Hook.Behaviour
-  def description do
-    "Checks for compilation errors after Claude edits Elixir files"
-  end
 
   @impl Claude.Hooks.Hook.Behaviour
   def run(:eof), do: :ok
@@ -38,7 +30,7 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
             :ok
 
           {:error, reason} ->
-            IO.puts(:stderr, "Claude compilation check error: #{reason}")
+            Helpers.print_error("Claude compilation check error: #{reason}")
             :ok
         end
 
@@ -77,7 +69,7 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
   end
 
   defp validate_elixir_file(file_path) do
-    if Enum.any?(@elixir_extensions, &String.ends_with?(file_path, &1)) do
+    if Helpers.has_extension?(file_path, @elixir_extensions) do
       :ok
     else
       {:skip, :not_elixir_file}
@@ -85,12 +77,7 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
   end
 
   defp check_compilation(file_path) do
-    project_dir = System.get_env("CLAUDE_PROJECT_DIR") || Path.dirname(file_path)
-    original_dir = File.cwd!()
-
-    try do
-      File.cd!(project_dir)
-
+    Helpers.in_project_dir(file_path, fn ->
       case System.cmd("mix", ["compile", "--warnings-as-errors"], stderr_to_stdout: true) do
         {_output, 0} ->
           :ok
@@ -100,12 +87,10 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
           IO.puts(:stderr, output)
           :ok
       end
-    rescue
-      error ->
-        IO.puts(:stderr, "Compilation check error: #{inspect(error)}")
-        :ok
-    after
-      File.cd!(original_dir)
-    end
+    end)
+  rescue
+    error ->
+      Helpers.print_error("Compilation check error: #{inspect(error)}")
+      :ok
   end
 end
