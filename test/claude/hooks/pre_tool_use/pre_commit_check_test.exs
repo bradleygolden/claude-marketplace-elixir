@@ -50,6 +50,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       assert description =~ "formatting"
       assert description =~ "compilation"
       assert description =~ "dependencies"
+      assert description =~ "tests"
     end
   end
 
@@ -260,6 +261,78 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       assert exit_code != 0
       assert output =~ "unused_dep"
     end
+
+    test "passes when all tests pass" do
+      File.mkdir_p!("test")
+
+      File.write!("test/test_helper.exs", """
+      ExUnit.start()
+      """)
+
+      File.write!("test/example_test.exs", """
+      defmodule ExampleTest do
+        use ExUnit.Case
+
+        test "passes" do
+          assert 1 + 1 == 2
+        end
+      end
+      """)
+
+      {output, exit_code} =
+        System.cmd("mix", ["test"], stderr_to_stdout: true, cd: @test_dir)
+
+      assert exit_code == 0
+      assert output =~ "1 test, 0 failures"
+    end
+
+    test "fails when tests fail" do
+      File.mkdir_p!("test")
+
+      File.write!("test/test_helper.exs", """
+      ExUnit.start()
+      """)
+
+      File.write!("test/failing_test.exs", """
+      defmodule FailingTest do
+        use ExUnit.Case
+
+        test "fails" do
+          assert 1 + 1 == 3
+        end
+      end
+      """)
+
+      {output, exit_code} =
+        System.cmd("mix", ["test"], stderr_to_stdout: true, cd: @test_dir)
+
+      assert exit_code != 0
+      assert output =~ "1 test, 1 failure"
+    end
+
+    test "fails when test files have compilation errors" do
+      File.mkdir_p!("test")
+
+      File.write!("test/test_helper.exs", """
+      ExUnit.start()
+      """)
+
+      File.write!("test/broken_test.exs", """
+      defmodule BrokenTest do
+        use ExUnit.Case
+
+        test "has syntax error" do
+          undefined_function()
+        end
+      end
+      """)
+
+      {output, exit_code} =
+        System.cmd("mix", ["test"], stderr_to_stdout: true, cd: @test_dir)
+
+      assert exit_code != 0
+      assert output =~ "undefined_function"
+    end
   end
 
   describe "edge cases" do
@@ -304,6 +377,19 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       File.write!("mix.lock", "%{}")
 
+      File.mkdir_p!("test")
+      File.write!("test/test_helper.exs", "ExUnit.start()\n")
+
+      File.write!("test/valid_test.exs", """
+      defmodule ValidTest do
+        use ExUnit.Case
+
+        test "example passes" do
+          assert true
+        end
+      end
+      """)
+
       hook_input = %{
         "tool_name" => "Bash",
         "tool_input" => %{"command" => "git commit -m 'good commit'"}
@@ -320,6 +406,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       assert output =~ "✓ Code formatting is correct"
       assert output =~ "✓ Compilation successful"
       assert output =~ "✓ No unused dependencies found"
+      assert output =~ "✓ All tests passed"
     end
 
     test "exits with code 2 when formatting fails" do
@@ -349,6 +436,58 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
         end)
 
       assert stdout =~ "Pre-commit validation triggered"
+    end
+
+    test "exits with code 2 when tests fail" do
+      File.write!("lib/good.ex", """
+      defmodule Good do
+        def hello do
+          :world
+        end
+      end
+      """)
+
+      System.cmd("mix", ["format"], cd: @test_dir)
+
+      File.write!("mix.lock", "%{}")
+
+      # Add a failing test
+      File.mkdir_p!("test")
+      File.write!("test/test_helper.exs", "ExUnit.start()\n")
+
+      File.write!("test/failing_test.exs", """
+      defmodule FailingTest do
+        use ExUnit.Case
+
+        test "this test fails" do
+          assert 1 == 2
+        end
+      end
+      """)
+
+      hook_input = %{
+        "tool_name" => "Bash",
+        "tool_input" => %{"command" => "git commit -m 'commit with failing tests'"}
+      }
+
+      stub(System, :halt, fn 2 -> :ok end)
+
+      stdout =
+        capture_io(fn ->
+          stderr =
+            capture_io(:stderr, fn ->
+              PreCommitCheck.run(Jason.encode!(hook_input))
+            end)
+
+          assert stderr =~ "❌ Tests failed!"
+          assert stderr =~ "Please fix failing tests before committing"
+        end)
+
+      assert stdout =~ "Pre-commit validation triggered"
+      assert stdout =~ "✓ Code formatting is correct"
+      assert stdout =~ "✓ Compilation successful"
+      assert stdout =~ "✓ No unused dependencies found"
+      assert stdout =~ "Running tests..."
     end
   end
 end

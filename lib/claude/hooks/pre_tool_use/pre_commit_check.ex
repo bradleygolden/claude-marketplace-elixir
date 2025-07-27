@@ -1,11 +1,12 @@
 defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   @moduledoc """
-  Pre-commit hook that validates formatting, compilation, and dependencies before allowing commits.
+  Pre-commit hook that validates formatting, compilation, tests, and dependencies before allowing commits.
 
   This hook runs before commit operations and blocks the commit if:
   - Any Elixir files are not properly formatted
   - The project has compilation errors or warnings
   - There are unused dependencies in mix.lock
+  - Any tests fail
   """
 
   @behaviour Claude.Hooks.Hook.Behaviour
@@ -21,7 +22,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
   @impl Claude.Hooks.Hook.Behaviour
   def description do
-    "Validates formatting, compilation, and dependencies before allowing commits"
+    "Validates formatting, compilation, tests, and dependencies before allowing commits"
   end
 
   @impl Claude.Hooks.Hook.Behaviour
@@ -73,7 +74,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   defp validate_commit do
     with :ok <- check_formatting(),
          :ok <- check_compilation(),
-         :ok <- check_unused_dependencies() do
+         :ok <- check_unused_dependencies(),
+         :ok <- run_tests() do
       :ok
     end
   end
@@ -123,6 +125,22 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
         IO.puts(:stderr, output)
         IO.puts(:stderr, "\nPlease run 'mix deps.unlock --unused' to remove unused dependencies.")
         {:error, :unused_dependencies}
+    end
+  end
+
+  defp run_tests do
+    IO.puts("Running tests...")
+
+    case System.cmd("mix", ["test"], stderr_to_stdout: true) do
+      {_output, 0} ->
+        IO.puts("✓ All tests passed")
+        :ok
+
+      {output, _exit_code} ->
+        IO.puts(:stderr, "\n❌ Tests failed!")
+        IO.puts(:stderr, output)
+        IO.puts(:stderr, "\nPlease fix failing tests before committing.")
+        {:error, :tests_failed}
     end
   end
 end
