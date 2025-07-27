@@ -53,6 +53,14 @@ mix claude.uninstall
 mix claude hooks run <hook_identifier> <tool_name> <json_params>
 ```
 
+## Reference Docs
+
+Before working with any concepts related to settings, hooks or sub agents, ALWAYS read which ever documentation is relevant to your needs below:
+
+To reference claude code settings, please see @docs/anthropic/claude_code/configuration/settings.md
+To reference claude code hooks, please see @docs/anthropic/claude_code/reference/hooks.md
+To reference claude code sub agents, please see @docs/anthropic/claude_code/build_with/sub_agents.md
+
 ## Architecture Overview
 
 **Important**: For all hooks-related functionality and documentation, always reference the official Claude Code hooks documentation at https://docs.anthropic.com/en/docs/claude-code/hooks
@@ -108,8 +116,8 @@ Internal CLI modules handle:
 <!-- usage-rules-header -->
 # Usage Rules
 
-**IMPORTANT**: Consult these usage rules early and often when working with the packages listed below. 
-Before attempting to use any of these packages or to discover if you should use them, review their 
+**IMPORTANT**: Consult these usage rules early and often when working with the packages listed below.
+Before attempting to use any of these packages or to discover if you should use them, review their
 usage rules to understand the correct patterns, conventions, and best practices.
 <!-- usage-rules-header-end -->
 
