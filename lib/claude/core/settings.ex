@@ -8,8 +8,8 @@ defmodule Claude.Core.Settings do
   This module evaluates `.claude.exs` files using `Code.eval_string/3`. Only load
   `.claude.exs` files from trusted sources, as they can execute arbitrary Elixir code.
 
-  The `.claude.exs` file is intended for project-specific configuration and should
-  be added to `.gitignore` if it contains sensitive information.
+  The `.claude.exs` file is intended for project-specific configuration that can be
+  shared with your team. Avoid putting sensitive information in this file.
   """
 
   alias Claude.Core.Project

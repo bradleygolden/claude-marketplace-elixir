@@ -21,6 +21,3 @@ claude-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
-
-# Claude configuration file (project-specific)
-.claude.exs
