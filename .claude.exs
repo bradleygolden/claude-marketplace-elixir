@@ -10,4 +10,10 @@
 # - And more as Claude evolves
 
 # Example configuration (uncomment and modify as needed):
-%{}
+%{
+  # Custom hooks can be registered here
+  # hooks: [
+  #   MyProject.Hooks.CustomFormatter,
+  #   MyProject.Hooks.SecurityChecker
+  # ]
+}

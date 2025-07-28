@@ -105,9 +105,12 @@ defmodule Claude.Core.Settings do
   defp stringify_keys(map) when is_map(map) do
     map
     |> Enum.map(fn
+      # Filter out the hooks array from .claude.exs as it's only for discovery
+      {:hooks, v} when is_list(v) -> nil
       {k, v} when is_atom(k) -> {Atom.to_string(k), stringify_keys(v)}
       {k, v} -> {k, stringify_keys(v)}
     end)
+    |> Enum.reject(&is_nil/1)
     |> Map.new()
   end
 

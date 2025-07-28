@@ -1,5 +1,6 @@
 defmodule Claude.Hooks.InstallerTest do
   use Claude.Test.ClaudeCodeCase
+  use Mimic
 
   alias Claude.Hooks.Installer
 
@@ -13,7 +14,7 @@ defmodule Claude.Hooks.InstallerTest do
       assert %{"PostToolUse" => post_tool_use} = hooks
       assert %{"PreToolUse" => pre_tool_use} = hooks
 
-      assert [%{"matcher" => ".*", "hooks" => post_hooks}] = post_tool_use
+      assert [%{"matcher" => "Write|Edit|MultiEdit", "hooks" => post_hooks}] = post_tool_use
       assert length(post_hooks) == 2
 
       assert Enum.any?(post_hooks, fn hook ->
@@ -52,16 +53,21 @@ defmodule Claude.Hooks.InstallerTest do
       result = Installer.install_hooks(settings)
 
       post_tool_use = get_in(result, ["hooks", "PostToolUse"])
-      assert [%{"matcher" => ".*", "hooks" => hooks}] = post_tool_use
-
-      assert length(hooks) == 3
-
-      assert Enum.any?(hooks, fn hook ->
-               case hook do
-                 %Claude.Hooks.Hook{command: cmd} -> cmd
-                 %{"command" => cmd} -> cmd
-               end == "echo 'custom hook'"
-             end)
+      assert length(post_tool_use) == 2
+      
+      custom_matcher = Enum.find(post_tool_use, fn m -> m["matcher"] == ".*" end)
+      assert custom_matcher
+      assert length(custom_matcher["hooks"]) == 1
+      first_hook = hd(custom_matcher["hooks"])
+      command = case first_hook do
+        %Claude.Hooks.Hook{command: cmd} -> cmd
+        %{"command" => cmd} -> cmd
+      end
+      assert command == "echo 'custom hook'"
+      
+      builtin_matcher = Enum.find(post_tool_use, fn m -> m["matcher"] == "Write|Edit|MultiEdit" end)
+      assert builtin_matcher
+      assert length(builtin_matcher["hooks"]) == 2
     end
 
     test "replaces existing Claude hooks" do
@@ -85,35 +91,25 @@ defmodule Claude.Hooks.InstallerTest do
       result = Installer.install_hooks(settings)
 
       post_tool_use = get_in(result, ["hooks", "PostToolUse"])
-      assert [%{"matcher" => ".*", "hooks" => hooks}] = post_tool_use
-
-      assert length(hooks) == 3
-
-      get_command = fn hook ->
-        case hook do
-          %Claude.Hooks.Hook{command: cmd} -> cmd
-          %{"command" => cmd} -> cmd
-        end
+      assert length(post_tool_use) == 2
+      
+      custom_matcher = Enum.find(post_tool_use, fn m -> m["matcher"] == ".*" end)
+      assert custom_matcher
+      assert length(custom_matcher["hooks"]) == 1
+      first_hook = hd(custom_matcher["hooks"])
+      command = case first_hook do
+        %Claude.Hooks.Hook{command: cmd} -> cmd
+        %{"command" => cmd} -> cmd
       end
-
-      formatter_hooks =
-        Enum.filter(hooks, fn hook ->
-          get_command.(hook) =~ "post_tool_use.elixir_formatter"
-        end)
-
-      assert length(formatter_hooks) == 1
-
-      assert Enum.any?(hooks, fn hook ->
-               get_command.(hook) =~ "post_tool_use.elixir_formatter"
-             end)
-
-      assert Enum.any?(hooks, fn hook ->
-               get_command.(hook) =~ "post_tool_use.compilation_checker"
-             end)
-
-      assert Enum.any?(hooks, fn hook ->
-               get_command.(hook) == "echo 'custom'"
-             end)
+      assert command == "echo 'custom'"
+      
+      builtin_matcher = Enum.find(post_tool_use, fn m -> m["matcher"] == "Write|Edit|MultiEdit" end)
+      assert builtin_matcher
+      assert length(builtin_matcher["hooks"]) == 2
+      
+      builtin_commands = Enum.map(builtin_matcher["hooks"], & &1["command"])
+      assert Enum.any?(builtin_commands, &(&1 =~ "post_tool_use.elixir_formatter"))
+      assert Enum.any?(builtin_commands, &(&1 =~ "post_tool_use.compilation_checker"))
     end
 
     test "handles multiple matchers correctly" do
@@ -137,7 +133,7 @@ defmodule Claude.Hooks.InstallerTest do
       assert length(post_tool_use) == 2
 
       assert Enum.any?(post_tool_use, fn matcher_obj ->
-               matcher_obj["matcher"] == ".*" &&
+               matcher_obj["matcher"] == "Write|Edit|MultiEdit" &&
                  length(matcher_obj["hooks"]) == 2
              end)
 
@@ -243,6 +239,68 @@ defmodule Claude.Hooks.InstallerTest do
       assert Enum.any?(lines, fn line ->
                line =~ "commit"
              end)
+    end
+  end
+
+  describe "custom hooks integration" do
+    setup do
+      temp_dir = System.tmp_dir!()
+      test_dir = Path.join([temp_dir, "claude_installer_test_#{:rand.uniform(10000)}"])
+      File.mkdir_p!(test_dir)
+      
+      File.write!(Path.join(test_dir, ".claude.exs"), """
+      %{
+        hooks: [
+          TestHooks.CustomFormatter
+        ]
+      }
+      """)
+      
+      on_exit(fn -> File.rm_rf!(test_dir) end)
+      
+      {:ok, test_dir: test_dir}
+    end
+
+    test "installs custom hooks from .claude.exs", %{test_dir: test_dir} do
+      stub(Claude.Core.Project, :root, fn -> test_dir end)
+      
+      
+      settings = %{}
+      result = Installer.install_hooks(settings)
+      
+      assert %{"hooks" => _hooks} = result
+      
+      post_tool_use = get_in(result, ["hooks", "PostToolUse"])
+      
+      custom_hook_found = 
+        Enum.any?(post_tool_use || [], fn matcher_obj ->
+          Enum.any?(matcher_obj["hooks"] || [], fn hook ->
+            command = if is_map(hook), do: hook["command"], else: ""
+            command =~ "test_hooks.custom_formatter"
+          end)
+        end)
+      
+      assert custom_hook_found, "Custom hook should be installed"
+    end
+
+    test "format_hooks_list shows custom hooks with [Custom] prefix", %{test_dir: test_dir} do
+      stub(Claude.Core.Project, :root, fn -> test_dir end)
+      
+      formatted = Installer.format_hooks_list()
+      
+      assert formatted =~ "formatting"
+      assert formatted =~ "[Custom] Custom formatter for project-specific patterns"
+    end
+
+    test "removes custom hooks correctly", %{test_dir: test_dir} do
+      stub(Claude.Core.Project, :root, fn -> test_dir end)
+      
+      settings = %{}
+      with_hooks = Installer.install_hooks(settings)
+      
+      result = Installer.remove_all_hooks(with_hooks)
+      
+      refute Map.has_key?(result, "hooks")
     end
   end
 end

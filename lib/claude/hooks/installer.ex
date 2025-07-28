@@ -7,14 +7,8 @@ defmodule Claude.Hooks.Installer do
   across different interfaces (CLI, Igniter tasks, etc.).
   """
 
-  alias Claude.Hooks
+  alias Claude.Hooks.Registry
   alias Claude.Settings, as: SettingsStruct
-
-  @hook_matchers %{
-    Claude.Hooks.PostToolUse.ElixirFormatter => ".*",
-    Claude.Hooks.PostToolUse.CompilationChecker => ".*",
-    Claude.Hooks.PreToolUse.PreCommitCheck => "Bash"
-  }
 
   @doc """
   Installs all Claude hooks into the given settings map.
@@ -23,6 +17,7 @@ defmodule Claude.Hooks.Installer do
   1. Ensures the "hooks" key exists in settings
   2. Removes any existing Claude hooks (to avoid duplicates)
   3. Installs all registered hooks with their proper configuration
+  4. Supports both built-in and custom hooks from .claude.exs
 
   ## Examples
 
@@ -49,19 +44,20 @@ defmodule Claude.Hooks.Installer do
 
     existing_hooks = settings_struct.hooks || %{}
 
-    claude_commands = Enum.map(Hooks.all_hooks(), fn hook -> hook.config().command end)
+    all_hooks = Registry.all_hooks()
+    claude_commands = Enum.map(all_hooks, fn hook -> 
+      config = hook.config()
+      get_config_field(config, :command)
+    end)
 
     cleaned_hooks = remove_claude_hooks_from_hooks_config(existing_hooks, claude_commands)
 
     hooks_by_event_and_matcher =
-      Hooks.all_hooks()
+      all_hooks
       |> Enum.group_by(fn hook_module ->
-        event_type =
-          hook_module
-          |> Module.split()
-          |> Enum.at(2)
-
-        matcher = Map.get(@hook_matchers, hook_module, ".*")
+        metadata = Registry.get_hook_metadata(hook_module)
+        event_type = to_event_type_string(metadata.event)
+        matcher = metadata.matcher || ".*"
 
         {event_type, matcher}
       end)
@@ -82,8 +78,8 @@ defmodule Claude.Hooks.Installer do
             config = hook_module.config()
 
             %{
-              "type" => config.type,
-              "command" => config.command
+              "type" => get_config_field(config, :type),
+              "command" => get_config_field(config, :command)
             }
           end)
 
@@ -108,6 +104,19 @@ defmodule Claude.Hooks.Installer do
     Map.put(settings_map, "hooks", new_hooks)
   end
 
+  defp to_event_type_string(event_atom) do
+    case event_atom do
+      :pre_tool_use -> "PreToolUse"
+      :post_tool_use -> "PostToolUse"
+      :user_prompt_submit -> "UserPromptSubmit"
+      :notification -> "Notification"
+      :stop -> "Stop"
+      :subagent_stop -> "SubagentStop"
+      :pre_compact -> "PreCompact"
+      _ -> Atom.to_string(event_atom)
+    end
+  end
+
   @doc """
   Removes all Claude hooks from the given settings map.
 
@@ -122,12 +131,13 @@ defmodule Claude.Hooks.Installer do
   """
   @spec remove_all_hooks(map()) :: map()
   def remove_all_hooks(settings) when is_map(settings) do
-    claude_commands = Enum.map(Hooks.all_hooks(), fn hook -> hook.config().command end)
+    claude_commands = Enum.map(Registry.all_hooks(), fn hook -> hook.config().command end)
     remove_claude_hooks(settings, claude_commands)
   end
 
   @doc """
   Formats a list of enabled hooks for display.
+  Distinguishes between built-in and custom hooks.
 
   ## Examples
 
@@ -136,11 +146,32 @@ defmodule Claude.Hooks.Installer do
   """
   @spec format_hooks_list() :: String.t()
   def format_hooks_list do
-    Hooks.all_hooks()
-    |> Enum.map(fn hook_module ->
-      "  • #{hook_module.description()}"
-    end)
-    |> Enum.join("\n")
+    all_hooks = Registry.all_hooks()
+    built_in_hooks = Registry.built_in_hooks()
+    
+    {built_in, custom} = 
+      Enum.split_with(all_hooks, fn hook -> hook in built_in_hooks end)
+    
+    built_in_list = 
+      built_in
+      |> Enum.map(fn hook_module ->
+        "  • #{hook_module.description()}"
+      end)
+      |> Enum.join("\n")
+    
+    custom_list = 
+      custom
+      |> Enum.map(fn hook_module ->
+        "  • [Custom] #{hook_module.description()}"
+      end)
+      |> Enum.join("\n")
+    
+    case {built_in_list, custom_list} do
+      {"", ""} -> "  No hooks installed"
+      {built_in, ""} -> built_in
+      {"", custom} -> custom
+      {built_in, custom} -> built_in <> "\n" <> custom
+    end
   end
 
   defp remove_claude_hooks_from_hooks_config(hooks_config, claude_commands) do
@@ -198,5 +229,13 @@ defmodule Claude.Hooks.Installer do
     else
       Map.put(settings, "hooks", updated_hooks)
     end
+  end
+  
+  defp get_config_field(%Claude.Hooks.Hook{} = config, field) do
+    Map.get(config, field)
+  end
+  
+  defp get_config_field(%{} = config, field) do
+    Map.get(config, field)
   end
 end

@@ -159,9 +159,16 @@ defmodule Claude.Hooks do
   Used internally by the Hook.Behaviour macro.
   """
   def generate_identifier(module) when is_atom(module) do
-    module
-    |> Module.split()
-    |> Enum.drop(2)
+    parts = Module.split(module)
+    
+    identifier_parts = 
+      if Enum.take(parts, 2) == ["Claude", "Hooks"] do
+        Enum.drop(parts, 2)
+      else
+        parts
+      end
+    
+    identifier_parts
     |> Enum.map(&Macro.underscore/1)
     |> Enum.join(".")
   end
