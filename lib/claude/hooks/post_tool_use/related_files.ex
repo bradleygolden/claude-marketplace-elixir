@@ -160,7 +160,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
       # Simple lib -> test transformation
       source_glob == "lib/**/*.ex" and target_pattern == "test/**/*_test.exs" ->
         # Handle both absolute and relative paths
-        transformed = 
+        transformed =
           if String.contains?(file_path, "/lib/") do
             file_path
             |> String.replace("/lib/", "/test/")
@@ -170,12 +170,13 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
             |> String.replace_prefix("lib/", "test/")
             |> String.replace_suffix(".ex", "_test.exs")
           end
+
         [transformed]
 
       # Simple test -> lib transformation  
       source_glob == "test/**/*_test.exs" and target_pattern == "lib/**/*.ex" ->
         # Handle both absolute and relative paths
-        transformed = 
+        transformed =
           if String.contains?(file_path, "/test/") do
             file_path
             |> String.replace("/test/", "/lib/")
@@ -185,6 +186,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
             |> String.replace_prefix("test/", "lib/")
             |> String.replace_suffix("_test.exs", ".ex")
           end
+
         [transformed]
 
       # Otherwise, use the pattern as a wildcard to find files
@@ -197,7 +199,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
   defp glob_match?(path, pattern) do
     # Normalize paths to be relative for matching
     relative_path = Path.relative_to_cwd(path)
-    
+
     # Convert glob pattern to regex
     # Special handling for ** patterns
     regex_pattern =
@@ -209,10 +211,11 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
       |> then(&"^#{&1}$")
 
     case Regex.compile(regex_pattern) do
-      {:ok, regex} -> 
+      {:ok, regex} ->
         # Try matching both absolute and relative paths
         Regex.match?(regex, path) or Regex.match?(regex, relative_path)
-      {:error, _} -> 
+
+      {:error, _} ->
         false
     end
   end
@@ -220,9 +223,12 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
   # Handle ** in glob patterns
   defp handle_double_star(pattern) do
     pattern
-    |> String.replace("/**/", "(?:/.*/|/)")  # Match /.../ or just /
-    |> String.replace("/**", "(?:/.*)?")     # Match /... or nothing
-    |> String.replace("**/", "(?:.*/)?")     # Match .../ or nothing
+    # Match /.../ or just /
+    |> String.replace("/**/", "(?:/.*/|/)")
+    # Match /... or nothing
+    |> String.replace("/**", "(?:/.*)?")
+    # Match .../ or nothing
+    |> String.replace("**/", "(?:.*/)?")
   end
 
   defp suggest_updates(modified_file, related_files) do

@@ -43,7 +43,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
       # Create a temporary lib file and test file
       in_tmp(fn tmp_dir ->
         File.cd!(tmp_dir)
-        
+
         File.mkdir_p!("lib")
         File.mkdir_p!("test")
 
@@ -77,7 +77,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
     test "suggests multiple related files when they exist" do
       in_tmp(fn tmp_dir ->
         File.cd!(tmp_dir)
-        
+
         # Create directory structure
         File.mkdir_p!("lib")
         File.mkdir_p!("test")
