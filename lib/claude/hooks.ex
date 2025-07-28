@@ -35,7 +35,9 @@ defmodule Claude.Hooks do
 
     Hooks must implement:
     - `config/0` to return their hook configuration as a %Claude.Hooks.Hook{} struct
-    - `run/2` to execute the hook logic
+    - `config/1` to return their hook configuration with user-provided config
+    - `run/1` to execute the hook logic with JSON input
+    - `run/2` to execute the hook logic with JSON input and user config
     - `description/0` to provide a human-readable description
 
     ## Using the macro
@@ -52,11 +54,17 @@ defmodule Claude.Hooks do
             # Your hook logic here
             :ok
           end
+          
+          # Override to handle user config
+          def run(input, user_config) do
+            # Your hook logic with user config
+            :ok
+          end
         end
 
     The macro automatically:
     - Implements the behaviour callbacks
-    - Generates the config/0 function
+    - Generates the config/0 and config/1 functions
     - Provides helper functions for common patterns
     """
 
@@ -69,6 +77,11 @@ defmodule Claude.Hooks do
     @callback config() :: Claude.Hooks.Hook.t()
 
     @doc """
+    Returns the hook configuration with user-provided config.
+    """
+    @callback config(user_config :: map()) :: Claude.Hooks.Hook.t()
+
+    @doc """
     Executes the hook logic with stdin JSON input.
 
     ## Parameters
@@ -79,6 +92,19 @@ defmodule Claude.Hooks do
     - `{:error, reason}` - Hook execution failed
     """
     @callback run(json_input :: String.t()) :: :ok | {:error, term()}
+
+    @doc """
+    Executes the hook logic with stdin JSON input and user configuration.
+
+    ## Parameters
+    - `json_input` - The raw JSON string from stdin containing the full hook data
+    - `user_config` - The user configuration from .claude.exs
+
+    ## Return values
+    - `:ok` - Hook executed successfully
+    - `{:error, reason}` - Hook execution failed
+    """
+    @callback run(json_input :: String.t(), user_config :: map()) :: :ok | {:error, term()}
 
     @doc """
     Returns a human-readable description of what this hook does.
@@ -107,6 +133,12 @@ defmodule Claude.Hooks do
         end
 
         @impl Claude.Hooks.Hook.Behaviour
+        def config(_user_config) do
+          # For now, ignore user config in command generation
+          config()
+        end
+
+        @impl Claude.Hooks.Hook.Behaviour
         def description, do: @hook_description
 
         def __hook_event__, do: @hook_event
@@ -118,11 +150,20 @@ defmodule Claude.Hooks do
           if json_input == ":eof" do
             :ok
           else
+            run(json_input, %{})
+          end
+        end
+
+        @impl Claude.Hooks.Hook.Behaviour
+        def run(json_input, _user_config) when is_binary(json_input) do
+          if json_input == ":eof" do
+            :ok
+          else
             :ok
           end
         end
 
-        defoverridable config: 0, description: 0, run: 1
+        defoverridable config: 0, config: 1, description: 0, run: 1, run: 2
       end
     end
   end
@@ -160,14 +201,14 @@ defmodule Claude.Hooks do
   """
   def generate_identifier(module) when is_atom(module) do
     parts = Module.split(module)
-    
-    identifier_parts = 
+
+    identifier_parts =
       if Enum.take(parts, 2) == ["Claude", "Hooks"] do
         Enum.drop(parts, 2)
       else
         parts
       end
-    
+
     identifier_parts
     |> Enum.map(&Macro.underscore/1)
     |> Enum.join(".")
@@ -283,13 +324,16 @@ defmodule Claude.Hooks do
 
       existing_hooks = settings_struct.hooks || %{}
 
-      claude_commands = Enum.map(all_hooks(), fn hook -> hook.config().command end)
+      claude_commands =
+        Enum.map(all_hooks(), fn {hook_module, _config} ->
+          hook_module.config().command
+        end)
 
       cleaned_hooks = remove_claude_hooks_from_hooks_config(existing_hooks, claude_commands)
 
       hooks_by_event_and_matcher =
         all_hooks()
-        |> Enum.group_by(fn hook_module ->
+        |> Enum.group_by(fn {hook_module, _config} ->
           event_type = get_hook_event_type(hook_module)
           matcher = get_hook_matcher(hook_module)
           {event_type, matcher}
@@ -307,8 +351,13 @@ defmodule Claude.Hooks do
             end)
 
           hook_configs =
-            Enum.map(hook_modules, fn hook_module ->
-              config = hook_module.config()
+            Enum.map(hook_modules, fn {hook_module, user_config} ->
+              config =
+                if map_size(user_config) > 0 do
+                  hook_module.config(user_config)
+                else
+                  hook_module.config()
+                end
 
               %{
                 "type" => config.type,
@@ -340,7 +389,11 @@ defmodule Claude.Hooks do
 
   defp remove_all_hooks do
     with {:ok, settings} <- Settings.read() do
-      claude_commands = Enum.map(all_hooks(), fn hook -> hook.config().command end)
+      claude_commands =
+        Enum.map(all_hooks(), fn {hook_module, _config} ->
+          hook_module.config().command
+        end)
+
       updated = remove_claude_hooks_from_settings(settings, claude_commands)
 
       if updated == %{} do

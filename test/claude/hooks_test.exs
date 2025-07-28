@@ -72,9 +72,12 @@ defmodule Claude.HooksTest do
     test "returns all registered hooks" do
       hooks = Hooks.all_hooks()
 
-      assert Claude.Hooks.PostToolUse.ElixirFormatter in hooks
-      assert Claude.Hooks.PostToolUse.CompilationChecker in hooks
-      assert Claude.Hooks.PreToolUse.PreCommitCheck in hooks
+      # Extract just the modules from the tuples for checking
+      hook_modules = Enum.map(hooks, fn {module, _config} -> module end)
+
+      assert Claude.Hooks.PostToolUse.ElixirFormatter in hook_modules
+      assert Claude.Hooks.PostToolUse.CompilationChecker in hook_modules
+      assert Claude.Hooks.PreToolUse.PreCommitCheck in hook_modules
       assert length(hooks) == 3
     end
   end
@@ -111,7 +114,7 @@ defmodule Claude.HooksTest do
 
   describe "Hook.Behaviour" do
     test "all hooks implement the required callbacks" do
-      for hook_module <- Hooks.all_hooks() do
+      for {hook_module, _user_config} <- Hooks.all_hooks() do
         config = hook_module.config()
         assert %Hook{} = config
         assert config.type
@@ -123,6 +126,72 @@ defmodule Claude.HooksTest do
 
         assert function_exported?(hook_module, :run, 1)
       end
+    end
+
+    test "hooks ignore user config in command generation" do
+      defmodule TestConfigurableHook do
+        use Claude.Hooks.Hook.Behaviour,
+          event: :post_tool_use,
+          matcher: :write,
+          description: "Test hook with user configuration"
+      end
+
+      # No config
+      config1 = TestConfigurableHook.config()
+      assert config1.command =~ "mix claude hooks run"
+
+      # With config
+      user_config = %{
+        "patterns" => [
+          %{"source" => "*.ex", "target" => "*.exs"}
+        ]
+      }
+
+      config2 = TestConfigurableHook.config(user_config)
+      assert config2.command =~ "mix claude hooks run"
+
+      # Commands should be the same since config is ignored
+      assert config1.command == config2.command
+    end
+
+    test "hooks with run/2 can accept user config" do
+      defmodule TestHookWithConfig do
+        use Claude.Hooks.Hook.Behaviour,
+          event: :post_tool_use,
+          matcher: :write,
+          description: "Test hook that accepts config"
+
+        @impl Claude.Hooks.Hook.Behaviour
+        def run(_json_input, user_config) do
+          patterns = Map.get(user_config, :patterns, [])
+          # Store the config for testing
+          send(self(), {:hook_executed, patterns})
+          :ok
+        end
+      end
+
+      test_config = %{
+        patterns: [
+          {"lib/**/*.ex", "test/**/*_test.exs"}
+        ],
+        custom_option: "test_value"
+      }
+
+      json_input =
+        Jason.encode!(%{
+          "hook_event_name" => "PostToolUse",
+          "tool_name" => "Write",
+          "tool_input" => %{
+            "file_path" => "lib/example.ex"
+          }
+        })
+
+      # Run hook with config
+      TestHookWithConfig.run(json_input, test_config)
+
+      # Should receive the patterns from config
+      assert_receive {:hook_executed, patterns}
+      assert patterns == [{"lib/**/*.ex", "test/**/*_test.exs"}]
     end
   end
 

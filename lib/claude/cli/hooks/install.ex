@@ -19,7 +19,7 @@ defmodule Claude.CLI.Hooks.Install do
         Shell.info("Enabled hooks:")
 
         Hooks.all_hooks()
-        |> Enum.each(fn hook_module ->
+        |> Enum.each(fn {hook_module, _config} ->
           Shell.bullet(hook_module.description())
         end)
 

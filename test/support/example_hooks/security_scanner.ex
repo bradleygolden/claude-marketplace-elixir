@@ -8,7 +8,7 @@ defmodule ExampleHooks.SecurityScanner do
     event: :pre_tool_use,
     matcher: [:bash],
     description: "Scans commands for potential security issues"
-  
+
   @impl Claude.Hooks.Hook.Behaviour
   def config do
     %Claude.Hooks.Hook{
@@ -19,7 +19,7 @@ defmodule ExampleHooks.SecurityScanner do
 
   @impl true
   def run(:eof), do: :ok
-  
+
   def run(json_input) when is_binary(json_input) do
     with {:ok, data} <- Jason.decode(json_input),
          command <- get_in(data, ["tool_input", "command"]) || "" do
@@ -28,7 +28,7 @@ defmodule ExampleHooks.SecurityScanner do
         ~r/curl.*\|\s*sh/,
         ~r/eval\(/
       ]
-      
+
       if Enum.any?(dangerous_patterns, &Regex.match?(&1, command)) do
         {:error, "Command contains potentially dangerous patterns"}
       else
