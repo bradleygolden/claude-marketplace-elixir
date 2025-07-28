@@ -145,6 +145,7 @@ defmodule Claude.Hooks.RegistryTest do
         Enum.count(all_hooks, fn {module, _config} ->
           module == Claude.Hooks.PostToolUse.ElixirFormatter
         end)
+
       assert count == 1
 
       File.rm_rf!(test_dir)

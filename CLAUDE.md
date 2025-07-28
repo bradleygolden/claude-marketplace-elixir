@@ -51,6 +51,12 @@ mix claude.uninstall
 
 # Run a specific hook (used internally by the hook system)
 mix claude hooks run <hook_identifier> <tool_name> <json_params>
+
+# MCP Server Management
+mix claude.mcp.list              # List available MCP servers
+mix claude.mcp.add <server>      # Add an MCP server to .claude.exs
+mix claude.mcp.sync              # Sync MCP servers to settings.json
+mix claude.install.tidewave      # Install and configure Tidewave
 ```
 
 ## Reference Docs
@@ -80,6 +86,12 @@ To reference claude code sub agents, please see @docs/anthropic/claude_code/buil
 3. **Project Context** (`lib/claude/core/project.ex`)
    - Determines project root and Claude configuration path
    - Ensures project-scoped configuration
+
+4. **MCP Server System** (`lib/claude/mcp/`)
+   - **Catalog** - Pre-configured MCP servers with recommended settings
+   - **Registry** - Reads mcp_servers from `.claude.exs`
+   - **Installer** - Syncs MCP configuration to settings.json
+   - Supports stdio, SSE, and HTTP server types
 
 ### Hook Implementation
 

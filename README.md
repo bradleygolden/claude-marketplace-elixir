@@ -123,6 +123,40 @@ error: undefined variable "nam"
 - Verifies code compiles without errors or warnings
 - Prevents commits if formatting or compilation issues exist
 
+### MCP Servers
+
+Claude supports Model Context Protocol (MCP) servers that provide external tools and data sources. This library includes pre-configured servers optimized for Elixir development.
+
+**Available Servers:**
+
+✅ **Tidewave** - Phoenix framework integration with development tools
+✅ **PostgreSQL** - Database access (read-only)
+✅ **Filesystem** - Controlled file system access
+✅ **GitHub** - GitHub API integration
+✅ **Memory** - Knowledge graph memory
+✅ **Puppeteer** - Browser automation
+
+**Quick Start:**
+
+```bash
+# Add Tidewave to your project
+mix claude.mcp.add tidewave
+
+# List all available servers
+mix claude.mcp.list
+
+# Install and configure Tidewave specifically
+mix claude.install.tidewave
+```
+
+**Configuration in `.claude.exs`:**
+
+```elixir
+%{
+  mcp_servers: [:tidewave, :postgres]
+}
+```
+
 ## Coming Soon
 
 🚧 **Test runner** - Run stale tests automatically

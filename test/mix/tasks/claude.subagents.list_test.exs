@@ -34,9 +34,10 @@ defmodule Mix.Tasks.Claude.Subagents.ListTest do
         }
         """)
 
-        output = capture_io(fn ->
-          Mix.Task.run("claude.subagents.list", [])
-        end)
+        output =
+          capture_io(fn ->
+            Mix.Task.run("claude.subagents.list", [])
+          end)
 
         assert output =~ "Configured subagents:"
         assert output =~ "• Ecto Expert"
@@ -55,9 +56,10 @@ defmodule Mix.Tasks.Claude.Subagents.ListTest do
 
         File.write!(".claude.exs", "%{}")
 
-        output = capture_io(fn ->
-          Mix.Task.run("claude.subagents.list", [])
-        end)
+        output =
+          capture_io(fn ->
+            Mix.Task.run("claude.subagents.list", [])
+          end)
 
         assert output =~ "No subagents configured"
       end)
@@ -67,9 +69,10 @@ defmodule Mix.Tasks.Claude.Subagents.ListTest do
       TestHelpers.in_tmp(fn tmp_dir ->
         System.put_env("CLAUDE_PROJECT_DIR", tmp_dir)
 
-        output = capture_io(fn ->
-          Mix.Task.run("claude.subagents.list", [])
-        end)
+        output =
+          capture_io(fn ->
+            Mix.Task.run("claude.subagents.list", [])
+          end)
 
         assert output =~ "No subagents configured"
       end)
