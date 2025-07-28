@@ -41,7 +41,7 @@ defmodule Claude.Test.ProjectBuilder do
   Compiles the test project.
   """
   def compile(%__MODULE__{} = project) do
-    main_project_root = Path.expand("../../..", __DIR__)
+    main_project_root = Path.expand("../..", __DIR__)
     ebin_path = Path.join([main_project_root, "_build", "test", "lib", "claude", "ebin"])
 
     System.cmd("mix", ["compile"],
@@ -57,15 +57,68 @@ defmodule Claude.Test.ProjectBuilder do
   """
   def install_claude_hooks(%__MODULE__{} = project) do
     main_project_root = Path.expand("../..", __DIR__)
-
-    System.cmd(
+    
+    # First, ensure the test project can access Claude's compiled code
+    claude_ebin = Path.join([main_project_root, "_build", "test", "lib", "claude", "ebin"])
+    
+    # Ensure the main project is compiled
+    System.cmd("mix", ["compile"], cd: main_project_root, env: [{"MIX_ENV", "test"}])
+    
+    # Install hooks using the main project's mix task
+    {output, exit_code} = System.cmd(
       "mix",
       ["claude", "hooks", "install"],
       cd: main_project_root,
-      env: [{"CLAUDE_PROJECT_DIR", project.root}]
+      env: [
+        {"CLAUDE_PROJECT_DIR", project.root},
+        {"MIX_ENV", "test"}
+      ],
+      stderr_to_stdout: true
     )
+    
+    unless exit_code == 0 do
+      raise "Failed to install hooks: #{output}"
+    end
+    
+    # Update the hooks commands to include the Claude library path
+    settings_path = Path.join([project.root, ".claude", "settings.json"])
+    
+    if File.exists?(settings_path) do
+      # Read and update settings
+      settings = File.read!(settings_path) |> Jason.decode!()
+      
+      # Update hook commands to include ERL_LIBS
+      updated_settings = update_hook_commands(settings, claude_ebin)
+      
+      # Write back
+      File.write!(settings_path, Jason.encode!(updated_settings, pretty: true))
+    end
 
     %{project | hooks_installed: true}
+  end
+  
+  defp update_hook_commands(settings, claude_ebin) do
+    Map.update(settings, "hooks", %{}, fn hooks ->
+      Enum.map(hooks, fn {event, matchers} ->
+        updated_matchers = Enum.map(matchers, fn matcher ->
+          Map.update(matcher, "hooks", [], fn hooks_list ->
+            Enum.map(hooks_list, fn hook ->
+              Map.update(hook, "command", "", fn cmd ->
+                # Replace the command to include ERL_LIBS
+                String.replace(
+                  cmd,
+                  "cd $CLAUDE_PROJECT_DIR && mix",
+                  "cd $CLAUDE_PROJECT_DIR && ERL_LIBS=#{claude_ebin} mix"
+                )
+              end)
+            end)
+          end)
+        end)
+        
+        {event, updated_matchers}
+      end)
+      |> Enum.into(%{})
+    end)
   end
 
   @doc """

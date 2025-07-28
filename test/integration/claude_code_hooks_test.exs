@@ -38,7 +38,7 @@ defmodule Claude.Integration.ClaudeCodeHooksTest do
       )
       
       # Assert formatter hook executed
-      {measurements, metadata} = assert_hook_success("post_tool_use.elixir_formatter",
+      {measurements, _metadata} = assert_hook_success("post_tool_use.elixir_formatter",
         tool_name: "Write"
       )
       
@@ -70,7 +70,7 @@ defmodule Claude.Integration.ClaudeCodeHooksTest do
       )
       
       # Assert formatter ran on edit
-      {_, metadata} = assert_hook_success("post_tool_use.elixir_formatter",
+      {_, _metadata} = assert_hook_success("post_tool_use.elixir_formatter",
         tool_name: "Edit"
       )
       
@@ -104,7 +104,7 @@ defmodule Claude.Integration.ClaudeCodeHooksTest do
       
       # Verify both files exist and are formatted
       for file <- ["producer_#{timestamp}.ex", "consumer_#{timestamp}.ex"] do
-        path = Path.join(project.root, "lib", file)
+        path = Path.join([project.root, "lib", file])
         assert File.exists?(path)
         content = File.read!(path)
         assert content =~ ~r/defmodule/  # Has module definition
@@ -148,7 +148,7 @@ defmodule Claude.Integration.ClaudeCodeHooksTest do
     test "compilation checker handles modules with warnings", %{project: project} do
       timestamp = System.unique_integer([:positive])
       
-      {:ok, output} = claude_create_file(
+      {:ok, _output} = claude_create_file(
         "lib/warning_module_#{timestamp}.ex",
         """
         Create a module WarningModule#{timestamp} with:
@@ -262,7 +262,7 @@ defmodule Claude.Integration.ClaudeCodeHooksTest do
       System.cmd("git", ["checkout", "-b", "multi-file-#{timestamp}"], cd: project.root)
       
       # Create multiple files
-      files = for i <- 1..3 do
+      _files = for i <- 1..3 do
         filename = "lib/module_#{timestamp}_#{i}.ex"
         ProjectBuilder.create_file(project, filename, """
         defmodule Module#{timestamp}#{i} do

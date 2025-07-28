@@ -13,7 +13,6 @@ defmodule Claude.Test.ClaudeCodeHelpers do
   
     * `:allowed_tools` - List of tools to allow (default: basic file operations)
     * `:extra_args` - Additional command line arguments
-    * `:timeout` - Command timeout in milliseconds (default: 30_000)
   
   ## Examples
   
@@ -47,9 +46,9 @@ defmodule Claude.Test.ClaudeCodeHelpers do
     ]
     
     allowed_tools = Keyword.get(opts, :allowed_tools, default_allowed_tools)
-    timeout = Keyword.get(opts, :timeout, 30_000)
     
     # Build command with print mode
+    # We don't need --add-dir since we're running in the project directory
     cmd_args = ["-p", prompt]
     
     # Add allowed tools
@@ -61,19 +60,25 @@ defmodule Claude.Test.ClaudeCodeHelpers do
     cmd_args = cmd_args ++ Keyword.get(opts, :extra_args, [])
     
     # Set up environment to point to test project
-    env = [
-      {"CLAUDE_PROJECT_DIR", project.root},
-      {"PATH", System.get_env("PATH")}
-    ]
+    # Preserve existing environment and add our overrides
+    current_env = System.get_env()
+    env = Map.merge(current_env, %{
+      "CLAUDE_PROJECT_DIR" => project.root
+    }) |> Enum.to_list()
     
     # Find claude executable
     claude_path = find_claude_executable()
     
-    # Run claude command
-    case System.cmd(claude_path, cmd_args, 
+    # Build the full command with stdin redirected from /dev/null
+    # This prevents Claude from hanging waiting for input
+    escaped_args = Enum.map(cmd_args, &shell_escape/1)
+    full_command = "#{shell_escape(claude_path)} #{Enum.join(escaped_args, " ")} < /dev/null"
+    
+    # Run through shell to get stdin redirection, in the project directory
+    case System.cmd("sh", ["-c", full_command], 
            env: env, 
            stderr_to_stdout: true,
-           timeout: timeout) do
+           cd: project.root) do
       {output, 0} -> 
         {:ok, output}
       {output, exit_code} -> 
@@ -198,6 +203,12 @@ defmodule Claude.Test.ClaudeCodeHelpers do
   end
   
   # Private functions
+  
+  defp shell_escape(arg) do
+    # Escape single quotes and wrap in single quotes
+    escaped = String.replace(arg, "'", "'\"'\"'")
+    "'#{escaped}'"
+  end
   
   defp find_claude_executable do
     # First try to find in PATH
