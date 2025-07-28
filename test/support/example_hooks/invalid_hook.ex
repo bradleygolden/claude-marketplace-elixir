@@ -4,9 +4,6 @@ defmodule ExampleHooks.InvalidHook do
   Used for testing hook validation.
   """
 
-  # Intentionally not using the behavior macro
-  # Missing required callbacks
-
   def some_function do
     :ok
   end

@@ -17,7 +17,6 @@ defmodule Claude.Hooks.RegistryTest do
 
   describe "custom_hooks/0" do
     test "returns empty list when no custom hooks are defined" do
-      # Create a temporary .claude.exs without hooks
       _original_root = Claude.Core.Project.root()
       temp_dir = System.tmp_dir!()
       test_dir = Path.join([temp_dir, "claude_test_#{:rand.uniform(10000)}"])
@@ -25,7 +24,6 @@ defmodule Claude.Hooks.RegistryTest do
       
       File.write!(Path.join(test_dir, ".claude.exs"), "%{}")
       
-      # Mock the project root
       expect(Claude.Core.Project, :root, fn -> test_dir end)
       
       assert Registry.custom_hooks() == []
@@ -34,7 +32,6 @@ defmodule Claude.Hooks.RegistryTest do
     end
 
     test "discovers valid custom hooks from .claude.exs" do
-      # Create a temporary .claude.exs with custom hooks
       _original_root = Claude.Core.Project.root()
       temp_dir = System.tmp_dir!()
       test_dir = Path.join([temp_dir, "claude_test_#{:rand.uniform(10000)}"])
@@ -49,7 +46,6 @@ defmodule Claude.Hooks.RegistryTest do
       }
       """)
       
-      # Mock the project root
       expect(Claude.Core.Project, :root, fn -> test_dir end)
       
       custom = Registry.custom_hooks()
@@ -62,7 +58,6 @@ defmodule Claude.Hooks.RegistryTest do
     end
 
     test "filters out invalid hooks" do
-      # Create a temporary .claude.exs with invalid hooks
       _original_root = Claude.Core.Project.root()
       temp_dir = System.tmp_dir!()
       test_dir = Path.join([temp_dir, "claude_test_#{:rand.uniform(10000)}"])
@@ -78,7 +73,6 @@ defmodule Claude.Hooks.RegistryTest do
       }
       """)
       
-      # Mock the project root
       expect(Claude.Core.Project, :root, fn -> test_dir end)
       
       custom = Registry.custom_hooks()
@@ -94,7 +88,6 @@ defmodule Claude.Hooks.RegistryTest do
 
   describe "all_hooks/0" do
     test "includes both built-in and custom hooks" do
-      # Create a temporary .claude.exs with custom hooks
       _original_root = Claude.Core.Project.root()
       temp_dir = System.tmp_dir!()
       test_dir = Path.join([temp_dir, "claude_test_#{:rand.uniform(10000)}"])
@@ -108,17 +101,14 @@ defmodule Claude.Hooks.RegistryTest do
       }
       """)
       
-      # Mock the project root
       expect(Claude.Core.Project, :root, fn -> test_dir end)
       
       all_hooks = Registry.all_hooks()
       
-      # Built-in hooks
       assert Claude.Hooks.PostToolUse.ElixirFormatter in all_hooks
       assert Claude.Hooks.PostToolUse.CompilationChecker in all_hooks
       assert Claude.Hooks.PreToolUse.PreCommitCheck in all_hooks
       
-      # Custom hook
       assert ExampleHooks.CustomFormatter in all_hooks
       
       assert length(all_hooks) == 4
@@ -127,7 +117,6 @@ defmodule Claude.Hooks.RegistryTest do
     end
 
     test "handles duplicates between built-in and custom" do
-      # Create a temporary .claude.exs that includes a built-in hook
       _original_root = Claude.Core.Project.root()
       temp_dir = System.tmp_dir!()
       test_dir = Path.join([temp_dir, "claude_test_#{:rand.uniform(10000)}"])
@@ -142,15 +131,12 @@ defmodule Claude.Hooks.RegistryTest do
       }
       """)
       
-      # Mock the project root
       expect(Claude.Core.Project, :root, fn -> test_dir end)
       
       all_hooks = Registry.all_hooks()
       
-      # Should not have duplicates
       assert Enum.uniq(all_hooks) == all_hooks
       
-      # ElixirFormatter should appear only once
       count = Enum.count(all_hooks, &(&1 == Claude.Hooks.PostToolUse.ElixirFormatter))
       assert count == 1
       
@@ -171,7 +157,6 @@ defmodule Claude.Hooks.RegistryTest do
 
   describe "hook validation" do
     test "validates hooks implement required callbacks" do
-      # Create a temporary .claude.exs with various hook types
       _original_root = Claude.Core.Project.root()
       temp_dir = System.tmp_dir!()
       test_dir = Path.join([temp_dir, "claude_test_#{:rand.uniform(10000)}"])
@@ -180,22 +165,20 @@ defmodule Claude.Hooks.RegistryTest do
       File.write!(Path.join(test_dir, ".claude.exs"), """
       %{
         hooks: [
-          ExampleHooks.CustomFormatter,      # Valid
-          ExampleHooks.InvalidHook,          # Invalid - missing callbacks
-          "not_a_module",                    # Invalid - not an atom
-          123,                               # Invalid - not an atom
-          nil,                               # Invalid - nil
-          UnknownModule                      # Invalid - doesn't exist
+          ExampleHooks.CustomFormatter,
+          ExampleHooks.InvalidHook,
+          "not_a_module",
+          123,
+          nil,
+          UnknownModule
         ]
       }
       """)
       
-      # Mock the project root
       expect(Claude.Core.Project, :root, fn -> test_dir end)
       
       custom = Registry.custom_hooks()
       
-      # Only the valid hook should be included
       assert custom == [ExampleHooks.CustomFormatter]
       
       File.rm_rf!(test_dir)
@@ -204,7 +187,6 @@ defmodule Claude.Hooks.RegistryTest do
 
   describe "find_by_identifier/1" do
     test "finds custom hooks by identifier" do
-      # Create a temporary .claude.exs with custom hooks
       _original_root = Claude.Core.Project.root()
       temp_dir = System.tmp_dir!()
       test_dir = Path.join([temp_dir, "claude_test_#{:rand.uniform(10000)}"])
@@ -218,13 +200,10 @@ defmodule Claude.Hooks.RegistryTest do
       }
       """)
       
-      # Mock the project root
-      expect(Claude.Core.Project, :root, fn -> test_dir end)
+      stub(Claude.Core.Project, :root, fn -> test_dir end)
       
-      # The identifier for the custom hook
-      identifier = Registry.hook_identifier(ExampleHooks.CustomFormatter)
+      identifier = "example_hooks.custom_formatter"
       
-      # Should find the custom hook
       assert Registry.find_by_identifier(identifier) == ExampleHooks.CustomFormatter
       
       File.rm_rf!(test_dir)

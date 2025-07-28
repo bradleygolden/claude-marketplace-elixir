@@ -207,12 +207,18 @@ defmodule Claude.Hooks.Registry do
          true <- function_exported?(module, :config, 0),
          true <- function_exported?(module, :run, 1),
          true <- function_exported?(module, :description, 0),
-         %Claude.Hooks.Hook{} <- module.config() do
+         config <- module.config(),
+         true <- validate_hook_config(config) do
       true
     else
       _ -> false
     end
   end
+  
+  defp validate_hook_config(%Claude.Hooks.Hook{}), do: true
+  defp validate_hook_config(%{type: type, command: command}) 
+    when is_binary(type) and is_binary(command), do: true
+  defp validate_hook_config(_), do: false
 
   @doc """
   Checks if a module is a custom hook (not built-in).

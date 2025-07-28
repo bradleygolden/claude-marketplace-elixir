@@ -45,7 +45,10 @@ defmodule Claude.Hooks.Installer do
     existing_hooks = settings_struct.hooks || %{}
 
     all_hooks = Registry.all_hooks()
-    claude_commands = Enum.map(all_hooks, fn hook -> hook.config().command end)
+    claude_commands = Enum.map(all_hooks, fn hook -> 
+      config = hook.config()
+      get_config_field(config, :command)
+    end)
 
     cleaned_hooks = remove_claude_hooks_from_hooks_config(existing_hooks, claude_commands)
 
@@ -75,8 +78,8 @@ defmodule Claude.Hooks.Installer do
             config = hook_module.config()
 
             %{
-              "type" => config.type,
-              "command" => config.command
+              "type" => get_config_field(config, :type),
+              "command" => get_config_field(config, :command)
             }
           end)
 
@@ -226,5 +229,13 @@ defmodule Claude.Hooks.Installer do
     else
       Map.put(settings, "hooks", updated_hooks)
     end
+  end
+  
+  defp get_config_field(%Claude.Hooks.Hook{} = config, field) do
+    Map.get(config, field)
+  end
+  
+  defp get_config_field(%{} = config, field) do
+    Map.get(config, field)
   end
 end

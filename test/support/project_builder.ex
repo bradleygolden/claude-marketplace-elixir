@@ -18,7 +18,6 @@ defmodule Claude.Test.ProjectBuilder do
     
     File.rm_rf!(root)
     
-    # The --module flag avoids interactive prompts
     {output, 0} = System.cmd("mix", ["new", name, "--module", Macro.camelize(name)], 
       cd: parent_dir,
       stderr_to_stdout: true
@@ -35,6 +34,20 @@ defmodule Claude.Test.ProjectBuilder do
       hooks_installed: false,
       git_initialized: false
     }
+  end
+  
+  @doc """
+  Compiles the test project.
+  """
+  def compile(%__MODULE__{} = project) do
+    main_project_root = Path.expand("../../..", __DIR__)
+    ebin_path = Path.join([main_project_root, "_build", "test", "lib", "claude", "ebin"])
+    
+    System.cmd("mix", ["compile"], 
+      cd: project.root,
+      env: [{"ERL_LIBS", ebin_path}]
+    )
+    project
   end
   
   @doc """
