@@ -49,7 +49,7 @@ defmodule Mix.Tasks.Claude.Install do
     |> Igniter.Project.Deps.add_dep({:usage_rules, "~> 0.1", only: [:dev]}, on_exists: :skip)
     |> Igniter.compose_task("claude.hooks.install", [])
     |> Igniter.compose_task("claude.usage_rules.sync", [])
-    |> Igniter.compose_task("claude.subagents.igniter_generate", [])
+    |> Igniter.compose_task("claude.subagents.generate", [])
     |> Igniter.add_notice("""
     Claude has been configured for your project!
 

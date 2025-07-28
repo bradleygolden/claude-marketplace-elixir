@@ -1,6 +1,33 @@
-defmodule Mix.Tasks.Claude.Subagents.IgniterGenerate do
-  @moduledoc false
-  # Internal task for Igniter composition with mix claude.install
+defmodule Mix.Tasks.Claude.Subagents.Generate do
+  @moduledoc """
+  Generates Claude Code subagent markdown files from .claude.exs configuration.
+
+  ## Usage
+
+      mix claude.subagents.generate
+
+  This task will:
+  1. Read subagent configurations from .claude.exs
+  2. Apply any configured plugins (e.g., usage_rules)
+  3. Generate markdown files in .claude/agents/
+  4. Report on generated files
+
+  ## Configuration
+
+  Subagents are configured in .claude.exs:
+
+      %{
+        subagents: [
+          %{
+            name: "Ecto Expert",
+            description: "Expert in Ecto database operations",
+            prompt: "You are an expert in Ecto...",
+            tools: [:read, :grep, :task],
+            usage_rules: ["ecto", "ecto_sql"]
+          }
+        ]
+      }
+  """
 
   use Igniter.Mix.Task
 
@@ -8,8 +35,10 @@ defmodule Mix.Tasks.Claude.Subagents.IgniterGenerate do
   alias Claude.Subagents
   alias Claude.Subagents.Subagent
   alias Claude.Tools
+  alias Claude.Utils.Shell
 
   @agents_dir "agents"
+  @shortdoc "Generate subagent markdown files from .claude.exs"
 
   @impl Igniter.Mix.Task
   def info(_argv, _composing_task) do
@@ -39,6 +68,33 @@ defmodule Mix.Tasks.Claude.Subagents.IgniterGenerate do
 
   @impl Igniter.Mix.Task
   def supports_umbrella?, do: false
+
+  # Support direct invocation for testing and non-Igniter usage
+  def run(_args) do
+    Shell.info("Generating Claude subagents...")
+
+    with {:ok, config} <- ClaudeExs.load(),
+         subagent_configs <- ClaudeExs.get_subagents(config) do
+      if subagent_configs == [] do
+        Shell.info("No subagents configured in .claude.exs")
+      else
+        with :ok <- ensure_agents_directory(),
+             {:ok, results} <- generate_subagents(subagent_configs) do
+          display_results(results)
+        else
+          error -> error
+        end
+      end
+    else
+      {:error, :not_found} ->
+        Shell.error("No .claude.exs file found")
+        {:error, "No .claude.exs file found"}
+
+      {:error, reason} ->
+        Shell.error("Failed to generate subagents: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
 
   defp process_subagents(igniter, []) do
     igniter
@@ -191,5 +247,18 @@ defmodule Mix.Tasks.Claude.Subagents.IgniterGenerate do
 
     (["Failed to generate some subagents:"] ++ error_lines)
     |> Enum.join("\n")
+  end
+
+  defp display_results(results) do
+    Shell.blank()
+    Shell.success("Generated #{length(results)} subagent(s):")
+
+    Enum.each(results, fn {name, path} ->
+      relative_path = Path.relative_to(path, Project.root())
+      Shell.bullet("#{name} → #{relative_path}")
+    end)
+
+    Shell.blank()
+    Shell.info("Subagents are now available in Claude Code.")
   end
 end

@@ -116,7 +116,7 @@ defmodule Claude.Core.ClaudeExs do
 
   defp validate_subagent_config(config) when is_map(config) do
     required_keys = [:name, :description, :prompt]
-    optional_keys = [:tools, :usage_rules]
+    optional_keys = [:tools, :usage_rules, :plugins]
     all_keys = required_keys ++ optional_keys
 
     with :ok <- validate_required_keys(config, required_keys),
@@ -125,7 +125,8 @@ defmodule Claude.Core.ClaudeExs do
          :ok <- validate_description(config[:description]),
          :ok <- validate_prompt(config[:prompt]),
          :ok <- validate_tools(config[:tools]),
-         :ok <- validate_usage_rules(config[:usage_rules]) do
+         :ok <- validate_usage_rules(config[:usage_rules]),
+         :ok <- validate_plugins(config[:plugins]) do
       :ok
     end
   end
@@ -184,6 +185,21 @@ defmodule Claude.Core.ClaudeExs do
   end
 
   defp validate_usage_rules(_), do: {:error, "Usage rules must be a list of strings"}
+
+  defp validate_plugins(nil), do: :ok
+
+  defp validate_plugins(plugins) when is_list(plugins) do
+    if Enum.all?(plugins, &valid_plugin_spec?/1) do
+      :ok
+    else
+      {:error, "Plugins must be a list of {module, map} tuples"}
+    end
+  end
+
+  defp validate_plugins(_), do: {:error, "Plugins must be a list"}
+
+  defp valid_plugin_spec?({module, opts}) when is_atom(module) and is_map(opts), do: true
+  defp valid_plugin_spec?(_), do: false
 
   defp build_plugins(config) do
     case config[:usage_rules] do
