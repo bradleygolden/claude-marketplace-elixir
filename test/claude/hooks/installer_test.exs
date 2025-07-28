@@ -1,5 +1,6 @@
 defmodule Claude.Hooks.InstallerTest do
   use Claude.Test.ClaudeCodeCase
+  use Mimic
 
   alias Claude.Hooks.Installer
 
@@ -243,6 +244,80 @@ defmodule Claude.Hooks.InstallerTest do
       assert Enum.any?(lines, fn line ->
                line =~ "commit"
              end)
+    end
+  end
+
+  describe "custom hooks integration" do
+    setup do
+      # Create a temporary project with custom hooks
+      temp_dir = System.tmp_dir!()
+      test_dir = Path.join([temp_dir, "claude_installer_test_#{:rand.uniform(10000)}"])
+      File.mkdir_p!(test_dir)
+      
+      # Use the example hooks from test/support that are already compiled
+      File.write!(Path.join(test_dir, ".claude.exs"), """
+      %{
+        hooks: [
+          ExampleHooks.CustomFormatter
+        ]
+      }
+      """)
+      
+      on_exit(fn -> File.rm_rf!(test_dir) end)
+      
+      {:ok, test_dir: test_dir}
+    end
+
+    test "installs custom hooks from .claude.exs", %{test_dir: test_dir} do
+      # Mock the project root to use our test directory - allow multiple calls
+      stub(Claude.Core.Project, :root, fn -> test_dir end)
+      
+      
+      settings = %{}
+      result = Installer.install_hooks(settings)
+      
+      # Should have hooks installed
+      assert %{"hooks" => _hooks} = result
+      
+      # Should have both built-in and custom hooks
+      post_tool_use = get_in(result, ["hooks", "PostToolUse"])
+      
+      # Find hooks that match custom formatter pattern
+      custom_hook_found = 
+        Enum.any?(post_tool_use || [], fn matcher_obj ->
+          Enum.any?(matcher_obj["hooks"] || [], fn hook ->
+            command = if is_map(hook), do: hook["command"], else: ""
+            command =~ "example_hooks.custom_formatter"
+          end)
+        end)
+      
+      assert custom_hook_found, "Custom hook should be installed"
+    end
+
+    test "format_hooks_list shows custom hooks with [Custom] prefix", %{test_dir: test_dir} do
+      # Mock the project root to use our test directory
+      stub(Claude.Core.Project, :root, fn -> test_dir end)
+      
+      formatted = Installer.format_hooks_list()
+      
+      # Should contain both built-in and custom hooks
+      assert formatted =~ "formatting"
+      assert formatted =~ "[Custom] Custom formatter for project-specific patterns"
+    end
+
+    test "removes custom hooks correctly", %{test_dir: test_dir} do
+      # Mock the project root to use our test directory
+      stub(Claude.Core.Project, :root, fn -> test_dir end)
+      
+      # First install hooks
+      settings = %{}
+      with_hooks = Installer.install_hooks(settings)
+      
+      # Then remove all hooks
+      result = Installer.remove_all_hooks(with_hooks)
+      
+      # Should have no hooks remaining
+      refute Map.has_key?(result, "hooks")
     end
   end
 end

@@ -3,12 +3,21 @@ defmodule Claude.Hooks.Registry do
   Hook registry that provides centralized hook discovery and management.
 
   This module provides:
-  - Centralized list of available hooks
+  - Centralized list of available hooks (built-in and custom)
   - Hook metadata introspection
   - Efficient hook lookup by identifier
+  - Dynamic discovery of custom hooks from .claude.exs
 
-  In the future, this can be extended to automatically discover hooks
-  that use the Claude.Hook behaviour.
+  Custom hooks can be registered by adding them to the `hooks` array in .claude.exs:
+
+      # .claude.exs
+      %{
+        hooks: [
+          MyProject.Hooks.CustomHook
+        ]
+      }
+
+  Custom hooks must implement the Claude.Hooks.Hook.Behaviour.
   """
 
   @known_hooks [
@@ -19,9 +28,12 @@ defmodule Claude.Hooks.Registry do
 
   @doc """
   Returns all available hook modules.
+  Includes both built-in hooks and custom hooks from .claude.exs.
   """
   def all_hooks do
-    @known_hooks
+    built_in = @known_hooks
+    custom = discover_custom_hooks()
+    built_in ++ custom
   end
 
   @doc """
@@ -41,7 +53,14 @@ defmodule Claude.Hooks.Registry do
     if function_exported?(hook_module, :__hook_identifier__, 0) do
       hook_module.__hook_identifier__()
     else
-      Claude.Hooks.generate_identifier(hook_module)
+      if custom_hook?(hook_module) do
+        hook_module
+        |> Module.split()
+        |> Enum.map(&Macro.underscore/1)
+        |> Enum.join(".")
+      else
+        Claude.Hooks.generate_identifier(hook_module)
+      end
     end
   end
 
@@ -127,5 +146,78 @@ defmodule Claude.Hooks.Registry do
     else
       ""
     end
+  end
+
+  @doc """
+  Returns only the built-in hooks.
+  """
+  def built_in_hooks do
+    @known_hooks
+  end
+
+  @doc """
+  Returns only the custom hooks discovered from .claude.exs.
+  """
+  def custom_hooks do
+    discover_custom_hooks()
+  end
+
+  defp discover_custom_hooks do
+    case load_claude_exs_hooks() do
+      {:ok, hooks} -> validate_hooks(hooks)
+      _ -> []
+    end
+  end
+
+  defp load_claude_exs_hooks do
+    exs_path = Path.join(Claude.Core.Project.root(), ".claude.exs")
+
+    case File.read(exs_path) do
+      {:ok, content} ->
+        try do
+          {result, _binding} = Code.eval_string(content, [], file: exs_path)
+
+          case result do
+            %{hooks: hooks} when is_list(hooks) ->
+              {:ok, hooks}
+
+            _ ->
+              {:ok, []}
+          end
+        rescue
+          _error ->
+            {:ok, []}
+        end
+
+      _ ->
+        {:ok, []}
+    end
+  end
+
+  defp validate_hooks(hook_modules) do
+    hook_modules
+    |> Enum.filter(&is_atom/1)
+    |> Enum.filter(&validate_hook_module/1)
+    |> Enum.reject(&(&1 in @known_hooks))
+    |> Enum.uniq()
+  end
+
+  defp validate_hook_module(module) do
+    with {:module, _} <- Code.ensure_compiled(module),
+         true <- function_exported?(module, :config, 0),
+         true <- function_exported?(module, :run, 1),
+         true <- function_exported?(module, :description, 0),
+         %Claude.Hooks.Hook{} <- module.config() do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  @doc """
+  Checks if a module is a custom hook (not built-in).
+  """
+  def custom_hook?(hook_module) do
+    hook_module not in @known_hooks
   end
 end

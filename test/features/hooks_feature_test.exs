@@ -237,4 +237,222 @@ defmodule Features.HooksFeatureTest do
       assert Enum.any?(pre_hooks, &(&1["matcher"] == "Bash"))
     end
   end
+
+  describe "Feature: Custom hooks from .claude.exs" do
+    setup do
+      project = ProjectBuilder.build_elixir_project()
+      {:ok, project: project}
+    end
+    
+    test "Scenario: Project defines custom hooks in .claude.exs", %{project: project} do
+      # Given: A project with custom hooks defined in .claude.exs
+      claude_exs_path = Path.join(project.root, ".claude.exs")
+      File.write!(claude_exs_path, """
+      %{
+        hooks: [
+          ExampleHooks.CustomFormatter,
+          ExampleHooks.SecurityScanner
+        ]
+      }
+      """)
+      
+      # And: The custom hook modules exist
+      lib_dir = Path.join(project.root, "lib/example_hooks")
+      File.mkdir_p!(lib_dir)
+      
+      File.write!(Path.join(lib_dir, "custom_formatter.ex"), """
+      defmodule ExampleHooks.CustomFormatter do
+        use Claude.Hooks.Hook.Behaviour,
+          event: :post_tool_use,
+          matcher: [:write, :edit],
+          description: "Custom formatter for project-specific patterns"
+
+        @impl true
+        def run(:eof), do: :ok
+        
+        def run(json_input) when is_binary(json_input) do
+          with {:ok, data} <- Jason.decode(json_input),
+               file_path <- get_in(data, ["tool_input", "file_path"]) || "" do
+            if String.ends_with?(file_path, ".ex") do
+              IO.puts("Custom formatter processed: \#{file_path}")
+            end
+            :ok
+          else
+            _ -> :ok
+          end
+        end
+      end
+      """)
+      
+      File.write!(Path.join(lib_dir, "security_scanner.ex"), """
+      defmodule ExampleHooks.SecurityScanner do
+        use Claude.Hooks.Hook.Behaviour,
+          event: :pre_tool_use,
+          matcher: [:bash],
+          description: "Scans commands for security issues"
+
+        @impl true
+        def run(:eof), do: :ok
+        
+        def run(json_input) when is_binary(json_input) do
+          with {:ok, data} <- Jason.decode(json_input),
+               command <- get_in(data, ["tool_input", "command"]) || "" do
+            if command =~ "rm -rf /" do
+              {:error, "Dangerous command blocked by security scanner"}
+            else
+              :ok
+            end
+          else
+            _ -> :ok
+          end
+        end
+      end
+      """)
+      
+      # When: Claude hooks are installed
+      project |> ProjectBuilder.install_claude_hooks()
+      
+      # Then: Settings include both built-in and custom hooks
+      settings_path = Path.join(project.root, ".claude/settings.json")
+      settings = Jason.decode!(File.read!(settings_path))
+      
+      # Check that custom hooks are installed
+      post_hooks = settings["hooks"]["PostToolUse"]
+      custom_formatter_found = 
+        Enum.any?(post_hooks, fn matcher_obj ->
+          Enum.any?(matcher_obj["hooks"], fn hook ->
+            hook["command"] =~ "example_hooks.custom_formatter"
+          end)
+        end)
+      
+      assert custom_formatter_found, "Custom formatter hook should be installed"
+      
+      pre_hooks = settings["hooks"]["PreToolUse"]
+      security_scanner_found = 
+        Enum.any?(pre_hooks, fn matcher_obj ->
+          Enum.any?(matcher_obj["hooks"], fn hook ->
+            hook["command"] =~ "example_hooks.security_scanner"
+          end)
+        end)
+      
+      assert security_scanner_found, "Security scanner hook should be installed"
+    end
+    
+    test "Scenario: Custom hook blocks dangerous commands", %{project: project} do
+      # Given: A project with a security scanner custom hook
+      claude_exs_path = Path.join(project.root, ".claude.exs")
+      File.write!(claude_exs_path, """
+      %{
+        hooks: [
+          ExampleHooks.SecurityScanner
+        ]
+      }
+      """)
+      
+      # And: The security scanner hook exists
+      lib_dir = Path.join(project.root, "lib/example_hooks")
+      File.mkdir_p!(lib_dir)
+      
+      File.write!(Path.join(lib_dir, "security_scanner.ex"), """
+      defmodule ExampleHooks.SecurityScanner do
+        use Claude.Hooks.Hook.Behaviour,
+          event: :pre_tool_use,
+          matcher: [:bash],
+          description: "Scans commands for security issues"
+
+        @impl true
+        def run(:eof), do: :ok
+        
+        def run(json_input) when is_binary(json_input) do
+          with {:ok, data} <- Jason.decode(json_input),
+               command <- get_in(data, ["tool_input", "command"]) || "" do
+            if command =~ "rm -rf /" do
+              {:error, "Dangerous command blocked by security scanner"}
+            else
+              :ok
+            end
+          else
+            _ -> :ok
+          end
+        end
+      end
+      """)
+      
+      # And: Hooks are installed
+      project |> ProjectBuilder.install_claude_hooks()
+      
+      # When: Claude tries to run a dangerous command
+      dangerous_command = %{
+        tool: "Bash",
+        command: "rm -rf /",
+        description: "Remove everything"
+      }
+      
+      result = FeatureHelpers.simulate_claude_bash(project, dangerous_command)
+      
+      # Then: The custom hook blocks the command
+      assert result.blocked == true
+      assert result.hook_output =~ "Dangerous command blocked by security scanner"
+    end
+    
+    test "Scenario: Invalid custom hooks are filtered out", %{project: project} do
+      # Given: A .claude.exs with both valid and invalid hooks
+      claude_exs_path = Path.join(project.root, ".claude.exs")
+      File.write!(claude_exs_path, """
+      %{
+        hooks: [
+          ExampleHooks.CustomFormatter,    # Valid
+          ExampleHooks.InvalidHook,         # Invalid - doesn't implement behavior
+          NonExistentModule                 # Invalid - doesn't exist
+        ]
+      }
+      """)
+      
+      # And: Only the valid hook exists
+      lib_dir = Path.join(project.root, "lib/example_hooks")
+      File.mkdir_p!(lib_dir)
+      
+      File.write!(Path.join(lib_dir, "custom_formatter.ex"), """
+      defmodule ExampleHooks.CustomFormatter do
+        use Claude.Hooks.Hook.Behaviour,
+          event: :post_tool_use,
+          matcher: [:write],
+          description: "Valid custom formatter"
+
+        @impl true
+        def run(:eof), do: :ok
+        def run(_json_input), do: :ok
+      end
+      """)
+      
+      File.write!(Path.join(lib_dir, "invalid_hook.ex"), """
+      defmodule ExampleHooks.InvalidHook do
+        # This module doesn't implement the behavior
+        def some_function, do: :ok
+      end
+      """)
+      
+      # When: Hooks are installed
+      project |> ProjectBuilder.install_claude_hooks()
+      
+      # Then: Only valid hooks are installed
+      settings_path = Path.join(project.root, ".claude/settings.json")
+      settings = Jason.decode!(File.read!(settings_path))
+      
+      all_commands = 
+        settings["hooks"]
+        |> Enum.flat_map(fn {_event, matchers} ->
+          Enum.flat_map(matchers, fn matcher ->
+            Enum.map(matcher["hooks"], &(&1["command"]))
+          end)
+        end)
+      
+      # Valid hook should be installed
+      assert Enum.any?(all_commands, &(&1 =~ "example_hooks.custom_formatter"))
+      
+      # Invalid hooks should not be installed
+      refute Enum.any?(all_commands, &(&1 =~ "example_hooks.invalid_hook"))
+      refute Enum.any?(all_commands, &(&1 =~ "non_existent_module"))
+    end
+  end
 end
