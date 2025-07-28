@@ -14,7 +14,8 @@ defmodule Mix.Tasks.Claude.Install do
   2. Installing all Claude hooks for auto-formatting and compilation checking
   3. Adding usage_rules dependency for better LLM integration
   4. Syncing usage rules to CLAUDE.md for enhanced code assistance
-  5. Ensuring your project is properly configured for Claude Code integration
+  5. Generating any configured subagents for specialized assistance
+  6. Ensuring your project is properly configured for Claude Code integration
 
   ## Example
 
@@ -48,6 +49,7 @@ defmodule Mix.Tasks.Claude.Install do
     |> Igniter.Project.Deps.add_dep({:usage_rules, "~> 0.1", only: [:dev]}, on_exists: :skip)
     |> Igniter.compose_task("claude.hooks.install", [])
     |> Igniter.compose_task("claude.usage_rules.sync", [])
+    |> Igniter.compose_task("claude.subagents.generate", [])
     |> Igniter.add_notice("""
     Claude has been configured for your project!
 

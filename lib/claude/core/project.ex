@@ -20,4 +20,17 @@ defmodule Claude.Core.Project do
   def root do
     System.get_env("CLAUDE_PROJECT_DIR") || File.cwd!()
   end
+
+  @doc """
+  Returns the path to the .claude.exs file in the project root.
+  """
+  def claude_exs_path do
+    path = Path.join(root(), ".claude.exs")
+
+    if File.exists?(path) do
+      {:ok, path}
+    else
+      {:error, :not_found}
+    end
+  end
 end
