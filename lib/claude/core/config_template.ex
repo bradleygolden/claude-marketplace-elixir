@@ -27,7 +27,7 @@ defmodule Claude.Core.ConfigTemplate do
       #   MyProject.Hooks.SecurityChecker
       # ],
       
-      # MCP servers provide external tools and data sources
+      # MCP servers (Tidewave is automatically configured for Phoenix projects)
       # mcp_servers: [:tidewave],
       
       # Subagents provide specialized expertise with their own context

@@ -36,64 +36,6 @@ defmodule Claude.MCP.Catalog do
       """,
       # Could implement auto-dependency addition later
       installer: nil
-    },
-    postgres: %{
-      type: :stdio,
-      command: "npx",
-      args: ["-y", "@modelcontextprotocol/server-postgres"],
-      env: %{
-        "CONNECTION_STRING" => "${DATABASE_URL:-postgresql://localhost:5432/dev}"
-      },
-      description: "PostgreSQL database access (read-only)",
-      setup_instructions: """
-      Set the DATABASE_URL environment variable to your PostgreSQL connection string.
-      Example: export DATABASE_URL="postgresql://user:pass@localhost:5432/mydb"
-      """
-    },
-    filesystem: %{
-      type: :stdio,
-      command: "npx",
-      args: [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "--allowed-directories",
-        "${MCP_ALLOWED_DIRS:-$HOME}"
-      ],
-      env: %{},
-      description: "Filesystem access",
-      setup_instructions: """
-      Set MCP_ALLOWED_DIRS to specify which directories the server can access.
-      Example: export MCP_ALLOWED_DIRS="/path/to/project:/another/path"
-      Default: $HOME
-      """
-    },
-    github: %{
-      type: :stdio,
-      command: "npx",
-      args: ["-y", "@modelcontextprotocol/server-github"],
-      env: %{
-        "GITHUB_PERSONAL_ACCESS_TOKEN" => "${GITHUB_TOKEN}"
-      },
-      description: "GitHub API access",
-      setup_instructions: """
-      Requires a GitHub personal access token.
-      1. Create a token at: https://github.com/settings/tokens
-      2. Set: export GITHUB_TOKEN="your-token-here"
-      """
-    },
-    memory: %{
-      type: :stdio,
-      command: "npx",
-      args: ["-y", "@modelcontextprotocol/server-memory"],
-      env: %{},
-      description: "Knowledge graph memory server"
-    },
-    puppeteer: %{
-      type: :stdio,
-      command: "npx",
-      args: ["-y", "@modelcontextprotocol/server-puppeteer"],
-      env: %{},
-      description: "Browser automation via Puppeteer"
     }
   }
 
@@ -103,7 +45,7 @@ defmodule Claude.MCP.Catalog do
   ## Examples
 
       iex> Claude.MCP.Catalog.get(:tidewave)
-      %{type: :sse, url: "http://localhost:3000/mcp/sse", ...}
+      %{type: :sse, url: "http://localhost:${PHOENIX_PORT:-4000}/tidewave/mcp", ...}
       
       iex> Claude.MCP.Catalog.get(:unknown)
       nil
@@ -119,7 +61,7 @@ defmodule Claude.MCP.Catalog do
   ## Examples
 
       iex> Claude.MCP.Catalog.available()
-      [:tidewave, :postgres, :filesystem, :github, :memory, :puppeteer]
+      [:tidewave]
   """
   @spec available() :: [atom()]
   def available do

@@ -62,12 +62,53 @@ defmodule Mix.Tasks.Claude.Install do
         """)
       end
 
+    igniter =
+      igniter
+      |> Igniter.Project.Deps.add_dep({:usage_rules, "~> 0.1", only: [:dev]}, on_exists: :skip)
+      |> Igniter.compose_task("claude.hooks.install", [])
+      
+    # Conditionally configure Tidewave for Phoenix projects
+    igniter = 
+      if Claude.Core.Deps.phoenix_dep?() do
+        igniter
+        |> maybe_add_tidewave_to_config()
+        |> Igniter.compose_task("claude.mcp.sync", [])
+      else
+        igniter
+      end
+      
     igniter
-    |> Igniter.Project.Deps.add_dep({:usage_rules, "~> 0.1", only: [:dev]}, on_exists: :skip)
-    |> Igniter.compose_task("claude.hooks.install", [])
-    |> Igniter.compose_task("claude.mcp.sync", [])
     |> Igniter.compose_task("claude.usage_rules.sync", [])
     |> Igniter.compose_task("claude.subagents.generate", [])
+  end
+  
+  defp maybe_add_tidewave_to_config(igniter) do
+    # Check if .claude.exs already has mcp_servers configured
+    case Claude.Core.ClaudeExs.read() do
+      {:ok, config} ->
+        existing_servers = Map.get(config, :mcp_servers, [])
+        
+        if :tidewave in existing_servers do
+          igniter
+        else
+          igniter
+          |> Igniter.compose_task("claude.mcp.add", ["tidewave"])
+          |> Igniter.add_notice("""
+          Phoenix detected! Tidewave MCP server has been configured.
+          
+          To use Tidewave:
+          1. Add {:tidewave, "~> 0.2.0"} to your deps
+          2. Run mix deps.get
+          3. Configure in config/dev.exs
+          4. Access MCP endpoint at http://localhost:4000/tidewave/mcp
+          """)
+        end
+        
+      {:error, _} ->
+        # If we can't read .claude.exs, still try to add tidewave
+        igniter
+        |> Igniter.compose_task("claude.mcp.add", ["tidewave"])
+    end
   end
 
   @impl Igniter.Mix.Task

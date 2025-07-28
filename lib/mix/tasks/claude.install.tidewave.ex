@@ -54,7 +54,7 @@ defmodule Mix.Tasks.Claude.Install.Tidewave do
   defp check_phoenix_project(igniter) do
     cond do
       # Check if Phoenix is in the project dependencies
-      phoenix_dep?() ->
+      Claude.Core.Deps.phoenix_dep?() ->
         igniter
 
       # Check if this might be a Phoenix project by looking for common files
@@ -72,20 +72,6 @@ defmodule Mix.Tasks.Claude.Install.Tidewave do
         Tidewave is designed to work with Phoenix applications.
         If this is a Phoenix project, you can ignore this warning.
         """)
-    end
-  end
-
-  defp phoenix_dep? do
-    case Mix.Project.config()[:deps] do
-      nil ->
-        false
-
-      deps ->
-        Enum.any?(deps, fn
-          {:phoenix, _} -> true
-          {:phoenix, _, _} -> true
-          _ -> false
-        end)
     end
   end
 
@@ -150,16 +136,6 @@ defmodule Mix.Tasks.Claude.Install.Tidewave do
   end
 
   defp tidewave_dep? do
-    case Mix.Project.config()[:deps] do
-      nil ->
-        false
-
-      deps ->
-        Enum.any?(deps, fn
-          {:tidewave, _} -> true
-          {:tidewave, _, _} -> true
-          _ -> false
-        end)
-    end
+    Claude.Core.Deps.tidewave_dep?()
   end
 end

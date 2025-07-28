@@ -123,38 +123,39 @@ error: undefined variable "nam"
 - Verifies code compiles without errors or warnings
 - Prevents commits if formatting or compilation issues exist
 
-### MCP Servers
+### Tidewave Integration (Phoenix Projects)
 
-Claude supports Model Context Protocol (MCP) servers that provide external tools and data sources. This library includes pre-configured servers optimized for Elixir development.
+For Phoenix projects, Claude automatically configures [Tidewave](https://hexdocs.pm/tidewave) integration, providing Claude with access to your development tools and database through the Model Context Protocol (MCP).
 
-**Available Servers:**
+**Automatic Setup:**
 
-✅ **Tidewave** - Phoenix framework integration with development tools
-✅ **PostgreSQL** - Database access (read-only)
-✅ **Filesystem** - Controlled file system access
-✅ **GitHub** - GitHub API integration
-✅ **Memory** - Knowledge graph memory
-✅ **Puppeteer** - Browser automation
+When you run `mix claude.install` in a Phoenix project, Tidewave is automatically configured. To complete the setup:
 
-**Quick Start:**
+1. Add Tidewave to your dependencies:
+   ```elixir
+   def deps do
+     [
+       {:tidewave, "~> 0.2.0", only: :dev}
+     ]
+   end
+   ```
+
+2. Run `mix deps.get`
+
+3. Configure Tidewave in `config/dev.exs` (see [Tidewave docs](https://hexdocs.pm/tidewave))
+
+4. Start your Phoenix server - the MCP endpoint will be available at `http://localhost:4000/tidewave/mcp`
+
+**Manual Configuration:**
+
+If needed, you can manually manage Tidewave:
 
 ```bash
-# Add Tidewave to your project
-mix claude.mcp.add tidewave
-
-# List all available servers
-mix claude.mcp.list
-
-# Install and configure Tidewave specifically
+# Reinstall Tidewave configuration
 mix claude.install.tidewave
-```
 
-**Configuration in `.claude.exs`:**
-
-```elixir
-%{
-  mcp_servers: [:tidewave, :postgres]
-}
+# Check MCP server status
+mix claude.mcp.list
 ```
 
 ## Coming Soon

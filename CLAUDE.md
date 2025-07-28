@@ -88,10 +88,10 @@ To reference claude code sub agents, please see @docs/anthropic/claude_code/buil
    - Ensures project-scoped configuration
 
 4. **MCP Server System** (`lib/claude/mcp/`)
-   - **Catalog** - Pre-configured MCP servers with recommended settings
+   - **Catalog** - Tidewave configuration for Phoenix projects
    - **Registry** - Reads mcp_servers from `.claude.exs`
    - **Installer** - Syncs MCP configuration to settings.json
-   - Supports stdio, SSE, and HTTP server types
+   - **Automatic** - Tidewave is auto-configured for Phoenix projects
 
 ### Hook Implementation
 
