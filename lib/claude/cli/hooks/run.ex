@@ -18,7 +18,6 @@ defmodule Claude.CLI.Hooks.Run do
   def run([hook_identifier]) do
     input = IO.read(:stdio, :eof)
 
-    # Handle empty stdin case
     input = if input == :eof, do: "", else: input
 
     case Hooks.find_hook_by_identifier(hook_identifier) do
@@ -26,10 +25,8 @@ defmodule Claude.CLI.Hooks.Run do
         :ok
 
       hook_module ->
-        # Get user config if available
         user_config = get_user_config(hook_identifier)
 
-        # Create a function that calls the hook with the right arity
         hook_fn = fn ->
           if function_exported?(hook_module, :run, 2) do
             hook_module.run(input, user_config)
@@ -38,7 +35,6 @@ defmodule Claude.CLI.Hooks.Run do
           end
         end
 
-        # Use telemetry if available, otherwise run directly
         if Telemetry.telemetry_available?() do
           Telemetry.execute_hook_fn(hook_fn, hook_module, input)
         else
@@ -52,7 +48,6 @@ defmodule Claude.CLI.Hooks.Run do
   end
 
   defp get_user_config(hook_identifier) do
-    # Find the hook configuration from registry
     case Enum.find(Hooks.all_hooks(), fn {module, _config} ->
            Hooks.hook_identifier(module) == hook_identifier
          end) do

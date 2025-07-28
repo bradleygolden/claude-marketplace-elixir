@@ -66,8 +66,6 @@ defmodule Claude.Test.ClaudeCodeCase do
       import Claude.TestHelpers
       import Claude.Test.ClaudeCodeCase, only: [isolate_project: 1]
 
-      # Automatically set mimic mode based on async setting
-      # This ensures proper test isolation
       setup :set_mimic_from_context
 
       if unquote(trap_halts) do
@@ -77,7 +75,6 @@ defmodule Claude.Test.ClaudeCodeCase do
   end
 
   setup _tags do
-    # Create isolated test directory
     test_isolation_dir =
       Path.join(System.tmp_dir!(), "claude_test_#{System.unique_integer([:positive])}")
 

@@ -31,15 +31,12 @@ defmodule Claude.Test.SystemHaltHelpers do
       end
   """
   def trap_unexpected_halts(_context \\ %{}) do
-    # Only stub if we haven't already stubbed System.halt
-    # This prevents conflicts when multiple tests try to stub the same function
     try do
       stub(System, :halt, fn exit_code ->
         raise "Unexpected System.halt(#{exit_code}) called! " <>
                 "If this is expected, add `expect(System, :halt, fn #{exit_code} -> :ok end)` to your test."
       end)
     rescue
-      # If stubbing fails, it's likely already stubbed, which is fine
       ArgumentError -> :ok
     end
 

@@ -20,7 +20,6 @@ defmodule Claude.CLI.Hooks.RunTelemetryTest do
 
   describe "automatic telemetry in CLI hook runner" do
     setup do
-      # Mock the registry to include our test hook
       Mimic.stub(Claude.Hooks.Registry, :all_hooks, fn ->
         [{__MODULE__.TestHookForAutoTelemetry, %{}}]
       end)
@@ -33,7 +32,6 @@ defmodule Claude.CLI.Hooks.RunTelemetryTest do
         end
       end)
 
-      # Attach telemetry handler
       test_pid = self()
       handler_id = "test-auto-telemetry-#{System.unique_integer()}"
 
@@ -66,13 +64,10 @@ defmodule Claude.CLI.Hooks.RunTelemetryTest do
           "tool_input" => %{"file_path" => "/test.ex"}
         })
 
-      # Mock stdin to return our JSON input
       Mimic.expect(IO, :read, fn :stdio, :eof -> json_input end)
 
-      # Run the hook through CLI
       Run.run(["claude.cli.hooks.run_telemetry_test.test_hook_for_auto_telemetry"])
 
-      # Verify telemetry events were emitted
       assert_receive {:telemetry_event, [:claude, :hook, :start], measurements, metadata}
       assert Map.has_key?(measurements, :monotonic_time)
       assert metadata.hook_module == __MODULE__.TestHookForAutoTelemetry
@@ -90,7 +85,6 @@ defmodule Claude.CLI.Hooks.RunTelemetryTest do
     end
 
     test "CLI runner works without telemetry" do
-      # Mock telemetry not being available
       Mimic.stub(Claude.Hooks.Telemetry, :telemetry_available?, fn -> false end)
 
       json_input =
@@ -99,13 +93,10 @@ defmodule Claude.CLI.Hooks.RunTelemetryTest do
           "hook_event_name" => "PostToolUse"
         })
 
-      # Mock stdin to return our JSON input
       Mimic.expect(IO, :read, fn :stdio, :eof -> json_input end)
 
-      # Should not crash when telemetry is not available
       Run.run(["claude.cli.hooks.run_telemetry_test.test_hook_for_auto_telemetry"])
 
-      # Should not receive any telemetry events
       refute_receive {:telemetry_event, _, _, _}, 100
     end
   end

@@ -108,9 +108,7 @@ defmodule Claude.Hooks.BehaviourTelemetryTest do
 
         @impl Claude.Hooks.Hook.Behaviour
         def run(_json_input, _user_config) do
-          # This should not crash even if telemetry is not available
           result = emit_telemetry(:test_event, %{value: 42}, %{status: :ok})
-          # Should return :ok
           {:ok, result}
         end
       end

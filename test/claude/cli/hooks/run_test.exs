@@ -11,7 +11,6 @@ defmodule Claude.CLI.Hooks.RunTest do
   setup :verify_on_exit!
 
   setup do
-    # Disable telemetry for these tests as it interferes with IO capture
     stub(Claude.Hooks.Telemetry, :telemetry_available?, fn -> false end)
     :ok
   end
