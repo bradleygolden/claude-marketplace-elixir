@@ -8,14 +8,17 @@ defmodule Claude.Subagents.Subagent do
 
   alias Claude.Tools
 
+  @type plugin_spec :: {module(), map()}
+
   @type t :: %__MODULE__{
           name: String.t(),
           description: String.t(),
           prompt: String.t(),
-          tools: [Tools.tool()]
+          tools: [Tools.tool()],
+          plugins: [plugin_spec()]
         }
 
-  defstruct [:name, :description, :prompt, tools: []]
+  defstruct [:name, :description, :prompt, tools: [], plugins: []]
 
   @doc """
   Creates a new Subagent from parsed attributes.
@@ -27,7 +30,8 @@ defmodule Claude.Subagents.Subagent do
       name: attrs[:name] || attrs["name"],
       description: attrs[:description] || attrs["description"],
       prompt: attrs[:prompt] || attrs["prompt"],
-      tools: parse_tools(attrs[:tools] || attrs["tools"])
+      tools: parse_tools(attrs[:tools] || attrs["tools"]),
+      plugins: parse_plugins(attrs[:plugins] || attrs["plugins"])
     }
   end
 
@@ -61,4 +65,18 @@ defmodule Claude.Subagents.Subagent do
       _ -> nil
     end
   end
+
+  defp parse_plugins(nil), do: []
+
+  defp parse_plugins(plugins) when is_list(plugins) do
+    plugins
+    |> Enum.map(&parse_plugin/1)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp parse_plugin({module, opts}) when is_atom(module) and is_map(opts) do
+    {module, opts}
+  end
+
+  defp parse_plugin(_), do: nil
 end

@@ -99,6 +99,50 @@ defmodule Claude.Subagents.SubagentTest do
 
       assert subagent.tools == [:web_fetch, :web_search, :todo_write]
     end
+
+    test "handles plugins configuration" do
+      attrs = %{
+        name: "with_plugins",
+        description: "Has plugins",
+        prompt: "Test prompt",
+        tools: [:read],
+        plugins: [{TestPlugin, %{option: "value"}}]
+      }
+
+      subagent = Subagent.new(attrs)
+
+      assert subagent.plugins == [{TestPlugin, %{option: "value"}}]
+    end
+
+    test "filters invalid plugin configurations" do
+      attrs = %{
+        name: "invalid_plugins",
+        description: "Has invalid plugins",
+        prompt: "Test prompt",
+        plugins: [
+          {TestPlugin, %{valid: true}},
+          "invalid",
+          {TestPlugin, "not a map"},
+          nil
+        ]
+      }
+
+      subagent = Subagent.new(attrs)
+
+      assert subagent.plugins == [{TestPlugin, %{valid: true}}]
+    end
+
+    test "handles nil plugins" do
+      attrs = %{
+        name: "no_plugins",
+        description: "No plugins",
+        prompt: "Test prompt"
+      }
+
+      subagent = Subagent.new(attrs)
+
+      assert subagent.plugins == []
+    end
   end
 
   describe "tools_to_strings/1" do

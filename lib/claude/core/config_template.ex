@@ -20,7 +20,24 @@ defmodule Claude.Core.ConfigTemplate do
     # - And more as Claude evolves
 
     # Example configuration (uncomment and modify as needed):
-    %{}
+    %{
+      # Custom hooks can be registered here
+      # hooks: [
+      #   MyProject.Hooks.CustomFormatter,
+      #   MyProject.Hooks.SecurityChecker
+      # ],
+      
+      # Subagents provide specialized expertise with their own context
+      # subagents: [
+      #   %{
+      #     name: "Domain Expert",
+      #     description: "Expert in your project's specific domain",
+      #     prompt: "You are an expert in...",
+      #     tools: [:read, :grep, :edit],
+      #     usage_rules: ["ecto", "phoenix"]
+      #   }
+      # ]
+    }
     """
   end
 end

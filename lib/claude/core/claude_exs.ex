@@ -1,0 +1,197 @@
+defmodule Claude.Core.ClaudeExs do
+  @moduledoc """
+  Handles loading and processing of .claude.exs configuration files.
+
+  This module provides functionality to read and evaluate .claude.exs files,
+  which contain project-specific Claude configuration including subagents.
+  """
+
+  alias Claude.Core.Project
+  alias Claude.Subagents.Subagent
+
+  @type config :: %{
+          optional(:hooks) => [module()],
+          optional(:subagents) => [subagent_config()]
+        }
+
+  @type subagent_config :: %{
+          name: String.t(),
+          description: String.t(),
+          prompt: String.t(),
+          tools: [atom()],
+          usage_rules: [String.t()]
+        }
+
+  @doc """
+  Loads the .claude.exs configuration from the project root.
+
+  Returns `{:ok, config}` if the file exists and is valid, or
+  `{:error, reason}` if there's an error.
+  """
+  @spec load() :: {:ok, config()} | {:error, term()}
+  def load do
+    case Project.claude_exs_path() do
+      {:ok, path} ->
+        load_from_path(path)
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  @doc """
+  Loads the .claude.exs configuration from a specific path.
+  """
+  @spec load_from_path(String.t()) :: {:ok, config()} | {:error, term()}
+  def load_from_path(path) do
+    if File.exists?(path) do
+      try do
+        {result, _binding} = Code.eval_file(path)
+        validate_config(result)
+      rescue
+        e ->
+          {:error, {:eval_error, Exception.message(e)}}
+      end
+    else
+      {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Retrieves the subagents configuration from the loaded config.
+  """
+  @spec get_subagents(config()) :: [subagent_config()]
+  def get_subagents(config) do
+    Map.get(config, :subagents, [])
+  end
+
+  @doc """
+  Converts a subagent config map to a Subagent struct.
+  """
+  @spec subagent_from_config(subagent_config()) :: {:ok, Subagent.t()} | {:error, term()}
+  def subagent_from_config(config) do
+    with :ok <- validate_subagent_config(config) do
+      subagent = %Subagent{
+        name: config.name,
+        description: config.description,
+        prompt: config.prompt,
+        tools: config[:tools] || [],
+        plugins: build_plugins(config)
+      }
+
+      {:ok, subagent}
+    end
+  end
+
+  defp validate_config(config) when is_map(config) do
+    case validate_config_keys(config) do
+      :ok -> {:ok, config}
+      error -> error
+    end
+  end
+
+  defp validate_config(_), do: {:error, "Configuration must be a map"}
+
+  defp validate_config_keys(config) do
+    valid_keys = [:hooks, :subagents]
+    invalid_keys = Map.keys(config) -- valid_keys
+
+    if invalid_keys == [] do
+      validate_subagents(Map.get(config, :subagents, []))
+    else
+      {:error, "Invalid configuration keys: #{inspect(invalid_keys)}"}
+    end
+  end
+
+  defp validate_subagents(subagents) when is_list(subagents) do
+    Enum.reduce_while(subagents, :ok, fn subagent, _acc ->
+      case validate_subagent_config(subagent) do
+        :ok -> {:cont, :ok}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp validate_subagents(_), do: {:error, "Subagents must be a list"}
+
+  defp validate_subagent_config(config) when is_map(config) do
+    required_keys = [:name, :description, :prompt]
+    optional_keys = [:tools, :usage_rules]
+    all_keys = required_keys ++ optional_keys
+
+    with :ok <- validate_required_keys(config, required_keys),
+         :ok <- validate_allowed_keys(config, all_keys),
+         :ok <- validate_name(config[:name]),
+         :ok <- validate_description(config[:description]),
+         :ok <- validate_prompt(config[:prompt]),
+         :ok <- validate_tools(config[:tools]),
+         :ok <- validate_usage_rules(config[:usage_rules]) do
+      :ok
+    end
+  end
+
+  defp validate_subagent_config(_), do: {:error, "Subagent config must be a map"}
+
+  defp validate_required_keys(config, required_keys) do
+    missing_keys = required_keys -- Map.keys(config)
+
+    if missing_keys == [] do
+      :ok
+    else
+      {:error, "Missing required keys: #{inspect(missing_keys)}"}
+    end
+  end
+
+  defp validate_allowed_keys(config, allowed_keys) do
+    invalid_keys = Map.keys(config) -- allowed_keys
+
+    if invalid_keys == [] do
+      :ok
+    else
+      {:error, "Invalid keys: #{inspect(invalid_keys)}"}
+    end
+  end
+
+  defp validate_name(name) when is_binary(name) and byte_size(name) > 0, do: :ok
+  defp validate_name(_), do: {:error, "Name must be a non-empty string"}
+
+  defp validate_description(desc) when is_binary(desc) and byte_size(desc) > 0, do: :ok
+  defp validate_description(_), do: {:error, "Description must be a non-empty string"}
+
+  defp validate_prompt(prompt) when is_binary(prompt) and byte_size(prompt) > 0, do: :ok
+  defp validate_prompt(_), do: {:error, "Prompt must be a non-empty string"}
+
+  defp validate_tools(nil), do: :ok
+
+  defp validate_tools(tools) when is_list(tools) do
+    if Enum.all?(tools, &is_atom/1) do
+      :ok
+    else
+      {:error, "Tools must be a list of atoms"}
+    end
+  end
+
+  defp validate_tools(_), do: {:error, "Tools must be a list of atoms"}
+
+  defp validate_usage_rules(nil), do: :ok
+
+  defp validate_usage_rules(rules) when is_list(rules) do
+    if Enum.all?(rules, &is_binary/1) do
+      :ok
+    else
+      {:error, "Usage rules must be a list of strings"}
+    end
+  end
+
+  defp validate_usage_rules(_), do: {:error, "Usage rules must be a list of strings"}
+
+  defp build_plugins(config) do
+    case config[:usage_rules] do
+      nil ->
+        []
+
+      rules when is_list(rules) ->
+        [{Claude.Subagents.Plugins.UsageRules, %{deps: rules}}]
+    end
+  end
+end
