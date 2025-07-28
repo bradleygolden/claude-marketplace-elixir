@@ -90,10 +90,10 @@ defmodule Claude.Hooks do
         @behaviour Claude.Hooks.Hook.Behaviour
 
         @hook_event Keyword.get(opts, :event, :post_tool_use)
-        
+
         raw_matcher = Keyword.get(opts, :matcher, :*)
         @hook_matcher Claude.Hooks.format_matcher(raw_matcher)
-        
+
         @hook_description Keyword.get(opts, :description, "")
 
         @hook_identifier Claude.Hooks.generate_identifier(__MODULE__)
@@ -102,7 +102,7 @@ defmodule Claude.Hooks do
         def config do
           %Claude.Hooks.Hook{
             type: "command",
-            command: "mix claude hooks run #{@hook_identifier} $TOOL_NAME \"$TOOL_PARAMS_JSON\""
+            command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run #{@hook_identifier}"
           }
         end
 
@@ -168,27 +168,27 @@ defmodule Claude.Hooks do
 
   @doc """
   Converts a matcher specification to Claude Code's expected format.
-  
+
   ## Examples
-  
+
       iex> Claude.Hooks.format_matcher([:write, :edit])
       "Write|Edit"
-      
+
       iex> Claude.Hooks.format_matcher(:bash)
       "Bash"
-      
+
       iex> Claude.Hooks.format_matcher("Write|Edit")
       "Write|Edit"
-      
+
       iex> Claude.Hooks.format_matcher([:write, :edit, :multi_edit])
       "Write|Edit|MultiEdit"
-      
+
       iex> Claude.Hooks.format_matcher(:*)
       "*"
-      
+
       iex> Claude.Hooks.format_matcher(:manual)
       "manual"
-      
+
       iex> Claude.Hooks.format_matcher(:auto)
       "auto"
   """
@@ -197,19 +197,19 @@ defmodule Claude.Hooks do
   def format_matcher(:manual), do: "manual"
   def format_matcher(:auto), do: "auto"
   def format_matcher(matcher) when is_binary(matcher), do: matcher
-  
+
   def format_matcher(matcher) when is_atom(matcher) do
     matcher
     |> Atom.to_string()
     |> to_title_case()
   end
-  
+
   def format_matcher(matchers) when is_list(matchers) do
     matchers
     |> Enum.map(&format_matcher/1)
     |> Enum.join("|")
   end
-  
+
   defp to_title_case(string) do
     string
     |> String.split("_")
