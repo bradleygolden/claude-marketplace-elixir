@@ -123,15 +123,6 @@ error: undefined variable "nam"
 - Verifies code compiles without errors or warnings
 - Prevents commits if formatting or compilation issues exist
 
-### Optional Hooks
-
-🔧 **RelatedFiles** (Post-tool-use)
-- Suggests updating related files when you modify code
-- Uses regex patterns to identify file relationships
-- Customizable patterns for your project structure
-- Example: reminds you to update tests when modifying lib files
-- Not installed by default - add to `.claude.exs` to enable
-
 ## Coming Soon
 
 🚧 **Test runner** - Run stale tests automatically
@@ -146,52 +137,6 @@ This library uses [Claude Code Hooks](https://docs.anthropic.com/en/docs/claude-
 2. Check for compilation errors with `mix compile --warnings-as-errors`
 
 The hook system is built on Elixir behaviours, making it easy to extend with your own custom hooks.
-
-## Custom Hooks
-
-You can add your own hooks or enable optional built-in hooks by creating a `.claude.exs` file in your project root:
-
-```elixir
-# .claude.exs
-%{
-  hooks: [
-    # Enable optional built-in hook
-    Claude.Hooks.PostToolUse.RelatedFiles,
-    
-    # Simple custom hook registration
-    MyProject.Hooks.CustomFormatter,
-    
-    # Hook with configuration (stored for future use)
-    {MyProject.Hooks.CustomValidator, %{
-      rules: ["no_todo_comments", "require_typespecs"]
-    }}
-  ]
-}
-```
-
-### Creating Your Own Hook
-
-Implement the `Claude.Hooks.Hook.Behaviour`:
-
-```elixir
-defmodule MyProject.Hooks.CustomValidator do
-  use Claude.Hooks.Hook.Behaviour,
-    event: :pre_tool_use,
-    matcher: [:write, :edit],
-    description: "Validates code before saving"
-
-  @impl true
-  def run(json_input) do
-    # Your hook logic here
-    # Parse the JSON input and perform validations
-    :ok
-  end
-end
-```
-
-The hook system supports registering hooks with configuration in `.claude.exs`, which allows tracking different instances of the same hook. This configuration is stored in the registry for potential future enhancements.
-
-See `example.claude.exs` for more examples.
 
 ## Contributing
 
