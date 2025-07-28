@@ -3,17 +3,8 @@ defmodule Claude.CLI.Hooks.RunTest do
 
   import ExUnit.CaptureIO
   import Claude.TestHelpers
-  import Mimic
 
   alias Claude.CLI.Hooks.Run
-
-  setup :isolate_project
-  setup :verify_on_exit!
-
-  setup do
-    stub(Claude.Hooks.Telemetry, :telemetry_available?, fn -> false end)
-    :ok
-  end
 
   describe "run/1" do
     test "executes ElixirFormatter hook with valid stdin JSON" do
@@ -141,7 +132,7 @@ defmodule Claude.CLI.Hooks.RunTest do
     end
 
     test "executes PreCommitCheck hook for non-commit commands" do
-      expect(System, :halt, 1, fn 0 -> :ok end)
+      expect(System, :halt, fn 0 -> :ok end)
 
       in_tmp(fn _tmp_dir ->
         setup_test_project()
