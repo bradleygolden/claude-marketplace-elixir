@@ -150,14 +150,35 @@ When you run `mix claude.install` in a Phoenix project, Tidewave is automaticall
 
 **Manual Configuration:**
 
-If needed, you can manually manage Tidewave:
+If needed, you can manually manage MCP servers in your `.claude.exs` file:
+
+```elixir
+# .claude.exs
+%{
+  mcp_servers: [
+    # Simple atom format (uses default port 4000)
+    :tidewave,
+    
+    # Custom port configuration
+    {:tidewave, [port: 5000]},
+    
+    # Disable a server without removing it
+    {:tidewave, [port: 4000, enabled?: false]}
+  ]
+}
+```
+
+Available CLI commands:
 
 ```bash
-# Reinstall Tidewave configuration
-mix claude.install.tidewave
-
-# Check MCP server status
+# List configured MCP servers
 mix claude.mcp.list
+
+# Add an MCP server
+mix claude.mcp.add tidewave
+
+# Sync MCP servers to settings.json
+mix claude.mcp.sync
 ```
 
 ## Coming Soon

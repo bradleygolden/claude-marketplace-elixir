@@ -172,17 +172,24 @@ defmodule Claude.Core.ClaudeExs do
 
   defp validate_mcp_server_opts(opts) when is_list(opts) do
     # Check all keys are valid
-    valid_keys = [:port]
-    
+    valid_keys = [:port, :enabled?]
+
     Enum.reduce_while(opts, :ok, fn
       {:port, port}, _acc ->
         case validate_port(port) do
           :ok -> {:cont, :ok}
           error -> {:halt, error}
         end
-        
+
+      {:enabled?, enabled?}, _acc when is_boolean(enabled?) ->
+        {:cont, :ok}
+
+      {:enabled?, _}, _acc ->
+        {:halt, {:error, "enabled? must be a boolean"}}
+
       {key, _}, _acc ->
-        {:halt, {:error, "Invalid option #{inspect(key)}. Valid options are: #{inspect(valid_keys)}"}}
+        {:halt,
+         {:error, "Invalid option #{inspect(key)}. Valid options are: #{inspect(valid_keys)}"}}
     end)
   end
 

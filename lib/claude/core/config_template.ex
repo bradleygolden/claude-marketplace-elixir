@@ -34,6 +34,11 @@ defmodule Claude.Core.ConfigTemplate do
       # mcp_servers: [
       #   {:tidewave, [port: 5000]}
       # ],
+      #
+      # To disable a server without removing it:
+      # mcp_servers: [
+      #   {:tidewave, [port: 4000, enabled?: false]}
+      # ],
       
       # Subagents provide specialized expertise with their own context
       # subagents: [

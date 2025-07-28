@@ -117,10 +117,10 @@ defmodule Claude.MCP.Registry do
                 # Always use explicit port for tidewave
                 server_name == :tidewave and opts == [] ->
                   {:tidewave, [port: 4000]}
-                
+
                 Keyword.keyword?(opts) and opts != [] ->
                   {server_name, opts}
-                
+
                 true ->
                   server_name
               end
@@ -148,11 +148,13 @@ defmodule Claude.MCP.Registry do
     case ClaudeExs.read() do
       {:ok, config} ->
         servers = Map.get(config, :mcp_servers, [])
-        updated_servers = Enum.reject(servers, fn
-          atom when is_atom(atom) -> atom == server_name
-          {server, _opts} when is_atom(server) -> server == server_name
-          _ -> false
-        end)
+
+        updated_servers =
+          Enum.reject(servers, fn
+            atom when is_atom(atom) -> atom == server_name
+            {server, _opts} when is_atom(server) -> server == server_name
+            _ -> false
+          end)
 
         if servers == updated_servers do
           {:error, "Server #{server_name} is not configured"}
@@ -176,15 +178,15 @@ defmodule Claude.MCP.Registry do
     case ClaudeExs.read() do
       {:ok, config} ->
         servers = Map.get(config, :mcp_servers, [])
-        
-        {valid, invalid} = 
+
+        {valid, invalid} =
           Enum.split_with(servers, fn
             atom when is_atom(atom) -> Catalog.exists?(atom)
             {server, _opts} when is_atom(server) -> Catalog.exists?(server)
             _ -> false
           end)
 
-        invalid_names = 
+        invalid_names =
           Enum.map(invalid, fn
             atom when is_atom(atom) -> atom
             {server, _opts} when is_atom(server) -> server
@@ -196,7 +198,7 @@ defmodule Claude.MCP.Registry do
         else
           {:error, invalid_names}
         end
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -214,14 +216,19 @@ defmodule Claude.MCP.Registry do
         end
 
       {server_name, opts}, acc when is_atom(server_name) and is_list(opts) ->
-        case Catalog.to_settings_json(server_name) do
-          nil ->
-            acc
+        # Skip disabled servers
+        if Keyword.get(opts, :enabled?, true) == false do
+          acc
+        else
+          case Catalog.to_settings_json(server_name) do
+            nil ->
+              acc
 
-          base_config ->
-            # Apply custom configuration over base config
-            config = apply_custom_config(base_config, opts)
-            Map.put(acc, to_string(server_name), config)
+            base_config ->
+              # Apply custom configuration over base config
+              config = apply_custom_config(base_config, opts)
+              Map.put(acc, to_string(server_name), config)
+          end
         end
 
       _, acc ->

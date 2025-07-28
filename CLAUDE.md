@@ -56,6 +56,11 @@ mix claude hooks run <hook_identifier> <tool_name> <json_params>
 mix claude.mcp.list              # List available MCP servers
 mix claude.mcp.add <server>      # Add an MCP server to .claude.exs
 mix claude.mcp.sync              # Sync MCP servers to settings.json
+
+# MCP server configuration in .claude.exs supports:
+# - Simple atom format: :tidewave
+# - Custom port: {:tidewave, [port: 5000]}
+# - Disable without removing: {:tidewave, [port: 4000, enabled?: false]}
 ```
 
 ## Reference Docs
@@ -92,6 +97,7 @@ To reference claude code sub agents, please see @docs/anthropic/claude_code/buil
    - **Installer** - Syncs MCP configuration to settings.json
    - **Automatic** - Tidewave is auto-configured for Phoenix projects
    - **Custom Config** - Supports port customization: `{:tidewave, [port: 5000]}`
+   - **Enable/Disable** - Servers can be disabled with `enabled?: false` option
 
 ### Hook Implementation
 

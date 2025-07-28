@@ -33,14 +33,14 @@ defmodule Mix.Tasks.Claude.Mcp.List do
 
       if tidewave_configured do
         Mix.shell().info("  Status: Configured")
-        
+
         # Get the actual endpoint from settings
-        endpoint = 
+        endpoint =
           case Claude.MCP.Installer.installed_servers() do
             %{"tidewave" => %{"url" => url}} -> url
             _ -> "http://localhost:4000/tidewave/mcp"
           end
-        
+
         Mix.shell().info("  Endpoint: #{endpoint}")
         Mix.shell().info("")
 

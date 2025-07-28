@@ -107,7 +107,7 @@ defmodule Mix.Tasks.Claude.Mcp.Sync do
         atom when is_atom(atom) ->
           config = Catalog.get(atom)
           "  - #{atom}: #{config.description}"
-        
+
         {server_atom, _opts} ->
           config = Catalog.get(server_atom)
           "  - #{server_atom}: #{config.description}"
@@ -122,7 +122,7 @@ defmodule Mix.Tasks.Claude.Mcp.Sync do
             %{setup_instructions: instructions} when not is_nil(instructions) -> true
             _ -> false
           end
-        
+
         {server_atom, _opts} ->
           case Catalog.get(server_atom) do
             %{setup_instructions: instructions} when not is_nil(instructions) -> true
@@ -133,7 +133,7 @@ defmodule Mix.Tasks.Claude.Mcp.Sync do
         atom when is_atom(atom) ->
           instructions = Catalog.setup_instructions(atom)
           "\n#{atom}:\n#{instructions}"
-        
+
         {server_atom, _opts} ->
           instructions = Catalog.setup_instructions(server_atom)
           "\n#{server_atom}:\n#{instructions}"

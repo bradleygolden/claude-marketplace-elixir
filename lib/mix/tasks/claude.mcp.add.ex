@@ -96,6 +96,7 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
     # Always write tidewave with explicit port so users can see they can change it
     {:tidewave, [port: 4000]}
   end
+
   defp build_server_config(server_atom), do: server_atom
 
   defp update_claude_exs(igniter, relative_path, server_config) do
@@ -149,14 +150,15 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
 
   defp add_server_to_list(servers_list, server_config) when is_list(servers_list) do
     server_name = extract_server_name(server_config)
-    
+
     # Remove any existing configuration for this server
-    filtered_list = Enum.reject(servers_list, fn
-      atom when is_atom(atom) -> atom == server_name
-      {server, _opts} -> server == server_name
-      _ -> false
-    end)
-    
+    filtered_list =
+      Enum.reject(servers_list, fn
+        atom when is_atom(atom) -> atom == server_name
+        {server, _opts} -> server == server_name
+        _ -> false
+      end)
+
     # Add the new configuration
     filtered_list ++ [server_config]
   end
@@ -173,7 +175,7 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
 
     notice = """
     Added MCP server '#{server_atom}' to your project.
-    
+
     Description: #{config.description}
     """
 
