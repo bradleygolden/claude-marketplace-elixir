@@ -243,7 +243,6 @@ defmodule Claude.Hooks.RegistryTest do
       # Get custom hooks
       custom_hooks = Registry.custom_hooks()
 
-      # Should have one custom hook with config
       assert [{ExampleHooks.CustomFormatter, config}] = custom_hooks
       assert %{patterns: patterns} = config
       assert length(patterns) == 2
@@ -270,7 +269,6 @@ defmodule Claude.Hooks.RegistryTest do
 
       custom_hooks = Registry.custom_hooks()
 
-      # Should have two instances
       assert length(custom_hooks) == 2
 
       # First one has empty config

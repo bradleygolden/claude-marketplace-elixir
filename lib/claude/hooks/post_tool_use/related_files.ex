@@ -101,7 +101,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     end
   end
 
-  # Override run/2 to maintain compatibility but just call run/1
   @impl Claude.Hooks.Hook.Behaviour
   def run(json_input, _user_config) when is_binary(json_input) do
     run(json_input)
@@ -138,7 +137,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     default_patterns()
     |> Enum.flat_map(fn {source_glob, target_transform} ->
       if glob_match?(file_path, source_glob) do
-        # For simple transformations, convert the file path
         target_transform
         |> List.wrap()
         |> Enum.flat_map(&transform_path(file_path, source_glob, &1))
@@ -150,16 +148,12 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     |> Enum.uniq()
   end
 
-  # Transform a file path based on source glob and target pattern
   defp transform_path(file_path, source_glob, target_pattern) do
     cond do
-      # Direct file mapping
       String.contains?(target_pattern, "*") == false ->
         [target_pattern]
 
-      # Simple lib -> test transformation
       source_glob == "lib/**/*.ex" and target_pattern == "test/**/*_test.exs" ->
-        # Handle both absolute and relative paths
         transformed =
           if String.contains?(file_path, "/lib/") do
             file_path
@@ -173,9 +167,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
 
         [transformed]
 
-      # Simple test -> lib transformation  
       source_glob == "test/**/*_test.exs" and target_pattern == "lib/**/*.ex" ->
-        # Handle both absolute and relative paths
         transformed =
           if String.contains?(file_path, "/test/") do
             file_path
@@ -189,7 +181,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
 
         [transformed]
 
-      # Otherwise, use the pattern as a wildcard to find files
       true ->
         Path.wildcard(target_pattern)
     end
@@ -201,7 +192,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     relative_path = Path.relative_to_cwd(path)
 
     # Convert glob pattern to regex
-    # Special handling for ** patterns
     regex_pattern =
       pattern
       |> String.replace(".", "\\.")
@@ -212,7 +202,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
 
     case Regex.compile(regex_pattern) do
       {:ok, regex} ->
-        # Try matching both absolute and relative paths
         Regex.match?(regex, path) or Regex.match?(regex, relative_path)
 
       {:error, _} ->
@@ -220,21 +209,16 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     end
   end
 
-  # Handle ** in glob patterns
   defp handle_double_star(pattern) do
     pattern
-    # Match /.../ or just /
     |> String.replace("/**/", "(?:/.*/|/)")
-    # Match /... or nothing
     |> String.replace("/**", "(?:/.*)?")
-    # Match .../ or nothing
     |> String.replace("**/", "(?:.*/)?")
   end
 
   defp suggest_updates(modified_file, related_files) do
     message = build_feedback_message(modified_file, related_files)
 
-    # Exit code 2 to get Claude's attention
     IO.puts(:stderr, message)
     System.halt(2)
   end
@@ -263,7 +247,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     """
   end
 
-  # Default patterns - override this in your own implementation
   defp default_patterns do
     [
       # Basic lib -> test mapping

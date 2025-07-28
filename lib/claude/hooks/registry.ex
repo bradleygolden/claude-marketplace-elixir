@@ -241,7 +241,6 @@ defmodule Claude.Hooks.Registry do
     |> Enum.filter(fn {module, _config} ->
       validate_hook_module(module) and module not in @known_hooks
     end)
-    # Don't deduplicate - allow multiple instances with different configs
     |> Enum.uniq()
   end
 

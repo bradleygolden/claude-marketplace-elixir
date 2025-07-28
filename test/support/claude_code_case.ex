@@ -74,16 +74,13 @@ defmodule Claude.Test.ClaudeCodeCase do
   end
 
   setup _tags do
-    # Set up project isolation to prevent the actual project's .claude.exs from interfering
     test_isolation_dir =
       Path.join(System.tmp_dir!(), "claude_test_#{System.unique_integer([:positive])}")
 
     File.mkdir_p!(test_isolation_dir)
 
-    # Stub Claude.Core.Project.root to use our isolated directory
     Mimic.stub(Claude.Core.Project, :root, fn -> test_isolation_dir end)
 
-    # Clean up the test directory after the test
     on_exit(fn ->
       File.rm_rf!(test_isolation_dir)
     end)

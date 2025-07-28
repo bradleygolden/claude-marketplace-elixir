@@ -72,7 +72,6 @@ defmodule Claude.HooksTest do
     test "returns all registered hooks" do
       hooks = Hooks.all_hooks()
 
-      # Extract just the modules from the tuples for checking
       hook_modules = Enum.map(hooks, fn {module, _config} -> module end)
 
       assert Claude.Hooks.PostToolUse.ElixirFormatter in hook_modules

@@ -134,7 +134,6 @@ defmodule Claude.Hooks do
 
         @impl Claude.Hooks.Hook.Behaviour
         def config(_user_config) do
-          # For now, ignore user config in command generation
           config()
         end
 

@@ -1,5 +1,6 @@
 %{
-  hooks: [
-    Claude.Hooks.PostToolUse.RelatedFiles
-  ]
+  # Example configuration for optional hooks
+  # hooks: [
+  #   Claude.Hooks.PostToolUse.RelatedFiles
+  # ]
 }

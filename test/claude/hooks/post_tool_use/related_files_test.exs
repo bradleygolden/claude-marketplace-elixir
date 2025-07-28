@@ -40,7 +40,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
     end
 
     test "exits with code 2 when related test file exists" do
-      # Create a temporary lib file and test file
       in_tmp(fn tmp_dir ->
         File.cd!(tmp_dir)
 
@@ -62,7 +61,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
             }
           })
 
-        # Expect halt with code 2
         expect_halt(2)
 
         output =
@@ -78,7 +76,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
       in_tmp(fn tmp_dir ->
         File.cd!(tmp_dir)
 
-        # Create directory structure
         File.mkdir_p!("lib")
         File.mkdir_p!("test")
 
@@ -97,7 +94,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
             }
           })
 
-        # Expect halt with code 2
         expect_halt(2)
 
         output =
@@ -125,7 +121,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
 
       user_config = %{patterns: [{"custom", "pattern"}]}
 
-      # Should behave the same as run/1
       assert RelatedFiles.run(json_input, user_config) == :ok
     end
   end
