@@ -1,6 +1,5 @@
 defmodule Mix.Tasks.Claude.UninstallTest do
   use Claude.Test.ClaudeCodeCase, async: false
-  use Mimic
 
   describe "run/1" do
     test "uninstalls hooks successfully" do

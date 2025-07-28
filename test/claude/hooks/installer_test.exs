@@ -1,6 +1,5 @@
 defmodule Claude.Hooks.InstallerTest do
-  use Claude.Test.ClaudeCodeCase
-  use Mimic
+  use Claude.Test.ClaudeCodeCase, async: false
 
   alias Claude.Hooks.Installer
 

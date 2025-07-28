@@ -64,8 +64,11 @@ defmodule Claude.Test.ClaudeCodeCase do
       import ExUnit.CaptureIO
       import Claude.Test.SystemHaltHelpers
       import Claude.TestHelpers
+      import Claude.Test.ClaudeCodeCase, only: [isolate_project: 1]
 
-      setup :set_mimic_global
+      # Automatically set mimic mode based on async setting
+      # This ensures proper test isolation
+      setup :set_mimic_from_context
 
       if unquote(trap_halts) do
         setup :trap_unexpected_halts
@@ -74,17 +77,32 @@ defmodule Claude.Test.ClaudeCodeCase do
   end
 
   setup _tags do
+    # Create isolated test directory
     test_isolation_dir =
       Path.join(System.tmp_dir!(), "claude_test_#{System.unique_integer([:positive])}")
 
     File.mkdir_p!(test_isolation_dir)
-
-    Mimic.stub(Claude.Core.Project, :root, fn -> test_isolation_dir end)
 
     on_exit(fn ->
       File.rm_rf!(test_isolation_dir)
     end)
 
     {:ok, test_dir: test_isolation_dir}
+  end
+
+  @doc """
+  Setup helper that stubs Claude.Core.Project.root to return the test directory.
+  
+  Use this in tests that need project isolation:
+  
+      setup :isolate_project
+  
+  Or in combination with other setup:
+  
+      setup [:isolate_project, :other_setup]
+  """
+  def isolate_project(%{test_dir: test_dir}) do
+    Mimic.stub(Claude.Core.Project, :root, fn -> test_dir end)
+    :ok
   end
 end

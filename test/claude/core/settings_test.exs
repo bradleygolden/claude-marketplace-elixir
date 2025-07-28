@@ -1,6 +1,5 @@
 defmodule Claude.Core.SettingsTest do
   use Claude.Test.ClaudeCodeCase, async: false
-  use Mimic
 
   import Claude.TestHelpers
 

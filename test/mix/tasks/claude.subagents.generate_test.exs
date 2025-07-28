@@ -32,6 +32,7 @@ defmodule Mix.Tasks.Claude.Subagents.GenerateTest do
 
         # Create a mock usage rules file
         File.mkdir_p!("deps/ex_unit")
+
         File.write!("deps/ex_unit/usage-rules.md", """
         # ExUnit Usage Rules
 
@@ -39,9 +40,10 @@ defmodule Mix.Tasks.Claude.Subagents.GenerateTest do
         """)
 
         # Run the task
-        output = capture_io(fn ->
-          Mix.Task.run("claude.subagents.generate", [])
-        end)
+        output =
+          capture_io(fn ->
+            Mix.Task.run("claude.subagents.generate", [])
+          end)
 
         # Check output
         assert output =~ "Generated 1 subagent(s)"
@@ -64,9 +66,10 @@ defmodule Mix.Tasks.Claude.Subagents.GenerateTest do
         System.put_env("CLAUDE_PROJECT_DIR", tmp_dir)
 
         # Run without .claude.exs
-        output = capture_io(:stderr, fn ->
-          Mix.Task.run("claude.subagents.generate", [])
-        end)
+        output =
+          capture_io(:stderr, fn ->
+            Mix.Task.run("claude.subagents.generate", [])
+          end)
 
         # Should show error
         assert output =~ "No .claude.exs file found"
@@ -101,9 +104,10 @@ defmodule Mix.Tasks.Claude.Subagents.GenerateTest do
         }
         """)
 
-        output = capture_io(:stderr, fn ->
-          Mix.Task.run("claude.subagents.generate", [])
-        end)
+        output =
+          capture_io(:stderr, fn ->
+            Mix.Task.run("claude.subagents.generate", [])
+          end)
 
         # Should show error about missing name
         assert output =~ "Failed to generate subagents"
