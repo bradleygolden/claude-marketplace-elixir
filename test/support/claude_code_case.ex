@@ -6,6 +6,7 @@ defmodule Claude.Test.ClaudeCodeCase do
   - Automatic System.halt trapping to prevent test suite crashes
   - Mimic setup for mocking
   - Common test helpers
+  - Project isolation to prevent interference from the actual project's .claude.exs
 
   ## Usage
 
@@ -26,6 +27,19 @@ defmodule Claude.Test.ClaudeCodeCase do
   Supported options:
   - `:async` - Whether tests in this module can run concurrently (default: false)
   - `:trap_halts` - Whether to trap System.halt calls (default: true)
+
+  ## Project Isolation
+
+  Each test gets its own isolated test directory to prevent interference from the
+  actual project's .claude.exs file. `Claude.Core.Project.root/0` is stubbed to 
+  return the isolated test directory, which effectively isolates all project-related
+  operations including reading .claude.exs and .claude/settings.json.
+
+  The test directory is available in your tests as `:test_dir`:
+
+      test "my test", %{test_dir: test_dir} do
+        # test_dir is the isolated directory for this test
+      end
 
   ## Overriding System.halt behavior
 
@@ -60,8 +74,17 @@ defmodule Claude.Test.ClaudeCodeCase do
   end
 
   setup _tags do
-    # Any common setup that should run for all tests
-    # Currently empty, but can be extended in the future
-    :ok
+    test_isolation_dir =
+      Path.join(System.tmp_dir!(), "claude_test_#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(test_isolation_dir)
+
+    Mimic.stub(Claude.Core.Project, :root, fn -> test_isolation_dir end)
+
+    on_exit(fn ->
+      File.rm_rf!(test_isolation_dir)
+    end)
+
+    {:ok, test_dir: test_isolation_dir}
   end
 end

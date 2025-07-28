@@ -8,7 +8,7 @@ defmodule ExampleHooks.CustomFormatter do
     event: :post_tool_use,
     matcher: [:write, :edit],
     description: "Custom formatter for project-specific patterns"
-  
+
   @impl Claude.Hooks.Hook.Behaviour
   def config do
     %Claude.Hooks.Hook{
@@ -19,13 +19,14 @@ defmodule ExampleHooks.CustomFormatter do
 
   @impl true
   def run(:eof), do: :ok
-  
+
   def run(json_input) when is_binary(json_input) do
     with {:ok, data} <- Jason.decode(json_input),
          file_path <- get_in(data, ["tool_input", "file_path"]) || "" do
       if String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") do
         IO.puts("Custom formatter would process: #{file_path}")
       end
+
       :ok
     else
       _ -> :ok

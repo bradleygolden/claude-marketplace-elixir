@@ -259,6 +259,7 @@ defmodule Claude.Core.SettingsTest do
     test "reads and merges .claude.exs with settings.json" do
       in_tmp(fn tmp_dir ->
         stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+        stub(Project, :root, fn -> tmp_dir end)
         File.mkdir_p!(Path.join(tmp_dir, ".claude"))
 
         # Write settings.json
@@ -294,6 +295,7 @@ defmodule Claude.Core.SettingsTest do
     test "works with only .claude.exs file" do
       in_tmp(fn tmp_dir ->
         stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+        stub(Project, :root, fn -> tmp_dir end)
 
         # Write only .claude.exs
         exs_content = """
@@ -369,6 +371,7 @@ defmodule Claude.Core.SettingsTest do
     test "converts atom keys to strings in .claude.exs" do
       in_tmp(fn tmp_dir ->
         stub(Project, :claude_path, fn -> Path.join(tmp_dir, ".claude") end)
+        stub(Project, :root, fn -> tmp_dir end)
 
         # Write .claude.exs with atom keys
         exs_content = """

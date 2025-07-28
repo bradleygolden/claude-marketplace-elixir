@@ -199,8 +199,6 @@ defmodule Claude.Core.Settings do
       (map_size(settings) == 1 and Map.has_key?(settings, "hooks") and settings["hooks"] == %{})
   end
 
-  # Private functions
-
   defp ensure_directory do
     File.mkdir_p!(Project.claude_path())
   end

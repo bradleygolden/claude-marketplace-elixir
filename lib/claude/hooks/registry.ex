@@ -7,15 +7,38 @@ defmodule Claude.Hooks.Registry do
   - Hook metadata introspection
   - Efficient hook lookup by identifier
   - Dynamic discovery of custom hooks from .claude.exs
+  - Support for configurable hooks with user-defined settings
+
+  ## Registering Custom Hooks
 
   Custom hooks can be registered by adding them to the `hooks` array in .claude.exs:
 
       # .claude.exs
       %{
         hooks: [
-          MyProject.Hooks.CustomHook
+          # Simple module reference (no configuration)
+          MyProject.Hooks.CustomHook,
+          
+          # Module with configuration
+          {MyProject.Hooks.RelatedFiles, %{
+            patterns: [
+              {"lib/**/*.ex", "test/**/*_test.exs"}
+            ]
+          }},
+          
+          # Multiple instances of the same hook with different configs
+          {MyProject.Hooks.FileWatcher, %{path: "lib/"}},
+          {MyProject.Hooks.FileWatcher, %{path: "test/"}}
         ]
       }
+
+  ## Hook Configuration
+
+  When a hook is registered with configuration, the configuration map is:
+  1. Passed to the hook's `config/1` callback to generate the command
+  2. Encoded and passed to the hook's `run/2` callback when executed
+
+  This allows hooks to be reusable with different configurations.
 
   Custom hooks must implement the Claude.Hooks.Hook.Behaviour.
   """
@@ -27,22 +50,26 @@ defmodule Claude.Hooks.Registry do
   ]
 
   @doc """
-  Returns all available hook modules.
+  Returns all available hook modules with their configurations.
   Includes both built-in hooks and custom hooks from .claude.exs.
+  Returns a list of {module, config} tuples.
   """
   def all_hooks do
-    built_in = @known_hooks
+    built_in = Enum.map(@known_hooks, &{&1, %{}})
     custom = discover_custom_hooks()
     built_in ++ custom
   end
 
   @doc """
   Finds a hook by its identifier.
+  Returns the hook module or nil.
   """
   def find_by_identifier(identifier) do
     all_hooks()
-    |> Enum.find(fn hook_module ->
-      hook_identifier(hook_module) == identifier
+    |> Enum.find_value(fn {hook_module, _config} ->
+      if hook_identifier(hook_module) == identifier do
+        hook_module
+      end
     end)
   end
 
@@ -69,7 +96,7 @@ defmodule Claude.Hooks.Registry do
   """
   def hooks_by_event do
     all_hooks()
-    |> Enum.group_by(&get_hook_event/1)
+    |> Enum.group_by(fn {hook_module, _config} -> get_hook_event(hook_module) end)
   end
 
   @doc """
@@ -77,7 +104,7 @@ defmodule Claude.Hooks.Registry do
   """
   def hooks_for_event(event) when is_atom(event) do
     all_hooks()
-    |> Enum.filter(fn hook_module ->
+    |> Enum.filter(fn {hook_module, _config} ->
       get_hook_event(hook_module) == event
     end)
   end
@@ -87,7 +114,10 @@ defmodule Claude.Hooks.Registry do
   """
   def all_hook_metadata do
     all_hooks()
-    |> Enum.map(&get_hook_metadata/1)
+    |> Enum.map(fn {hook_module, config} ->
+      metadata = get_hook_metadata(hook_module)
+      if metadata, do: Map.put(metadata, :config, config), else: nil
+    end)
     |> Enum.reject(&is_nil/1)
   end
 
@@ -150,9 +180,10 @@ defmodule Claude.Hooks.Registry do
 
   @doc """
   Returns only the built-in hooks.
+  Returns a list of {module, config} tuples.
   """
   def built_in_hooks do
-    @known_hooks
+    Enum.map(@known_hooks, &{&1, %{}})
   end
 
   @doc """
@@ -194,11 +225,22 @@ defmodule Claude.Hooks.Registry do
     end
   end
 
-  defp validate_hooks(hook_modules) do
-    hook_modules
-    |> Enum.filter(&is_atom/1)
-    |> Enum.filter(&validate_hook_module/1)
-    |> Enum.reject(&(&1 in @known_hooks))
+  defp validate_hooks(hook_specs) do
+    hook_specs
+    |> Enum.map(fn
+      {module, config} when is_atom(module) and is_map(config) ->
+        {module, config}
+
+      module when is_atom(module) ->
+        {module, %{}}
+
+      _ ->
+        nil
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.filter(fn {module, _config} ->
+      validate_hook_module(module) and module not in @known_hooks
+    end)
     |> Enum.uniq()
   end
 
@@ -214,16 +256,23 @@ defmodule Claude.Hooks.Registry do
       _ -> false
     end
   end
-  
+
   defp validate_hook_config(%Claude.Hooks.Hook{}), do: true
-  defp validate_hook_config(%{type: type, command: command}) 
-    when is_binary(type) and is_binary(command), do: true
+
+  defp validate_hook_config(%{type: type, command: command})
+       when is_binary(type) and is_binary(command),
+       do: true
+
   defp validate_hook_config(_), do: false
 
   @doc """
   Checks if a module is a custom hook (not built-in).
   """
-  def custom_hook?(hook_module) do
+  def custom_hook?(hook_module) when is_atom(hook_module) do
+    hook_module not in @known_hooks
+  end
+
+  def custom_hook?({hook_module, _config}) when is_atom(hook_module) do
     hook_module not in @known_hooks
   end
 end

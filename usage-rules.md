@@ -30,6 +30,54 @@ Claude provides a behavior-based hook system that integrates with Claude Code. A
 2. **CompilationChecker** - Checks for compilation errors after edits
 3. **PreCommitCheck** - Validates formatting, compilation, and unused dependencies before commits
 
+### Optional Hooks
+
+1. **RelatedFiles** - Trigger Claude to view related files after edits
+
+#### RelatedFiles Hook Examples
+
+The RelatedFiles hook helps you keep related files in sync by suggesting updates when you modify code. Here are some examples:
+
+**Basic Usage** - Enable with default patterns:
+
+```elixir
+# .claude.exs
+%{
+  hooks: [
+    # This will use the default lib <-> test mappings
+    Claude.Hooks.PostToolUse.RelatedFiles
+  ]
+}
+```
+
+**Custom Patterns** - Configure your own file relationships:
+
+```elixir
+# .claude.exs
+%{
+  hooks: [
+    {Claude.Hooks.PostToolUse.RelatedFiles, %{
+      patterns: [
+        # When editing Phoenix controllers, suggest updating views
+        {"lib/*_web/controllers/*_controller.ex", "lib/*_web/controllers/*_html.ex"},
+
+        # When editing LiveView modules, suggest updating tests
+        {"lib/*_web/live/*_live.ex", "test/*_web/live/*_live_test.exs"},
+
+        # When editing schemas, suggest updating migrations
+        {"lib/*/schemas/*.ex", "priv/repo/migrations/*_*.exs"},
+
+        # Bidirectional mapping for documentation
+        {"lib/**/*.ex", "docs/**/*.md"},
+        {"docs/**/*.md", "lib/**/*.ex"}
+      ]
+    }}
+  ]
+}
+```
+
+The hook uses glob patterns (`*` matches any characters except `/`, `**` matches any characters including `/`) and will suggest Claude to review related files after you make edits.
+
 ### Creating Custom Hooks
 
 The easiest way to create a hook is using the `use` macro:

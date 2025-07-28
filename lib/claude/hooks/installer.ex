@@ -45,16 +45,24 @@ defmodule Claude.Hooks.Installer do
     existing_hooks = settings_struct.hooks || %{}
 
     all_hooks = Registry.all_hooks()
-    claude_commands = Enum.map(all_hooks, fn hook -> 
-      config = hook.config()
-      get_config_field(config, :command)
-    end)
+
+    claude_commands =
+      Enum.map(all_hooks, fn {hook_module, user_config} ->
+        config =
+          if map_size(user_config) > 0 do
+            hook_module.config(user_config)
+          else
+            hook_module.config()
+          end
+
+        get_config_field(config, :command)
+      end)
 
     cleaned_hooks = remove_claude_hooks_from_hooks_config(existing_hooks, claude_commands)
 
     hooks_by_event_and_matcher =
       all_hooks
-      |> Enum.group_by(fn hook_module ->
+      |> Enum.group_by(fn {hook_module, _user_config} ->
         metadata = Registry.get_hook_metadata(hook_module)
         event_type = to_event_type_string(metadata.event)
         matcher = metadata.matcher || ".*"
@@ -74,8 +82,13 @@ defmodule Claude.Hooks.Installer do
           end)
 
         hook_configs =
-          Enum.map(hook_modules, fn hook_module ->
-            config = hook_module.config()
+          Enum.map(hook_modules, fn {hook_module, user_config} ->
+            config =
+              if map_size(user_config) > 0 do
+                hook_module.config(user_config)
+              else
+                hook_module.config()
+              end
 
             %{
               "type" => get_config_field(config, :type),
@@ -131,7 +144,18 @@ defmodule Claude.Hooks.Installer do
   """
   @spec remove_all_hooks(map()) :: map()
   def remove_all_hooks(settings) when is_map(settings) do
-    claude_commands = Enum.map(Registry.all_hooks(), fn hook -> hook.config().command end)
+    claude_commands =
+      Enum.map(Registry.all_hooks(), fn {hook_module, user_config} ->
+        config =
+          if map_size(user_config) > 0 do
+            hook_module.config(user_config)
+          else
+            hook_module.config()
+          end
+
+        config.command
+      end)
+
     remove_claude_hooks(settings, claude_commands)
   end
 
@@ -148,24 +172,26 @@ defmodule Claude.Hooks.Installer do
   def format_hooks_list do
     all_hooks = Registry.all_hooks()
     built_in_hooks = Registry.built_in_hooks()
-    
-    {built_in, custom} = 
-      Enum.split_with(all_hooks, fn hook -> hook in built_in_hooks end)
-    
-    built_in_list = 
+
+    {built_in, custom} =
+      Enum.split_with(all_hooks, fn {hook_module, _config} ->
+        Enum.any?(built_in_hooks, fn {built_in_module, _} -> built_in_module == hook_module end)
+      end)
+
+    built_in_list =
       built_in
-      |> Enum.map(fn hook_module ->
+      |> Enum.map(fn {hook_module, _config} ->
         "  • #{hook_module.description()}"
       end)
       |> Enum.join("\n")
-    
-    custom_list = 
+
+    custom_list =
       custom
-      |> Enum.map(fn hook_module ->
+      |> Enum.map(fn {hook_module, _config} ->
         "  • [Custom] #{hook_module.description()}"
       end)
       |> Enum.join("\n")
-    
+
     case {built_in_list, custom_list} do
       {"", ""} -> "  No hooks installed"
       {built_in, ""} -> built_in
@@ -230,11 +256,11 @@ defmodule Claude.Hooks.Installer do
       Map.put(settings, "hooks", updated_hooks)
     end
   end
-  
+
   defp get_config_field(%Claude.Hooks.Hook{} = config, field) do
     Map.get(config, field)
   end
-  
+
   defp get_config_field(%{} = config, field) do
     Map.get(config, field)
   end
