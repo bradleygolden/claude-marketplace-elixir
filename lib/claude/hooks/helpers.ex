@@ -9,6 +9,11 @@ defmodule Claude.Hooks.Helpers do
   @edit_tools ["Edit", "Write", "MultiEdit"]
 
   @doc """
+  Returns the list of edit tool names.
+  """
+  def edit_tools, do: @edit_tools
+
+  @doc """
   Parses JSON input into the appropriate event struct.
 
   Returns {:ok, parsed_input} or {:error, reason}.
@@ -71,11 +76,11 @@ defmodule Claude.Hooks.Helpers do
   def extract_file_path(%{} = raw_map) do
     case Map.get(raw_map, "file_path") do
       file_path when is_binary(file_path) -> {:ok, file_path}
-      _ -> {:error, :no_file_path}
+      _ -> {:skip, :no_file_path}
     end
   end
 
-  def extract_file_path(_), do: {:error, :no_file_path}
+  def extract_file_path(_), do: {:skip, :no_file_path}
 
   @doc """
   Checks if a file has one of the given extensions.

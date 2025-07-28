@@ -12,7 +12,6 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
 
   alias Claude.Hooks.Helpers
 
-  @edit_tools ["Edit", "Write", "MultiEdit"]
   @elixir_extensions [".ex", ".exs"]
 
   @impl Claude.Hooks.Hook.Behaviour
@@ -39,33 +38,16 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
     end
   end
 
-  defp validate_tool(tool_name) when tool_name in @edit_tools, do: :ok
-  defp validate_tool(_), do: {:skip, :not_edit_tool}
-
-  defp extract_file_path(%Claude.Hooks.ToolInputs.Edit{file_path: file_path})
-       when is_binary(file_path) do
-    {:ok, file_path}
-  end
-
-  defp extract_file_path(%Claude.Hooks.ToolInputs.Write{file_path: file_path})
-       when is_binary(file_path) do
-    {:ok, file_path}
-  end
-
-  defp extract_file_path(%Claude.Hooks.ToolInputs.MultiEdit{file_path: file_path})
-       when is_binary(file_path) do
-    {:ok, file_path}
-  end
-
-  defp extract_file_path(%{} = raw_map) do
-    case Map.get(raw_map, "file_path") do
-      file_path when is_binary(file_path) -> {:ok, file_path}
-      _ -> {:skip, :no_file_path}
+  defp validate_tool(tool_name) do
+    if tool_name in Helpers.edit_tools() do
+      :ok
+    else
+      {:skip, :not_edit_tool}
     end
   end
 
-  defp extract_file_path(_) do
-    {:skip, :no_file_path}
+  defp extract_file_path(tool_input) do
+    Helpers.extract_file_path(tool_input)
   end
 
   defp validate_elixir_file(file_path) do
