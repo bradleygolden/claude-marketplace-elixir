@@ -44,18 +44,29 @@ defmodule Mix.Tasks.Claude.Install do
     claude_exs_path = Path.join(Project.root(), ".claude.exs")
     relative_exs_path = Path.relative_to_cwd(claude_exs_path)
 
+    igniter =
+      if File.exists?(claude_exs_path) do
+        igniter
+        |> Igniter.add_notice("""
+        Claude configuration file already exists at #{relative_exs_path}
+        Skipping file creation to preserve your existing configuration.
+        """)
+      else
+        igniter
+        |> Igniter.create_new_file(relative_exs_path, ConfigTemplate.claude_exs_content())
+        |> Igniter.add_notice("""
+        Claude has been configured for your project!
+
+        Configuration file created at #{relative_exs_path}
+        You can customize Claude's behavior by editing this file.
+        """)
+      end
+
     igniter
-    |> Igniter.create_new_file(relative_exs_path, ConfigTemplate.claude_exs_content())
     |> Igniter.Project.Deps.add_dep({:usage_rules, "~> 0.1", only: [:dev]}, on_exists: :skip)
     |> Igniter.compose_task("claude.hooks.install", [])
     |> Igniter.compose_task("claude.usage_rules.sync", [])
     |> Igniter.compose_task("claude.subagents.generate", [])
-    |> Igniter.add_notice("""
-    Claude has been configured for your project!
-
-    Configuration file created at #{relative_exs_path}
-    You can customize Claude's behavior by editing this file.
-    """)
   end
 
   @impl Igniter.Mix.Task
