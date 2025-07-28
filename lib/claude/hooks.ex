@@ -54,7 +54,7 @@ defmodule Claude.Hooks do
             # Your hook logic here
             :ok
           end
-          
+
           # Override to handle user config
           def run(input, user_config) do
             # Your hook logic with user config
@@ -67,6 +67,7 @@ defmodule Claude.Hooks do
     - Generates the config/0 and config/1 functions
     - Provides helper functions for common patterns
     """
+    require Logger
 
     @doc """
     Returns the hook configuration as a %Claude.Hook{} struct.
@@ -157,6 +158,41 @@ defmodule Claude.Hooks do
         def run(json_input, _user_config) when is_binary(json_input) do
           if json_input == ":eof" do
             :ok
+          else
+            :ok
+          end
+        end
+
+        @doc """
+        Emits a custom telemetry event for this hook.
+
+        This is a convenience function that automatically includes hook metadata
+        in the telemetry event. If telemetry is not available, this is a no-op.
+
+        ## Parameters
+
+        - `event_suffix` - Atom or list of atoms to append to [:claude, :hook]
+        - `measurements` - Map of measurement data (default: %{})
+        - `metadata` - Additional metadata to include (default: %{})
+
+        ## Examples
+
+            # Emit a simple event
+            emit_telemetry(:validated)
+
+            # Emit with measurements
+            emit_telemetry(:processed, %{file_count: 3, duration_ms: 45})
+
+            # Emit with metadata
+            emit_telemetry(:failed, %{}, %{reason: :invalid_syntax})
+
+            # Emit with nested event name
+            emit_telemetry([:format, :check], %{files: 10}, %{status: :needs_formatting})
+        """
+        @spec emit_telemetry(atom() | [atom()], map(), map()) :: :ok
+        def emit_telemetry(event_suffix, measurements \\ %{}, metadata \\ %{}) do
+          if Code.ensure_loaded?(:telemetry) and Code.ensure_loaded?(Claude.Hooks.Telemetry) do
+            Claude.Hooks.Telemetry.emit_event(event_suffix, measurements, metadata, __MODULE__)
           else
             :ok
           end

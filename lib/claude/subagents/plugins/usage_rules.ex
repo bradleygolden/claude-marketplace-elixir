@@ -134,7 +134,8 @@ defmodule Claude.Subagents.Plugins.UsageRules do
 
   defp fetch_usage_rules({package, sub_rule}) do
     # Fetch specific sub-rule
-    sub_rule_path = Path.join([Project.root(), "deps", to_string(package), "usage-rules", "#{sub_rule}.md"])
+    sub_rule_path =
+      Path.join([Project.root(), "deps", to_string(package), "usage-rules", "#{sub_rule}.md"])
 
     case File.read(sub_rule_path) do
       {:ok, content} -> {package, sub_rule, content}
