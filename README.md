@@ -127,6 +127,8 @@ error: undefined variable "nam"
 
 For Phoenix projects, Claude automatically configures [Tidewave](https://hexdocs.pm/tidewave) integration, providing Claude with access to your development tools and database through the Model Context Protocol (MCP).
 
+**Note:** Phoenix is an optional dependency. Claude will detect Phoenix whether it's a direct dependency, transitive dependency, or just present in your project.
+
 **Automatic Setup:**
 
 When you run `mix claude.install` in a Phoenix project, Tidewave is automatically configured. To complete the setup:

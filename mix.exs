@@ -37,7 +37,10 @@ defmodule Claude.MixProject do
       {:jason, "~> 1.4"},
       {:mimic, "~> 1.7", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:igniter, "~> 0.6", optional: true}
+      {:igniter, "~> 0.6", optional: true},
+
+      # Optional dependencies
+      {:phoenix, "~> 1.7", optional: true, only: [:dev]}
     ]
   end
 

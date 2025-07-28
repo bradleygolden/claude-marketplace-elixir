@@ -43,41 +43,41 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
     case igniter.args.positional do
       [server_name | _] ->
         server_atom = String.to_atom(server_name)
-        
+
         cond do
           not Catalog.exists?(server_atom) ->
             available = Catalog.available() |> Enum.map(&to_string/1) |> Enum.join(", ")
-            
+
             igniter
             |> Igniter.add_issue("""
             Unknown MCP server: #{server_name}
-            
+
             Available servers: #{available}
-            
+
             Run `mix claude.mcp.list` for more details about each server.
             """)
-            
+
           Registry.configured?(server_atom) ->
             igniter
             |> Igniter.add_notice("MCP server '#{server_name}' is already configured.")
-            
+
           true ->
             claude_exs_path = Path.join(Project.root(), ".claude.exs")
             relative_exs_path = Path.relative_to_cwd(claude_exs_path)
-            
+
             igniter
             |> update_claude_exs(relative_exs_path, server_atom)
             |> Igniter.compose_task("claude.mcp.sync", [])
             |> add_setup_notice(server_atom)
         end
-        
+
       _ ->
         igniter
         |> Igniter.add_issue("""
         Please specify a server name.
-        
+
         Usage: mix claude.mcp.add SERVER_NAME
-        
+
         Run `mix claude.mcp.list` to see available servers.
         """)
     end

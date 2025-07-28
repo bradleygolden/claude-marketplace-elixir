@@ -52,31 +52,17 @@ defmodule Mix.Tasks.Claude.Install.Tidewave do
   # Private functions
 
   defp check_phoenix_project(igniter) do
-    cond do
-      # Check if Phoenix is in the project dependencies
-      Claude.Core.Deps.phoenix_dep?() ->
-        igniter
+    if Claude.Core.Deps.phoenix_project?() do
+      igniter
+    else
+      igniter
+      |> Igniter.add_warning("""
+      This doesn't appear to be a Phoenix project.
 
-      # Check if this might be a Phoenix project by looking for common files
-      File.exists?("lib/#{app_name()}_web.ex") or File.exists?("lib/#{app_name()}_web/router.ex") ->
-        igniter
-        |> Igniter.add_notice(
-          "This appears to be a Phoenix project. Tidewave will be configured."
-        )
-
-      true ->
-        igniter
-        |> Igniter.add_warning("""
-        This doesn't appear to be a Phoenix project.
-
-        Tidewave is designed to work with Phoenix applications.
-        If this is a Phoenix project, you can ignore this warning.
-        """)
+      Tidewave is designed to work with Phoenix applications.
+      If this is a Phoenix project, you can ignore this warning.
+      """)
     end
-  end
-
-  defp app_name do
-    Mix.Project.config()[:app] |> to_string()
   end
 
   defp add_tidewave_to_config(igniter) do
@@ -136,6 +122,6 @@ defmodule Mix.Tasks.Claude.Install.Tidewave do
   end
 
   defp tidewave_dep? do
-    Claude.Core.Deps.tidewave_dep?()
+    Claude.Core.Deps.tidewave_available?()
   end
 end
