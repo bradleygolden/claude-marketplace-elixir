@@ -11,7 +11,8 @@ defmodule Claude.Core.ClaudeExs do
 
   @type config :: %{
           optional(:hooks) => [module()],
-          optional(:subagents) => [subagent_config()]
+          optional(:subagents) => [subagent_config()],
+          optional(:mcp_servers) => [atom() | {atom(), keyword()}]
         }
 
   @type subagent_config :: %{
@@ -36,6 +37,40 @@ defmodule Claude.Core.ClaudeExs do
 
       {:error, _} = error ->
         error
+    end
+  end
+
+  @doc """
+  Reads the .claude.exs configuration from the project root.
+
+  This is an alias for `load/0` for consistency with other modules.
+  """
+  @spec read() :: {:ok, config()} | {:error, term()}
+  def read, do: load()
+
+  @doc """
+  Writes configuration to .claude.exs file.
+  """
+  @spec write(config()) :: :ok | {:error, term()}
+  def write(config) when is_map(config) do
+    case validate_config(config) do
+      {:ok, _} ->
+        case Project.claude_exs_path() do
+          {:ok, path} ->
+            content = """
+            %{
+            #{format_config(config)}
+            }
+            """
+
+            File.write(path, content)
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -93,11 +128,14 @@ defmodule Claude.Core.ClaudeExs do
   defp validate_config(_), do: {:error, "Configuration must be a map"}
 
   defp validate_config_keys(config) do
-    valid_keys = [:hooks, :subagents]
+    valid_keys = [:hooks, :subagents, :mcp_servers]
     invalid_keys = Map.keys(config) -- valid_keys
 
     if invalid_keys == [] do
-      validate_subagents(Map.get(config, :subagents, []))
+      with :ok <- validate_subagents(Map.get(config, :subagents, [])),
+           :ok <- validate_mcp_servers(Map.get(config, :mcp_servers, [])) do
+        :ok
+      end
     else
       {:error, "Invalid configuration keys: #{inspect(invalid_keys)}"}
     end
@@ -113,6 +151,52 @@ defmodule Claude.Core.ClaudeExs do
   end
 
   defp validate_subagents(_), do: {:error, "Subagents must be a list"}
+
+  defp validate_mcp_servers(servers) when is_list(servers) do
+    Enum.reduce_while(servers, :ok, fn
+      server, _acc when is_atom(server) ->
+        {:cont, :ok}
+
+      {server, opts}, _acc when is_atom(server) and is_list(opts) ->
+        case validate_mcp_server_opts(opts) do
+          :ok -> {:cont, :ok}
+          error -> {:halt, error}
+        end
+
+      _, _acc ->
+        {:halt, {:error, "MCP servers must be atoms or tuples like {:server_name, [port: 5000]}"}}
+    end)
+  end
+
+  defp validate_mcp_servers(_), do: {:error, "MCP servers must be a list"}
+
+  defp validate_mcp_server_opts(opts) when is_list(opts) do
+    # Check all keys are valid
+    valid_keys = [:port, :enabled?]
+
+    Enum.reduce_while(opts, :ok, fn
+      {:port, port}, _acc ->
+        case validate_port(port) do
+          :ok -> {:cont, :ok}
+          error -> {:halt, error}
+        end
+
+      {:enabled?, enabled?}, _acc when is_boolean(enabled?) ->
+        {:cont, :ok}
+
+      {:enabled?, _}, _acc ->
+        {:halt, {:error, "enabled? must be a boolean"}}
+
+      {key, _}, _acc ->
+        {:halt,
+         {:error, "Invalid option #{inspect(key)}. Valid options are: #{inspect(valid_keys)}"}}
+    end)
+  end
+
+  defp validate_mcp_server_opts(_), do: {:error, "MCP server options must be a keyword list"}
+
+  defp validate_port(port) when is_integer(port) and port > 0 and port <= 65535, do: :ok
+  defp validate_port(_), do: {:error, "Port must be an integer between 1 and 65535"}
 
   defp validate_subagent_config(config) when is_map(config) do
     required_keys = [:name, :description, :prompt]
@@ -209,5 +293,56 @@ defmodule Claude.Core.ClaudeExs do
       rules when is_list(rules) ->
         [{Claude.Subagents.Plugins.UsageRules, %{deps: rules}}]
     end
+  end
+
+  defp format_config(config) do
+    config
+    |> Enum.map(&format_config_entry/1)
+    |> Enum.join(",\n")
+  end
+
+  defp format_config_entry({:hooks, hooks}) when is_list(hooks) do
+    formatted_hooks =
+      hooks
+      |> Enum.map(&inspect/1)
+      |> Enum.join(",\n    ")
+
+    "  hooks: [\n    #{formatted_hooks}\n  ]"
+  end
+
+  defp format_config_entry({:mcp_servers, servers}) when is_list(servers) do
+    formatted_servers =
+      servers
+      |> Enum.map(&format_mcp_server/1)
+      |> Enum.join(", ")
+
+    "  mcp_servers: [#{formatted_servers}]"
+  end
+
+  defp format_config_entry({:subagents, subagents}) when is_list(subagents) do
+    formatted_subagents =
+      subagents
+      |> Enum.map(&format_subagent/1)
+      |> Enum.join(",\n    ")
+
+    "  subagents: [\n    #{formatted_subagents}\n  ]"
+  end
+
+  defp format_config_entry({key, value}) do
+    "  #{key}: #{inspect(value)}"
+  end
+
+  defp format_subagent(subagent) when is_map(subagent) do
+    "%{\n" <>
+      (subagent
+       |> Enum.map(fn {k, v} -> "      #{k}: #{inspect(v)}" end)
+       |> Enum.join(",\n")) <>
+      "\n    }"
+  end
+
+  defp format_mcp_server(server) when is_atom(server), do: inspect(server)
+
+  defp format_mcp_server({server, opts}) when is_atom(server) and is_list(opts) do
+    "{#{inspect(server)}, #{inspect(opts)}}"
   end
 end

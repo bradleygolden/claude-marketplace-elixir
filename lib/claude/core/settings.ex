@@ -109,6 +109,8 @@ defmodule Claude.Core.Settings do
       {:hooks, v} when is_list(v) -> nil
       # Filter out subagents from .claude.exs as they should not be in settings.json
       {:subagents, v} when is_list(v) -> nil
+      # Filter out mcp_servers from .claude.exs as they should not be in settings.json
+      {:mcp_servers, v} when is_list(v) -> nil
       {k, v} when is_atom(k) -> {Atom.to_string(k), stringify_keys(v)}
       {k, v} -> {k, stringify_keys(v)}
     end)
