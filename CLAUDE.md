@@ -58,7 +58,7 @@ mix claude hooks run <hook_identifier> <tool_name> <json_params>
 Before working with any concepts related to settings, hooks or sub agents, ALWAYS read which ever documentation is relevant to your needs below:
 
 To reference claude code settings, please see @docs/anthropic/claude_code/configuration/settings.md
-To reference claude code hooks, please see @docs/anthropic/claude_code/reference/hooks.md
+To reference claude code hooks, please see @docs/anthropic/claude_code/reference/hooks.md and @docs/anthropic/claude_code/guides/hooks.md
 To reference claude code sub agents, please see @docs/anthropic/claude_code/build_with/sub_agents.md
 
 ## Architecture Overview

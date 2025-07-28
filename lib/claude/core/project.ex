@@ -15,9 +15,9 @@ defmodule Claude.Core.Project do
 
   @doc """
   Returns the root path of the current project.
-  Defaults to the current working directory but can be overridden.
+  Checks CLAUDE_PROJECT_DIR environment variable first, then falls back to current working directory.
   """
   def root do
-    File.cwd!()
+    System.get_env("CLAUDE_PROJECT_DIR") || File.cwd!()
   end
 end

@@ -8,20 +8,12 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   - There are unused dependencies in mix.lock
   """
 
-  @behaviour Claude.Hooks.Hook.Behaviour
+  use Claude.Hooks.Hook.Behaviour,
+    event: :pre_tool_use,
+    matcher: :bash,
+    description: "Validates formatting, compilation, and dependencies before allowing commits"
 
-  @impl Claude.Hooks.Hook.Behaviour
-  def config do
-    %Claude.Hooks.Hook{
-      type: "command",
-      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run pre_tool_use.pre_commit_check"
-    }
-  end
-
-  @impl Claude.Hooks.Hook.Behaviour
-  def description do
-    "Validates formatting, compilation, and dependencies before allowing commits"
-  end
+  alias Claude.Hooks.Helpers
 
   @impl Claude.Hooks.Hook.Behaviour
   def run(:eof) do
@@ -47,21 +39,12 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
     if String.contains?(command, "git commit") do
       IO.puts("Pre-commit validation triggered for: #{command}")
 
-      project_dir = System.get_env("CLAUDE_PROJECT_DIR") || File.cwd!()
-      original_dir = File.cwd!()
+      case validate_commit() do
+        :ok ->
+          System.halt(0)
 
-      try do
-        File.cd!(project_dir)
-
-        case validate_commit() do
-          :ok ->
-            System.halt(0)
-
-          {:error, _reason} ->
-            System.halt(2)
-        end
-      after
-        File.cd!(original_dir)
+        {:error, _reason} ->
+          System.halt(2)
       end
     else
       System.halt(0)
@@ -73,11 +56,13 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   end
 
   defp validate_commit do
-    with :ok <- check_formatting(),
-         :ok <- check_compilation(),
-         :ok <- check_unused_dependencies() do
-      :ok
-    end
+    Helpers.in_project_dir(nil, fn ->
+      with :ok <- check_formatting(),
+           :ok <- check_compilation(),
+           :ok <- check_unused_dependencies() do
+        :ok
+      end
+    end)
   end
 
   defp check_formatting do
