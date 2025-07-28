@@ -12,7 +12,7 @@
             "type": "command"
           }
         ],
-        "matcher": ".*"
+        "matcher": "Write|Edit|MultiEdit"
       }
     ],
     "PreToolUse": [
