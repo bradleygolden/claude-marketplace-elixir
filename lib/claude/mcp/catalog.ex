@@ -22,7 +22,7 @@ defmodule Claude.MCP.Catalog do
   @servers %{
     tidewave: %{
       type: :sse,
-      url: "http://localhost:${PHOENIX_PORT:-4000}/tidewave/mcp",
+      url: "http://localhost:4000/tidewave/mcp",
       description: "Phoenix development framework integration",
       setup_instructions: """
       Tidewave integrates with your Phoenix application:
@@ -30,9 +30,7 @@ defmodule Claude.MCP.Catalog do
       2. Run: mix deps.get
       3. Configure in config/dev.exs (see Tidewave docs)
       4. Start your Phoenix server: mix phx.server
-      5. MCP endpoint will be at: http://localhost:PORT/tidewave/mcp
-
-      Set PHOENIX_PORT environment variable if not using default port 4000.
+      5. MCP endpoint will be at: http://localhost:4000/tidewave/mcp
       """,
       # Could implement auto-dependency addition later
       installer: nil
@@ -45,7 +43,7 @@ defmodule Claude.MCP.Catalog do
   ## Examples
 
       iex> Claude.MCP.Catalog.get(:tidewave)
-      %{type: :sse, url: "http://localhost:${PHOENIX_PORT:-4000}/tidewave/mcp", ...}
+      %{type: :sse, url: "http://localhost:4000/tidewave/mcp", ...}
       
       iex> Claude.MCP.Catalog.get(:unknown)
       nil

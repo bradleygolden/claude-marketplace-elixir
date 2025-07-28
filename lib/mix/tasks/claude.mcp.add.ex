@@ -16,8 +16,10 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
   ## Examples
 
       mix claude.mcp.add tidewave
-      mix claude.mcp.add postgres
-      mix claude.mcp.add filesystem
+
+  This will add the server configuration to your `.claude.exs` file.
+  For Tidewave, it includes a default port that you can modify directly
+  in the configuration file.
 
   ## Available Servers
 
@@ -65,8 +67,10 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
             claude_exs_path = Path.join(Project.root(), ".claude.exs")
             relative_exs_path = Path.relative_to_cwd(claude_exs_path)
 
+            server_config = build_server_config(server_atom)
+
             igniter
-            |> update_claude_exs(relative_exs_path, server_atom)
+            |> update_claude_exs(relative_exs_path, server_config)
             |> Igniter.compose_task("claude.mcp.sync", [])
             |> add_setup_notice(server_atom)
         end
@@ -88,11 +92,17 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
 
   # Private functions
 
-  defp update_claude_exs(igniter, relative_path, server_atom) do
+  defp build_server_config(:tidewave) do
+    # Always write tidewave with explicit port so users can see they can change it
+    {:tidewave, [port: 4000]}
+  end
+  defp build_server_config(server_atom), do: server_atom
+
+  defp update_claude_exs(igniter, relative_path, server_config) do
     # Create default content if file doesn't exist
     default_content = """
     %{
-      mcp_servers: [#{inspect(server_atom)}]
+      mcp_servers: [#{inspect(server_config)}]
     }
     """
 
@@ -104,7 +114,7 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
       case Code.string_to_quoted(content) do
         {:ok, ast} ->
           # Update the AST to add the server
-          updated_ast = update_mcp_servers_ast(ast, server_atom)
+          updated_ast = update_mcp_servers_ast(ast, server_config)
           new_content = Macro.to_string(updated_ast)
 
           Rewrite.Source.update(source, :content, new_content)
@@ -116,45 +126,54 @@ defmodule Mix.Tasks.Claude.Mcp.Add do
     end)
   end
 
-  defp update_mcp_servers_ast({:%{}, meta, fields}, server_atom) do
+  defp update_mcp_servers_ast({:%{}, meta, fields}, server_config) do
     updated_fields =
       case List.keyfind(fields, :mcp_servers, 0) do
         {:mcp_servers, servers_list} ->
           # Add server to existing list
-          updated_servers = add_server_to_list(servers_list, server_atom)
+          updated_servers = add_server_to_list(servers_list, server_config)
           List.keyreplace(fields, :mcp_servers, 0, {:mcp_servers, updated_servers})
 
         nil ->
           # Add new mcp_servers field
-          fields ++ [{:mcp_servers, [server_atom]}]
+          fields ++ [{:mcp_servers, [server_config]}]
       end
 
     {:%{}, meta, updated_fields}
   end
 
-  defp update_mcp_servers_ast(_ast, server_atom) do
+  defp update_mcp_servers_ast(_ast, server_config) do
     # If it's not a map, wrap it in a map with mcp_servers
-    {:%{}, [], [{:mcp_servers, [server_atom]}]}
+    {:%{}, [], [{:mcp_servers, [server_config]}]}
   end
 
-  defp add_server_to_list(servers_list, server_atom) when is_list(servers_list) do
-    if server_atom in servers_list do
-      servers_list
-    else
-      servers_list ++ [server_atom]
-    end
+  defp add_server_to_list(servers_list, server_config) when is_list(servers_list) do
+    server_name = extract_server_name(server_config)
+    
+    # Remove any existing configuration for this server
+    filtered_list = Enum.reject(servers_list, fn
+      atom when is_atom(atom) -> atom == server_name
+      {server, _opts} -> server == server_name
+      _ -> false
+    end)
+    
+    # Add the new configuration
+    filtered_list ++ [server_config]
   end
 
-  defp add_server_to_list(_, server_atom) do
-    [server_atom]
+  defp add_server_to_list(_, server_config) do
+    [server_config]
   end
+
+  defp extract_server_name(atom) when is_atom(atom), do: atom
+  defp extract_server_name({server, _opts}) when is_atom(server), do: server
 
   defp add_setup_notice(igniter, server_atom) do
     config = Catalog.get(server_atom)
 
     notice = """
     Added MCP server '#{server_atom}' to your project.
-
+    
     Description: #{config.description}
     """
 

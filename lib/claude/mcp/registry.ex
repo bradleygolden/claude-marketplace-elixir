@@ -50,7 +50,14 @@ defmodule Claude.MCP.Registry do
   def configured_servers do
     case ClaudeExs.read() do
       {:ok, config} ->
-        Map.get(config, :mcp_servers, [])
+        config
+        |> Map.get(:mcp_servers, [])
+        |> Enum.map(fn
+          atom when is_atom(atom) -> atom
+          {server, _opts} when is_atom(server) -> server
+          _ -> nil
+        end)
+        |> Enum.reject(&is_nil/1)
 
       {:error, _} ->
         []
@@ -80,17 +87,45 @@ defmodule Claude.MCP.Registry do
   """
   @spec add_server(atom()) :: :ok | {:error, term()}
   def add_server(server_name) when is_atom(server_name) do
+    add_server(server_name, [])
+  end
+
+  @doc """
+  Add a server with custom configuration.
+
+  ## Examples
+
+      iex> Claude.MCP.Registry.add_server(:tidewave, port: 5000)
+      :ok
+  """
+  @spec add_server(atom(), keyword()) :: :ok | {:error, term()}
+  def add_server(server_name, opts) when is_atom(server_name) and is_list(opts) do
     unless Catalog.exists?(server_name) do
       {:error, "Unknown MCP server: #{server_name}"}
     else
       case ClaudeExs.read() do
         {:ok, config} ->
           servers = Map.get(config, :mcp_servers, [])
+          configured_names = configured_servers()
 
-          if server_name in servers do
+          if server_name in configured_names do
             {:error, "Server #{server_name} is already configured"}
           else
-            updated_config = Map.put(config, :mcp_servers, servers ++ [server_name])
+            # Build the server entry based on options
+            server_entry =
+              cond do
+                # Always use explicit port for tidewave
+                server_name == :tidewave and opts == [] ->
+                  {:tidewave, [port: 4000]}
+                
+                Keyword.keyword?(opts) and opts != [] ->
+                  {server_name, opts}
+                
+                true ->
+                  server_name
+              end
+
+            updated_config = Map.put(config, :mcp_servers, servers ++ [server_entry])
             ClaudeExs.write(updated_config)
           end
 
@@ -113,7 +148,11 @@ defmodule Claude.MCP.Registry do
     case ClaudeExs.read() do
       {:ok, config} ->
         servers = Map.get(config, :mcp_servers, [])
-        updated_servers = Enum.reject(servers, &(&1 == server_name))
+        updated_servers = Enum.reject(servers, fn
+          atom when is_atom(atom) -> atom == server_name
+          {server, _opts} when is_atom(server) -> server == server_name
+          _ -> false
+        end)
 
         if servers == updated_servers do
           {:error, "Server #{server_name} is not configured"}
@@ -134,13 +173,32 @@ defmodule Claude.MCP.Registry do
   """
   @spec validate() :: {:ok, [atom()]} | {:error, [atom()]}
   def validate do
-    servers = configured_servers()
-    invalid = Enum.reject(servers, &Catalog.exists?/1)
+    case ClaudeExs.read() do
+      {:ok, config} ->
+        servers = Map.get(config, :mcp_servers, [])
+        
+        {valid, invalid} = 
+          Enum.split_with(servers, fn
+            atom when is_atom(atom) -> Catalog.exists?(atom)
+            {server, _opts} when is_atom(server) -> Catalog.exists?(server)
+            _ -> false
+          end)
 
-    if Enum.empty?(invalid) do
-      {:ok, servers}
-    else
-      {:error, invalid}
+        invalid_names = 
+          Enum.map(invalid, fn
+            atom when is_atom(atom) -> atom
+            {server, _opts} when is_atom(server) -> server
+            other -> inspect(other)
+          end)
+
+        if Enum.empty?(invalid) do
+          {:ok, valid}
+        else
+          {:error, invalid_names}
+        end
+        
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -148,14 +206,60 @@ defmodule Claude.MCP.Registry do
 
   defp build_server_configs(servers) when is_list(servers) do
     servers
-    |> Enum.filter(&is_atom/1)
-    |> Enum.reduce(%{}, fn server_name, acc ->
-      case Catalog.to_settings_json(server_name) do
-        nil -> acc
-        config -> Map.put(acc, to_string(server_name), config)
-      end
+    |> Enum.reduce(%{}, fn
+      server_name, acc when is_atom(server_name) ->
+        case Catalog.to_settings_json(server_name) do
+          nil -> acc
+          config -> Map.put(acc, to_string(server_name), config)
+        end
+
+      {server_name, opts}, acc when is_atom(server_name) and is_list(opts) ->
+        case Catalog.to_settings_json(server_name) do
+          nil ->
+            acc
+
+          base_config ->
+            # Apply custom configuration over base config
+            config = apply_custom_config(base_config, opts)
+            Map.put(acc, to_string(server_name), config)
+        end
+
+      _, acc ->
+        acc
     end)
   end
 
   defp build_server_configs(_), do: %{}
+
+  defp apply_custom_config(base_config, opts) when is_list(opts) do
+    # Apply custom port if specified
+    case Keyword.get(opts, :port) do
+      nil ->
+        base_config
+
+      port ->
+        # Update the URL with the custom port
+        case base_config["url"] do
+          nil ->
+            base_config
+
+          url ->
+            # Parse and update the URL with the new port
+            updated_url = update_url_port(url, port)
+            Map.put(base_config, "url", updated_url)
+        end
+    end
+  end
+
+  defp update_url_port(url, port) do
+    case URI.parse(url) do
+      %URI{} = uri ->
+        uri
+        |> Map.put(:port, port)
+        |> URI.to_string()
+
+      _ ->
+        url
+    end
+  end
 end

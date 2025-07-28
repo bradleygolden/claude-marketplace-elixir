@@ -29,6 +29,11 @@ defmodule Claude.Core.ConfigTemplate do
       
       # MCP servers (Tidewave is automatically configured for Phoenix projects)
       # mcp_servers: [:tidewave],
+      # 
+      # You can also specify custom configuration like port:
+      # mcp_servers: [
+      #   {:tidewave, [port: 5000]}
+      # ],
       
       # Subagents provide specialized expertise with their own context
       # subagents: [

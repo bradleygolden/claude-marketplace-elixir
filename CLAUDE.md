@@ -56,7 +56,6 @@ mix claude hooks run <hook_identifier> <tool_name> <json_params>
 mix claude.mcp.list              # List available MCP servers
 mix claude.mcp.add <server>      # Add an MCP server to .claude.exs
 mix claude.mcp.sync              # Sync MCP servers to settings.json
-mix claude.install.tidewave      # Install and configure Tidewave
 ```
 
 ## Reference Docs
@@ -89,9 +88,10 @@ To reference claude code sub agents, please see @docs/anthropic/claude_code/buil
 
 4. **MCP Server System** (`lib/claude/mcp/`)
    - **Catalog** - Tidewave configuration for Phoenix projects
-   - **Registry** - Reads mcp_servers from `.claude.exs`
+   - **Registry** - Reads mcp_servers from `.claude.exs` (supports both atom and tuple formats)
    - **Installer** - Syncs MCP configuration to settings.json
    - **Automatic** - Tidewave is auto-configured for Phoenix projects
+   - **Custom Config** - Supports port customization: `{:tidewave, [port: 5000]}`
 
 ### Hook Implementation
 

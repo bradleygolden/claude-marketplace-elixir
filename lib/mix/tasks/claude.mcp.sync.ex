@@ -103,23 +103,40 @@ defmodule Mix.Tasks.Claude.Mcp.Sync do
   defp add_sync_notice(igniter, servers, relative_settings_path) do
     server_info =
       servers
-      |> Enum.map(fn server ->
-        config = Catalog.get(server)
-        "  - #{server}: #{config.description}"
+      |> Enum.map(fn
+        atom when is_atom(atom) ->
+          config = Catalog.get(atom)
+          "  - #{atom}: #{config.description}"
+        
+        {server_atom, _opts} ->
+          config = Catalog.get(server_atom)
+          "  - #{server_atom}: #{config.description}"
       end)
       |> Enum.join("\n")
 
     setup_instructions =
       servers
-      |> Enum.filter(fn server ->
-        case Catalog.get(server) do
-          %{setup_instructions: instructions} when not is_nil(instructions) -> true
-          _ -> false
-        end
+      |> Enum.filter(fn
+        atom when is_atom(atom) ->
+          case Catalog.get(atom) do
+            %{setup_instructions: instructions} when not is_nil(instructions) -> true
+            _ -> false
+          end
+        
+        {server_atom, _opts} ->
+          case Catalog.get(server_atom) do
+            %{setup_instructions: instructions} when not is_nil(instructions) -> true
+            _ -> false
+          end
       end)
-      |> Enum.map(fn server ->
-        instructions = Catalog.setup_instructions(server)
-        "\n#{server}:\n#{instructions}"
+      |> Enum.map(fn
+        atom when is_atom(atom) ->
+          instructions = Catalog.setup_instructions(atom)
+          "\n#{atom}:\n#{instructions}"
+        
+        {server_atom, _opts} ->
+          instructions = Catalog.setup_instructions(server_atom)
+          "\n#{server_atom}:\n#{instructions}"
       end)
       |> Enum.join("\n")
 

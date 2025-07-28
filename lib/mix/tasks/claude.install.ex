@@ -87,8 +87,15 @@ defmodule Mix.Tasks.Claude.Install do
     case Claude.Core.ClaudeExs.read() do
       {:ok, config} ->
         existing_servers = Map.get(config, :mcp_servers, [])
+        
+        # Check if tidewave is already configured (either as atom or tuple)
+        tidewave_configured = Enum.any?(existing_servers, fn
+          :tidewave -> true
+          {:tidewave, _opts} -> true
+          _ -> false
+        end)
 
-        if :tidewave in existing_servers do
+        if tidewave_configured do
           igniter
         else
           igniter
@@ -101,6 +108,8 @@ defmodule Mix.Tasks.Claude.Install do
           2. Run mix deps.get
           3. Configure in config/dev.exs
           4. Access MCP endpoint at http://localhost:4000/tidewave/mcp
+          
+          Note: You can modify the port in .claude.exs if needed.
           """)
         end
 
