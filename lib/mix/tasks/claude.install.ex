@@ -1023,13 +1023,11 @@ defmodule Mix.Tasks.Claude.Install do
             # Check if the Meta Agent differs from the default
             if meta_agent_differs?(existing_meta_agent) do
               # Ask user if they want to update
-              if Igniter.Util.IO.yes?("""
-              
-              Your project has a customized Meta Agent that differs from the latest version.
-              Would you like to update it to the latest version?
-              
-              Note: This will overwrite your custom Meta Agent configuration.
-              """) do
+              if Igniter.Util.IO.yes?(
+                   "Your project has a customized Meta Agent that differs from the latest version.\n" <>
+                   "Would you like to update it to the latest version?\n\n" <>
+                   "Note: This will overwrite your custom Meta Agent configuration."
+                 ) do
                 # Update the Meta Agent
                 updated_subagents = List.replace_at(subagents, meta_agent_index, @meta_agent_config)
                 updated_config = Map.put(config, :subagents, updated_subagents)
@@ -1052,11 +1050,10 @@ defmodule Mix.Tasks.Claude.Install do
             end
           else
             # No Meta Agent exists, ask if they want to add it
-            if Igniter.Util.IO.yes?("""
-            
-            Your project doesn't have a Meta Agent configured.
-            Would you like to add the Meta Agent? It helps create new subagents.
-            """) do
+            if Igniter.Util.IO.yes?(
+                 "Your project doesn't have a Meta Agent configured.\n" <>
+                 "Would you like to add the Meta Agent? It helps create new subagents."
+               ) do
               updated_subagents = subagents ++ [@meta_agent_config]
               updated_config = Map.put(config, :subagents, updated_subagents)
               
