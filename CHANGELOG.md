@@ -22,8 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 See the new updated [README.md](README.md) for more details!
 
 ### Changed
-- Install now requires igniter. Use `mix igniter.install claude` initially followed by
+- **BREAKING**: Installation now requires Igniter. Use `mix igniter.install claude` initially followed by
   `mix claude.install` to sync settings
+- **BREAKING**: Hook execution paths have changed. Users upgrading from v0.1.0 should:
+  1. Delete the old Claude hooks from `.claude/settings.json`
+  2. Run `mix igniter.install claude` to reinstall with the new structure
 
 ### Removed
 - Removed standalone CLI commands (replaced with direct hook execution)
