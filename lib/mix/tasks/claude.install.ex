@@ -1083,7 +1083,8 @@ defmodule Mix.Tasks.Claude.Install do
   end
   
   defp generate_claude_exs_content(config) do
-    # Convert the config map back to Elixir code
+    # For now, just use the original approach until we have a better solution
+    # The newlines in the prompt will be escaped, but at least it won't break
     """
     # .claude.exs - Claude configuration for this project
     # This file is evaluated when Claude reads your project settings
