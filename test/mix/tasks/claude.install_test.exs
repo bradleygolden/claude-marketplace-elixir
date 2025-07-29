@@ -307,7 +307,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
       source = Rewrite.source!(igniter.rewrite, ".claude/agents/meta-agent.md")
       content = Rewrite.Source.get(source, :content)
       assert String.contains?(content, "name: meta-agent")
-      assert String.contains?(content, "description: Generates new, complete Claude Code subagent")
+
+      assert String.contains?(
+               content,
+               "description: Generates new, complete Claude Code subagent"
+             )
     end
 
     test "generates subagents with correct YAML frontmatter format" do
@@ -335,7 +339,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
 
       # Verify YAML frontmatter format
-      assert content =~ ~r/^---\nname: test-agent\ndescription: A test agent for verification\ntools: Read, Grep\n---\n\n/
+      assert content =~
+               ~r/^---\nname: test-agent\ndescription: A test agent for verification\ntools: Read, Grep\n---\n\n/
 
       # Verify the prompt is included after the frontmatter
       assert content =~ "You are a test agent that helps with testing."
@@ -365,7 +370,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
 
       # Verify YAML frontmatter format without tools line
-      assert content =~ ~r/^---\nname: no-tools-agent\ndescription: An agent with no tool restrictions\n---\n\n/
+      assert content =~
+               ~r/^---\nname: no-tools-agent\ndescription: An agent with no tool restrictions\n---\n\n/
+
       refute content =~ ~r/tools:/
     end
   end

@@ -29,7 +29,8 @@ defmodule Mix.Tasks.Claude.Install do
 
   @meta_agent_config %{
     name: "Meta Agent",
-    description: "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
+    description:
+      "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
     prompt: """
     # Purpose
 
@@ -83,7 +84,7 @@ defmodule Mix.Tasks.Claude.Install do
         %{
           name: "Generated Name",
           description: "Generated action-oriented description",
-          prompt: \\"""
+          prompt: \\\"""
           # Purpose
           You are [role definition].
 
@@ -103,7 +104,7 @@ defmodule Mix.Tasks.Claude.Install do
           - [Domain-specific guidelines]
           - [Performance considerations]
           - [Common pitfalls to avoid]
-          \\""",
+          \\\""",
           tools: [inferred tools]
         }
 
@@ -202,6 +203,7 @@ defmodule Mix.Tasks.Claude.Install do
     |> Igniter.assign(claude_exs_path: ".claude.exs", claude_dir_path: ".claude")
     |> create_claude_exs()
     |> add_usage_rules_dependency()
+    |> add_claude_exs_to_formatter()
     |> install_hooks()
     |> setup_phoenix_mcp()
     |> sync_usage_rules()
@@ -232,11 +234,68 @@ defmodule Mix.Tasks.Claude.Install do
     )
   end
 
+  defp add_claude_exs_to_formatter(igniter) do
+    # Default formatter content in case the file doesn't exist
+    default_formatter = """
+    # Used by "mix format"
+    [
+      inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+    ]
+    """
+
+    igniter
+    |> Igniter.include_or_create_file(".formatter.exs", default_formatter)
+    |> Igniter.update_elixir_file(".formatter.exs", fn zipper ->
+      # Navigate to the keyword list inside the formatter config
+      zipper
+      |> Sourceror.Zipper.down()
+      |> case do
+        nil ->
+          # Empty file - create the structure
+          code =
+            quote do
+              [inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]]
+            end
+
+          {:ok, Igniter.Code.Common.add_code(zipper, code)}
+
+        zipper ->
+          # Find the keyword list and update inputs
+          zipper
+          |> Sourceror.Zipper.rightmost()
+          |> Igniter.Code.Keyword.put_in_keyword(
+            [:inputs],
+            ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"],
+            fn nested_zipper ->
+              Igniter.Code.List.prepend_new_to_list(
+                nested_zipper,
+                ".claude.exs"
+              )
+            end
+          )
+          |> case do
+            {:ok, updated_zipper} ->
+              updated_zipper
+
+            :error ->
+              {:warning,
+               """
+               Could not add .claude.exs to the inputs in .formatter.exs.
+
+               Please add it manually to the inputs list:
+
+                   inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+               """}
+          end
+      end
+    end)
+  end
+
   defp format_meta_agent_for_template do
     # Format the Meta Agent config for inclusion in the template
     inspect(@meta_agent_config, pretty: true, limit: :infinity, printable_limit: :infinity)
   end
-  
+
   defp format_meta_agent_for_notice do
     # Format the Meta Agent config for display in notices
     # Build it manually to show proper formatting
@@ -244,19 +303,19 @@ defmodule Mix.Tasks.Claude.Install do
     description = inspect(@meta_agent_config.description)
     tools = inspect(@meta_agent_config.tools)
     prompt = @meta_agent_config.prompt
-    
+
     # Manually build the string to preserve formatting
     "    %{\n" <>
-    "      name: #{name},\n" <>
-    "      description: #{description},\n" <>
-    "      prompt: \"\"\"\n#{prompt}\"\"\",\n" <>
-    "      tools: #{tools}\n" <>
-    "    }"
+      "      name: #{name},\n" <>
+      "      description: #{description},\n" <>
+      "      prompt: \"\"\"\n#{prompt}\"\"\",\n" <>
+      "      tools: #{tools}\n" <>
+      "    }"
   end
 
   defp claude_exs_template do
     meta_agent_str = format_meta_agent_for_template()
-    
+
     """
     # .claude.exs - Claude configuration for this project
     # This file is evaluated when Claude reads your project settings
@@ -1028,29 +1087,30 @@ defmodule Mix.Tasks.Claude.Install do
       case read_and_eval_claude_exs(igniter, path) do
         {:ok, config} when is_map(config) ->
           subagents = Map.get(config, :subagents, [])
-          
-          has_meta_agent = Enum.any?(subagents, fn agent ->
-            Map.get(agent, :name) == "Meta Agent"
-          end)
-          
+
+          has_meta_agent =
+            Enum.any?(subagents, fn agent ->
+              Map.get(agent, :name) == "Meta Agent"
+            end)
+
           if has_meta_agent do
             igniter
           else
             # Show notice about how to add Meta Agent
             igniter
             |> Igniter.add_notice("""
-            
+
             Your project doesn't have a Meta Agent configured.
             The Meta Agent helps you create new subagents.
-            
+
             To add it, copy the following to your .claude.exs subagents list:
-            
+
             #{format_meta_agent_for_notice()}
-            
+
             Then run `mix claude.install` again to generate the agent file.
             """)
           end
-          
+
         _ ->
           # If we can't read the file, just return the igniter unchanged
           igniter
