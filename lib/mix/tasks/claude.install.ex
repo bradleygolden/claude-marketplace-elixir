@@ -83,7 +83,7 @@ defmodule Mix.Tasks.Claude.Install do
         %{
           name: "Generated Name",
           description: "Generated action-oriented description",
-          prompt: \"""
+          prompt: \\"""
           # Purpose
           You are [role definition].
 
@@ -103,7 +103,7 @@ defmodule Mix.Tasks.Claude.Install do
           - [Domain-specific guidelines]
           - [Performance considerations]
           - [Common pitfalls to avoid]
-          \""",
+          \\""",
           tools: [inferred tools]
         }
 
