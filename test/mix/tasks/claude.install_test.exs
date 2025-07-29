@@ -293,15 +293,21 @@ defmodule Mix.Tasks.Claude.InstallTest do
              end)
     end
 
-    test "creates no subagents when .claude.exs has none" do
+    test "creates meta agent by default" do
       igniter =
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # No subagent files should be created (since the template has no subagents)
-      refute Enum.any?(Map.keys(igniter.rewrite.sources), fn path ->
-               String.contains?(path, ".claude/agents/")
+      # Meta agent should be created by default
+      assert Enum.any?(Map.keys(igniter.rewrite.sources), fn path ->
+               path == ".claude/agents/meta-agent.md"
              end)
+
+      # Check that the meta agent has the correct content
+      source = Rewrite.source!(igniter.rewrite, ".claude/agents/meta-agent.md")
+      content = Rewrite.Source.get(source, :content)
+      assert String.contains?(content, "name: meta-agent")
+      assert String.contains?(content, "description: Generates new, complete Claude Code subagent")
     end
 
     test "generates subagents with correct YAML frontmatter format" do
@@ -641,8 +647,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
       # Should have usage rules sync notice
       assert Enum.any?(notices, &String.contains?(&1, "Syncing usage rules to CLAUDE.md"))
 
-      # Should NOT have subagent generation notice (no subagents in template)
-      refute Enum.any?(notices, &String.contains?(&1, "Generated"))
+      # Should have subagent generation notice for meta agent
+      assert Enum.any?(notices, &String.contains?(&1, "Generated 1 subagent(s)"))
+      assert Enum.any?(notices, &String.contains?(&1, "Meta Agent"))
     end
 
     test "includes subagent notice when subagents are configured" do
