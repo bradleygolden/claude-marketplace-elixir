@@ -202,7 +202,6 @@ defmodule Claude.Hooks do
     end
   end
 
-
   @doc """
   Generates an identifier from a module name.
 

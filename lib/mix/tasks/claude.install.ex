@@ -220,8 +220,7 @@ defmodule Mix.Tasks.Claude.Install do
       end)
 
     new_hooks =
-      Enum.reduce(hooks_by_event_and_matcher, cleaned_hooks, fn {{event_type, matcher},
-                                                                 hooks},
+      Enum.reduce(hooks_by_event_and_matcher, cleaned_hooks, fn {{event_type, matcher}, hooks},
                                                                 acc ->
         existing_matchers = Map.get(acc, event_type, [])
 
@@ -354,7 +353,8 @@ defmodule Mix.Tasks.Claude.Install do
   defp install_hooks_claude_code_hooks_dir(igniter) do
     claude_dep = get_claude_dependency()
 
-    Enum.reduce(@available_hooks, igniter, fn {module, script_path, _event, _matchers, _desc}, acc ->
+    Enum.reduce(@available_hooks, igniter, fn {module, script_path, _event, _matchers, _desc},
+                                              acc ->
       content = generate_hook_script(module, claude_dep)
 
       Igniter.create_or_update_file(acc, script_path, content, fn source ->
@@ -365,6 +365,7 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp generate_hook_script(hook_module, claude_dep) do
     module_name = Module.split(hook_module) |> Enum.join(".")
+
     deps =
       if claude_dep == "{:claude, path: \"../..\"}" do
         "[#{claude_dep}, {:jason, \"~> 1.4\"}, {:igniter, \"~> 0.6\"}]"
@@ -372,7 +373,7 @@ defmodule Mix.Tasks.Claude.Install do
         "[#{claude_dep}, {:jason, \"~> 1.4\"}]"
       end
 
-    description = 
+    description =
       if function_exported?(hook_module, :description, 0) do
         hook_module.description()
       else
@@ -448,7 +449,6 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-
   defp setup_phoenix_mcp(igniter) do
     if Igniter.Project.Deps.has_dep?(igniter, :phoenix) do
       add_tidewave_to_project(igniter)
@@ -467,7 +467,7 @@ defmodule Mix.Tasks.Claude.Install do
     }
 
     Or with a custom port:
-    
+
     %{
       mcp_servers: [{:tidewave, [port: 5000]}]
     }
@@ -488,21 +488,21 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp generate_subagents(igniter) do
     claude_exs_path = ".claude.exs"
-    
+
     if Igniter.exists?(igniter, claude_exs_path) do
       case read_and_eval_claude_exs(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           subagents = Map.get(config, :subagents, [])
-          
+
           if is_list(subagents) and subagents != [] do
             process_subagents_directly(igniter, subagents)
           else
             igniter
           end
-          
+
         {:ok, _} ->
           igniter
-          
+
         {:error, reason} ->
           igniter
           |> Igniter.add_warning("Failed to load .claude.exs: #{reason}")
@@ -513,21 +513,22 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp process_subagents_directly(igniter, subagent_configs) do
-    results = 
+    results =
       Enum.map(subagent_configs, fn config ->
         case validate_and_generate_subagent(config) do
           {:ok, {name, path, content}} ->
             {:ok, {name, path, content}}
+
           {:error, reason} ->
             {:error, {config[:name] || "Unknown", reason}}
         end
       end)
-    
+
     errors = Enum.filter(results, &match?({:error, _}, &1))
-    
+
     if errors == [] do
       successful = Enum.map(results, fn {:ok, result} -> result end)
-      
+
       igniter
       |> add_generated_files(successful)
       |> Igniter.add_notice(format_subagents_success_message(successful))
@@ -543,14 +544,15 @@ defmodule Mix.Tasks.Claude.Install do
       name = config.name
       filename = subagent_filename(name)
       relative_path = Path.join([".claude", "agents", filename])
-      
-      content = generate_subagent_markdown(%{
-        name: name,
-        description: config.description,
-        prompt: enhanced_prompt,
-        tools: config[:tools] || []
-      })
-      
+
+      content =
+        generate_subagent_markdown(%{
+          name: name,
+          description: config.description,
+          prompt: enhanced_prompt,
+          tools: config[:tools] || []
+        })
+
       {:ok, {name, relative_path, content}}
     end
   end
@@ -558,18 +560,22 @@ defmodule Mix.Tasks.Claude.Install do
   defp validate_subagent_config(config) do
     required_keys = [:name, :description, :prompt]
     missing_keys = required_keys -- Map.keys(config)
-    
+
     if missing_keys == [] do
       # Validate tools if present
       case config[:tools] do
-        nil -> :ok
-        tools when is_list(tools) -> 
+        nil ->
+          :ok
+
+        tools when is_list(tools) ->
           if Enum.all?(tools, &is_atom/1) do
             :ok
           else
             {:error, "Tools must be a list of atoms"}
           end
-        _ -> {:error, "Tools must be a list"}
+
+        _ ->
+          {:error, "Tools must be a list"}
       end
     else
       {:error, "Missing required keys: #{inspect(missing_keys)}"}
@@ -578,14 +584,14 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp maybe_add_usage_rules(config) do
     case config[:usage_rules] do
-      nil -> 
+      nil ->
         {:ok, config.prompt}
-        
+
       rules when is_list(rules) ->
         usage_rules_content = load_usage_rules(rules)
         enhanced_prompt = config.prompt <> "\n\n## Usage Rules\n\n" <> usage_rules_content
         {:ok, enhanced_prompt}
-        
+
       _ ->
         {:error, "usage_rules must be a list"}
     end
@@ -601,29 +607,31 @@ defmodule Mix.Tasks.Claude.Install do
   defp load_single_usage_rule(rule) when is_atom(rule) do
     # Look for deps/package_name/usage-rules.md
     path = Path.join(["deps", Atom.to_string(rule), "usage-rules.md"])
+
     case File.read(path) do
       {:ok, content} -> "### #{rule}\n\n#{content}"
       _ -> nil
     end
   end
-  
+
   defp load_single_usage_rule(rule) when is_binary(rule) do
     case String.split(rule, ":", parts: 2) do
       [package] ->
         # Same as atom version
         load_single_usage_rule(String.to_atom(package))
-        
+
       [package, "all"] ->
         # Load all usage-rules files in the package
         deps_path = Path.join("deps", package)
         usage_rules_path = Path.join(deps_path, "usage-rules")
-        
+
         if File.dir?(usage_rules_path) do
           usage_rules_path
           |> File.ls!()
           |> Enum.filter(&String.ends_with?(&1, ".md"))
           |> Enum.map(fn file ->
             path = Path.join(usage_rules_path, file)
+
             case File.read(path) do
               {:ok, content} -> "### #{package}:#{Path.rootname(file)}\n\n#{content}"
               _ -> nil
@@ -634,17 +642,18 @@ defmodule Mix.Tasks.Claude.Install do
         else
           nil
         end
-        
+
       [package, sub_rule] ->
         # Load specific sub-rule
         path = Path.join(["deps", package, "usage-rules", "#{sub_rule}.md"])
+
         case File.read(path) do
           {:ok, content} -> "### #{package}:#{sub_rule}\n\n#{content}"
           _ -> nil
         end
     end
   end
-  
+
   defp load_single_usage_rule(_), do: nil
 
   defp subagent_filename(name) do
@@ -656,43 +665,46 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp generate_subagent_markdown(subagent) do
-    tools_section = generate_tools_section(subagent.tools)
+    frontmatter = generate_frontmatter(subagent)
 
     """
-    # #{subagent.name}
-
-    #{subagent.description}
-
-    ## Prompt
+    #{frontmatter}
 
     #{subagent.prompt}
-
-    ## Configuration
-
-    #{tools_section}
     """
     |> String.trim()
   end
 
-  defp generate_tools_section([]), do: "### Tools\n\nThis subagent has access to all tools."
+  defp generate_frontmatter(subagent) do
+    # Convert name to lowercase with hyphens as per Claude Code conventions
+    name =
+      subagent.name
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/, "-")
+      |> String.trim("-")
 
-  defp generate_tools_section(tools) do
-    tools_list =
-      tools
-      |> Enum.map(&tool_to_string/1)
-      |> Enum.map(&"- #{&1}")
-      |> Enum.join("\n")
+    lines = [
+      "---",
+      "name: #{name}",
+      "description: #{subagent.description}"
+    ]
 
-    """
-    ### Tools
+    # Add tools line only if tools are specified
+    lines =
+      if subagent.tools != [] do
+        tools_line =
+          subagent.tools
+          |> Enum.map(&tool_to_string/1)
+          |> Enum.join(", ")
 
-    This subagent has access to the following tools:
+        lines ++ ["tools: #{tools_line}"]
+      else
+        lines
+      end
 
-    #{tools_list}
-    """
-    |> String.trim()
+    (lines ++ ["---"])
+    |> Enum.join("\n")
   end
-
 
   defp add_generated_files(igniter, results) do
     Enum.reduce(results, igniter, fn {_name, relative_path, content}, acc ->
@@ -736,16 +748,16 @@ defmodule Mix.Tasks.Claude.Install do
         |> update_settings_with_tidewave(relative_settings_path, port)
         |> Igniter.add_notice("""
         Tidewave MCP server has been configured in #{relative_settings_path}
-        
+
         Port: #{port}
         Endpoint: http://localhost:#{port}/tidewave/mcp
-        
+
         #{@tidewave_setup_instructions}
         """)
-        
+
       :not_configured ->
         igniter
-        
+
       :disabled ->
         igniter
         |> remove_tidewave_from_settings(relative_settings_path)
@@ -754,29 +766,33 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp get_tidewave_config(igniter) do
     claude_exs_path = ".claude.exs"
-    
+
     if Igniter.exists?(igniter, claude_exs_path) do
       case read_and_eval_claude_exs(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           case Map.get(config, :mcp_servers, []) do
-            [] -> :not_configured
+            [] ->
+              :not_configured
+
             servers when is_list(servers) ->
               case find_tidewave_in_servers(servers) do
                 {:ok, port} -> {:ok, port}
                 :disabled -> :disabled
                 :not_found -> :not_configured
               end
-            _ -> :not_configured
+
+            _ ->
+              :not_configured
           end
-          
-        _ -> 
+
+        _ ->
           :not_configured
       end
     else
       :not_configured
     end
   end
-  
+
   defp read_and_eval_claude_exs(igniter, path) do
     try do
       igniter = Igniter.include_existing_file(igniter, path)
@@ -785,16 +801,17 @@ defmodule Mix.Tasks.Claude.Install do
       {result, _binding} = Code.eval_string(content, [], file: path)
       {:ok, result}
     rescue
-      _e in [Rewrite.Error] -> 
+      _e in [Rewrite.Error] ->
         {:error, "File not found: #{path}"}
-        
-      e in [CompileError, SyntaxError] -> 
+
+      e in [CompileError, SyntaxError] ->
         {:error, inspect(e)}
     end
   end
 
   defp find_tidewave_in_servers([]), do: :not_found
   defp find_tidewave_in_servers([:tidewave | _]), do: {:ok, @default_tidewave_port}
+
   defp find_tidewave_in_servers([{:tidewave, opts} | _]) when is_list(opts) do
     if Keyword.get(opts, :enabled?, true) do
       port = Keyword.get(opts, :port, @default_tidewave_port)
@@ -803,6 +820,7 @@ defmodule Mix.Tasks.Claude.Install do
       :disabled
     end
   end
+
   defp find_tidewave_in_servers([_ | rest]), do: find_tidewave_in_servers(rest)
 
   defp update_settings_with_tidewave(igniter, relative_settings_path, port) do
@@ -822,7 +840,7 @@ defmodule Mix.Tasks.Claude.Install do
                 "url" => "http://localhost:#{port}/tidewave/mcp"
               }
             }
-            
+
             updated_settings = Map.put(settings, "mcpServers", tidewave_config)
             Jason.encode!(updated_settings, pretty: true) <> "\n"
 
@@ -835,6 +853,7 @@ defmodule Mix.Tasks.Claude.Install do
                 }
               }
             }
+
             Jason.encode!(settings, pretty: true) <> "\n"
         end
 
@@ -847,26 +866,27 @@ defmodule Mix.Tasks.Claude.Install do
       igniter
       |> Igniter.update_file(relative_settings_path, fn source ->
         content = Rewrite.Source.get(source, :content)
-        
+
         case Jason.decode(content) do
           {:ok, settings} ->
             case Map.get(settings, "mcpServers") do
               %{"tidewave" => _} = mcp_servers ->
                 updated_mcp = Map.delete(mcp_servers, "tidewave")
-                updated_settings = 
+
+                updated_settings =
                   if map_size(updated_mcp) == 0 do
                     Map.delete(settings, "mcpServers")
                   else
                     Map.put(settings, "mcpServers", updated_mcp)
                   end
-                  
+
                 new_content = Jason.encode!(updated_settings, pretty: true) <> "\n"
                 Rewrite.Source.update(source, :content, new_content)
-                
+
               _ ->
                 source
             end
-            
+
           {:error, _} ->
             source
         end

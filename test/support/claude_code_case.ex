@@ -87,13 +87,13 @@ defmodule Claude.Test.ClaudeCodeCase do
 
   @doc """
   Setup helper that provides an isolated test directory.
-  
+
   Use this in tests that need project isolation:
-  
+
       setup :isolate_project
-  
+
   Or in combination with other setup:
-  
+
       setup [:isolate_project, :other_setup]
   """
   def isolate_project(%{test_dir: _test_dir}) do
@@ -103,9 +103,9 @@ defmodule Claude.Test.ClaudeCodeCase do
 
   @doc """
   Execute a command using Elixir ports with optional stdin input.
-  
+
   ## Examples
-  
+
       # Simple command
       {output, 0} = cmd("echo 'hello'")
       assert output == "hello\\n"
@@ -117,15 +117,15 @@ defmodule Claude.Test.ClaudeCodeCase do
       # Command that fails
       {output, exit_code} = cmd("exit 1")
       assert exit_code == 1
-  
+
   ## Options
-  
+
   - `:stdin` - String to send to the command's stdin
   - `:cd` - Directory to run the command in
   - `:env` - Environment variables as a list of {"key", "value"} tuples
-  
+
   ## Returns
-  
+
   Returns a tuple of `{output, exit_code}` where:
   - `output` is the combined stdout and stderr as a string
   - `exit_code` is the integer exit code of the command
@@ -134,56 +134,61 @@ defmodule Claude.Test.ClaudeCodeCase do
     stdin = Keyword.get(opts, :stdin)
     cd = Keyword.get(opts, :cd)
     env = Keyword.get(opts, :env, [])
-    
+
     # Build port options
     port_opts = [:binary, :exit_status, :stderr_to_stdout, :hide]
-    
+
     # Add cd option if provided
     port_opts = if cd, do: [{:cd, cd} | port_opts], else: port_opts
-    
+
     # Convert environment variables to the format expected by Port.open
-    port_opts = if env != [] do
-      env_charlists = Enum.map(env, fn {k, v} -> 
-        {String.to_charlist(k), String.to_charlist(v)}
-      end)
-      [{:env, env_charlists} | port_opts]
-    else
-      port_opts
-    end
-    
+    port_opts =
+      if env != [] do
+        env_charlists =
+          Enum.map(env, fn {k, v} ->
+            {String.to_charlist(k), String.to_charlist(v)}
+          end)
+
+        [{:env, env_charlists} | port_opts]
+      else
+        port_opts
+      end
+
     # For stdin handling, we need to modify the command to use echo/printf
-    final_command = if stdin do
-      # Use printf to preserve exact formatting and handle special characters
-      escaped_stdin = stdin
-        |> String.replace("\\", "\\\\")
-        |> String.replace("\"", "\\\"")
-        |> String.replace("$", "\\$")
-        |> String.replace("`", "\\`")
-        |> String.replace("\n", "\\n")
-      
-      "printf \"#{escaped_stdin}\" | #{command}"
-    else
-      command
-    end
-    
+    final_command =
+      if stdin do
+        # Use printf to preserve exact formatting and handle special characters
+        escaped_stdin =
+          stdin
+          |> String.replace("\\", "\\\\")
+          |> String.replace("\"", "\\\"")
+          |> String.replace("$", "\\$")
+          |> String.replace("`", "\\`")
+          |> String.replace("\n", "\\n")
+
+        "printf \"#{escaped_stdin}\" | #{command}"
+      else
+        command
+      end
+
     # Use sh -c to run the command for consistent shell behavior
     port = Port.open({:spawn, "sh -c '#{escape_shell_arg(final_command)}'"}, port_opts)
-    
+
     # Collect output
     collect_port_output(port, "")
   end
-  
+
   defp escape_shell_arg(arg) do
     # Escape single quotes for shell safety
     String.replace(arg, "'", "'\"'\"'")
   end
-  
+
   defp collect_port_output(port, acc) do
     receive do
       {^port, {:data, data}} ->
         # Continue collecting data
         collect_port_output(port, acc <> data)
-        
+
       {^port, {:exit_status, status}} ->
         # Command finished with exit status
         {acc, status}
