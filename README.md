@@ -6,7 +6,7 @@
 
 **Make Claude Code write production-ready Elixir, every time.**
 
-Claude is a batteries-included integration that ensures every line of code Claude writes is properly formatted, compiles without warnings, and follows your project's conventions—automatically.
+Claude is an elixir library, batteries-included integration that ensures every line of code Claude writes is properly formatted, compiles without warnings, and follows your project's conventions—automatically.
 
 ## Quick Start
 
@@ -212,7 +212,7 @@ This happens automatically, without interrupting Claude's workflow.
 
 ## Contributing
 
-We welcome contributions! See our [contributing guide](CONTRIBUTING.md) for details.
+We welcome contributions!
 
 ```bash
 # Run tests
@@ -250,7 +250,7 @@ mix compile --warnings-as-errors
 - Auto-configuration based on project dependencies
 
 **Dynamic Sub-agents**
-- Generate sub-agents for each dependency automatically
+- Generate sub-agents for each dependency with context automatically
 - Common workflow templates (LiveView, GraphQL, Testing)
 
 Want to contribute? Open an issue on [GitHub](https://github.com/bradleygolden/claude/issues)!
