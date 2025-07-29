@@ -73,7 +73,7 @@ defmodule Claude.Hooks.Telemetry do
   ## Usage
 
   This module is automatically used by the Claude hook system. Hooks are instrumented
-  transparently when executed through `Claude.CLI.Hooks.Run`.
+  transparently when executed through the hook scripts.
 
   To attach your own handlers:
 

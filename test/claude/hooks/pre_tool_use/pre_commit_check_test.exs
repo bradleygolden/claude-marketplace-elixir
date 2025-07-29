@@ -1,37 +1,17 @@
 defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   use Claude.Test.ClaudeCodeCase
+  import Claude.Test.HookTestHelpers
 
   alias Claude.Hooks.PreToolUse.PreCommitCheck
 
-  @test_dir Path.join(System.tmp_dir!(), "claude_pre_commit_test_#{:erlang.phash2(make_ref())}")
-
   setup do
-    File.rm_rf!(@test_dir)
-    File.mkdir_p!(@test_dir)
-    original_cwd = File.cwd!()
-    File.cd!(@test_dir)
-
-    File.write!("mix.exs", """
-    defmodule TestProject.MixProject do
-      use Mix.Project
-
-      def project do
-        [app: :test_project, version: "0.1.0", elixir: "~> 1.14"]
-      end
-    end
-    """)
-
-    File.write!(".formatter.exs", "[\n  inputs: [\"**/*.{ex,exs}\"]\n]\n")
-
-    File.mkdir_p!("lib")
-
-    on_exit(fn ->
-      File.cd!(original_cwd)
-      File.rm_rf!(@test_dir)
-      System.delete_env("CLAUDE_PROJECT_DIR")
-    end)
-
-    {:ok, test_dir: @test_dir}
+    {test_dir, cleanup} = setup_hook_test(
+      files: %{
+        ".formatter.exs" => "[\n  inputs: [\"**/*.{ex,exs}\"]\n]\n"
+      }
+    )
+    on_exit(cleanup)
+    {:ok, test_dir: test_dir}
   end
 
   describe "config/0" do
@@ -39,7 +19,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       config = PreCommitCheck.config()
 
       assert config.type == "command"
-      assert config.command =~ "mix claude hooks run pre_tool_use.pre_commit_check"
+      assert config.command =~ "Hook command configured by installer"
     end
   end
 
@@ -61,10 +41,9 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   end
 
   describe "run/1 - git commit detection" do
-    test "detects and validates git commit commands" do
-      System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
-
-      File.write!("lib/good.ex", """
+    test "detects and validates git commit commands", %{test_dir: test_dir} do
+      # CLAUDE_PROJECT_DIR is already set by setup_hook_test
+      create_elixir_file(test_dir, "lib/good.ex", """
       defmodule Good do
         def hello do
           :world
@@ -72,18 +51,17 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      System.cmd("mix", ["format"], cd: @test_dir)
+      System.cmd("mix", ["format"], cd: test_dir)
 
-      hook_input = %{
-        "session_id" => "test123",
-        "hook_event_name" => "PreToolUse",
-        "tool_name" => "Bash",
-        "tool_input" => %{
-          "command" => "git commit -m 'test commit'"
+      input_json = build_tool_input(
+        tool_name: "Bash",
+        file_path: "dummy",  # Required by helper but not used for Bash
+        extra: %{
+          "session_id" => "test123",
+          "hook_event_name" => "PreToolUse",
+          "tool_input" => %{"command" => "git commit -m 'test commit'"}
         }
-      }
-
-      input_json = Jason.encode!(hook_input)
+      )
 
       stub(System, :halt, fn 0 -> :ok end)
 
@@ -93,14 +71,12 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "ignores non-git-commit bash commands" do
-      hook_input = %{
+      input_json = Jason.encode!(%{
         "tool_name" => "Bash",
         "tool_input" => %{
           "command" => "ls -la"
         }
-      }
-
-      input_json = Jason.encode!(hook_input)
+      })
 
       stub(System, :halt, fn 0 -> :ok end)
 
@@ -118,11 +94,9 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "handles missing fields gracefully" do
-      hook_input = %{
+      input_json = Jason.encode!(%{
         "other_field" => "value"
-      }
-
-      input_json = Jason.encode!(hook_input)
+      })
 
       stub(System, :halt, fn 0 -> :ok end)
 
@@ -133,13 +107,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   end
 
   describe "validation logic" do
-    setup do
-      System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
-      :ok
-    end
-
-    test "passes when code is properly formatted and compiles" do
-      File.write!("lib/good_code.ex", """
+    test "passes when code is properly formatted and compiles", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/good_code.ex", """
       defmodule GoodCode do
         def hello(name) do
           "Hello, \#{name}!"
@@ -147,14 +116,14 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      System.cmd("mix", ["format"], cd: @test_dir)
+      System.cmd("mix", ["format"], cd: test_dir)
 
       output =
         capture_io(fn ->
           {output, exit_code} =
             System.cmd("mix", ["format", "--check-formatted"],
               stderr_to_stdout: true,
-              cd: @test_dir
+              cd: test_dir
             )
 
           assert exit_code == 0
@@ -163,7 +132,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           {output, exit_code} =
             System.cmd("mix", ["compile", "--warnings-as-errors"],
               stderr_to_stdout: true,
-              cd: @test_dir
+              cd: test_dir
             )
 
           assert exit_code == 0
@@ -174,8 +143,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       refute output =~ "Compilation check failed"
     end
 
-    test "fails when code has formatting issues" do
-      File.write!("lib/bad_format.ex", """
+    test "fails when code has formatting issues", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/bad_format.ex", """
       defmodule BadFormat do
       def hello(  name  ) do
         "Hello, \#{ name }!"
@@ -184,14 +153,14 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       """)
 
       {output, exit_code} =
-        System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true, cd: @test_dir)
+        System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true, cd: test_dir)
 
       assert exit_code != 0
       assert output =~ "bad_format.ex" or output =~ "not formatted"
     end
 
-    test "fails when code has compilation errors" do
-      File.write!("lib/bad_compile.ex", """
+    test "fails when code has compilation errors", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/bad_compile.ex", """
       defmodule BadCompile do
         def hello(name) do
           undefined_function()
@@ -202,15 +171,15 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       {output, exit_code} =
         System.cmd("mix", ["compile", "--warnings-as-errors"],
           stderr_to_stdout: true,
-          cd: @test_dir
+          cd: test_dir
         )
 
       assert exit_code != 0
       assert output =~ "undefined_function"
     end
 
-    test "fails when code has warnings with --warnings-as-errors" do
-      File.write!("lib/warning_code.ex", """
+    test "fails when code has warnings with --warnings-as-errors", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/warning_code.ex", """
       defmodule WarningCode do
         def hello(name, unused) do
           "Hello, \#{name}!"
@@ -221,30 +190,30 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       {output, exit_code} =
         System.cmd("mix", ["compile", "--warnings-as-errors"],
           stderr_to_stdout: true,
-          cd: @test_dir
+          cd: test_dir
         )
 
       assert exit_code != 0
       assert output =~ "unused"
     end
 
-    test "passes when no unused dependencies exist" do
-      File.write!("mix.lock", """
+    test "passes when no unused dependencies exist", %{test_dir: test_dir} do
+      File.write!(Path.join(test_dir, "mix.lock"), """
       %{}
       """)
 
       {output, exit_code} =
         System.cmd("mix", ["deps.unlock", "--check-unused"],
           stderr_to_stdout: true,
-          cd: @test_dir
+          cd: test_dir
         )
 
       assert exit_code == 0
       refute output =~ "Unused dependencies"
     end
 
-    test "fails when unused dependencies are detected" do
-      File.write!("mix.lock", """
+    test "fails when unused dependencies are detected", %{test_dir: test_dir} do
+      File.write!(Path.join(test_dir, "mix.lock"), """
       %{
         "unused_dep": {:hex, :unused_dep, "1.0.0", "abc123", [:mix], [], "hexpm", "def456"}
       }
@@ -253,7 +222,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       {output, exit_code} =
         System.cmd("mix", ["deps.unlock", "--check-unused"],
           stderr_to_stdout: true,
-          cd: @test_dir
+          cd: test_dir
         )
 
       assert exit_code != 0
@@ -262,21 +231,21 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   end
 
   describe "edge cases" do
-    test "handles missing mix.exs gracefully" do
-      File.rm!("mix.exs")
+    test "handles missing mix.exs gracefully", %{test_dir: test_dir} do
+      File.rm!(Path.join(test_dir, "mix.exs"))
 
-      {output, _exit_code} = System.cmd("mix", ["compile"], stderr_to_stdout: true, cd: @test_dir)
+      {output, _exit_code} = System.cmd("mix", ["compile"], stderr_to_stdout: true, cd: test_dir)
 
       assert output =~ "Could not find a Mix.Project"
     end
 
-    test "handles empty project directory" do
-      File.rm_rf!(@test_dir)
-      File.mkdir_p!(@test_dir)
-      File.cd!(@test_dir)
+    test "handles empty project directory", %{test_dir: test_dir} do
+      File.rm_rf!(test_dir)
+      File.mkdir_p!(test_dir)
+      File.cd!(test_dir)
 
       {output, _exit_code} =
-        System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true, cd: @test_dir)
+        System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true, cd: test_dir)
 
       assert output =~ "Expected one or more files" or
                output =~ "Could not find a Mix.Project" or
@@ -285,13 +254,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   end
 
   describe "hook validation with different exit scenarios" do
-    setup do
-      System.put_env("CLAUDE_PROJECT_DIR", @test_dir)
-      :ok
-    end
-
-    test "exits with code 0 when validation passes" do
-      File.write!("lib/valid.ex", """
+    test "exits with code 0 when validation passes", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/valid.ex", """
       defmodule Valid do
         def greet(name) do
           "Hello, \#{name}!"
@@ -299,20 +263,20 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      System.cmd("mix", ["format"], cd: @test_dir)
+      System.cmd("mix", ["format"], cd: test_dir)
 
-      File.write!("mix.lock", "%{}")
+      File.write!(Path.join(test_dir, "mix.lock"), "%{}")
 
-      hook_input = %{
+      input_json = Jason.encode!(%{
         "tool_name" => "Bash",
         "tool_input" => %{"command" => "git commit -m 'good commit'"}
-      }
+      })
 
       stub(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_io([input: Jason.encode!(hook_input)], fn ->
-          PreCommitCheck.run(Jason.encode!(hook_input))
+        capture_io([input: input_json], fn ->
+          PreCommitCheck.run(input_json)
         end)
 
       assert output =~ "Pre-commit validation triggered"
@@ -321,8 +285,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       assert output =~ "✓ No unused dependencies found"
     end
 
-    test "exits with code 2 when formatting fails" do
-      File.write!("lib/bad.ex", """
+    test "exits with code 2 when formatting fails", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/bad.ex", """
       defmodule Bad do
       def greet(  name  ) do
           "Hello!"
@@ -330,18 +294,18 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      hook_input = %{
+      input_json = Jason.encode!(%{
         "tool_name" => "Bash",
         "tool_input" => %{"command" => "git commit -m 'bad formatting'"}
-      }
+      })
 
       stub(System, :halt, fn 2 -> :ok end)
 
       stdout =
         capture_io(fn ->
           stderr =
-            capture_io(:stderr, fn ->
-              PreCommitCheck.run(Jason.encode!(hook_input))
+            capture_stderr(fn ->
+              PreCommitCheck.run(input_json)
             end)
 
           assert stderr =~ "❌ Formatting check failed!"

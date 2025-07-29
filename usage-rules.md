@@ -12,13 +12,13 @@ mix igniter.install claude
 
 ## Uninstalling hooks
 
-Optionally you can uninstall the project:
+To uninstall hooks, run the install command again and choose to remove hooks when prompted:
 
 ```bash
-mix claude.uninstall
+mix claude.install
 ```
 
-This removes all settings created by this project from your project settings.
+This will allow you to remove all settings created by this project from your project settings.
 
 ## Hook System
 
@@ -131,7 +131,7 @@ defmodule MyProject.MyHook do
   def config do
     %Claude.Hooks.Hook{
       type: "command",
-      command: "cd $CLAUDE_PROJECT_DIR && mix claude hooks run #{identifier()}"
+      command: "# Hook command configured by ScriptInstaller"
     }
   end
 
