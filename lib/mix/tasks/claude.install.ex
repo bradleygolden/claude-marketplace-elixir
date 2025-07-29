@@ -627,7 +627,7 @@ defmodule Mix.Tasks.Claude.Install do
   defp generate_hook_script(hook_module, claude_dep) do
     module_name = Module.split(hook_module) |> Enum.join(".")
 
-    deps = "[#{claude_dep}, {:jason, \"~> 1.4\"}]"
+    deps = "[#{claude_dep}, {:jason, \"~> 1.4\"}, {:igniter, \"~> 0.6\"}]"
 
     description =
       if function_exported?(hook_module, :description, 0) do
