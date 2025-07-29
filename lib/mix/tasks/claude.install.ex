@@ -183,6 +183,13 @@ defmodule Mix.Tasks.Claude.Install do
       :pre_tool_use,
       ["Bash"],
       "Validates code before git commits"
+    },
+    {
+      Claude.Hooks.PostToolUse.RelatedFiles,
+      ".claude/hooks/related_files.exs",
+      :post_tool_use,
+      ["Edit", "Write", "MultiEdit"],
+      "Suggests updating related test files when implementation files are modified"
     }
   ]
 
@@ -403,7 +410,8 @@ defmodule Mix.Tasks.Claude.Install do
       "mix claude hooks run",
       ".claude/hooks/elixir_formatter.exs",
       ".claude/hooks/compilation_checker.exs",
-      ".claude/hooks/pre_commit_check.exs"
+      ".claude/hooks/pre_commit_check.exs",
+      ".claude/hooks/related_files.exs"
     ]
 
     hooks_config
