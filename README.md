@@ -14,7 +14,7 @@ Claude, not to be confused with _the_ Claude (probably should have picked a bett
 # Install Claude
 mix igniter.install claude
 
-# That's it! Claude now automatically:
+# That's it! Now Claude:
 # ✓ Formats every file after editing
 # ✓ Checks for compilation errors
 # ✓ Validates code before commits
@@ -95,11 +95,9 @@ Create specialized AI assistants for your project with built-in best practices:
 Integrate with Phoenix development tools via Tidewave:
 ```elixir
 %{
-  mcp_servers: [tidewave: [port: 4000]]  # Automatic Phoenix integration
+  mcp_servers: [tidewave: [port: 4000]]
 }
 ```
-
-Tidewave will be added automatically if you're using Phoenix in your project.
 
 ### 📚 **Best Practices**
 
