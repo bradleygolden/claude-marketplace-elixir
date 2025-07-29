@@ -213,8 +213,8 @@ defmodule Mix.Tasks.Claude.Install do
     path = igniter.assigns[:claude_exs_path]
 
     if Igniter.exists?(igniter, path) do
-      # If .claude.exs exists, check if we should update the Meta Agent
-      update_meta_agent_if_needed(igniter, path)
+      # If .claude.exs exists, just check if Meta Agent is missing and notify
+      check_meta_agent_and_notify(igniter, path)
     else
       Igniter.create_new_file(
         igniter,
@@ -234,8 +234,24 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp format_meta_agent_for_template do
     # Format the Meta Agent config for inclusion in the template
-    # We need to be careful with escaping the prompt
     inspect(@meta_agent_config, pretty: true, limit: :infinity, printable_limit: :infinity)
+  end
+  
+  defp format_meta_agent_for_notice do
+    # Format the Meta Agent config for display in notices
+    # Build it manually to show proper formatting
+    name = inspect(@meta_agent_config.name)
+    description = inspect(@meta_agent_config.description)
+    tools = inspect(@meta_agent_config.tools)
+    prompt = @meta_agent_config.prompt
+    
+    # Manually build the string to preserve formatting
+    "    %{\n" <>
+    "      name: #{name},\n" <>
+    "      description: #{description},\n" <>
+    "      prompt: \"\"\"\n#{prompt}\"\"\",\n" <>
+    "      tools: #{tools}\n" <>
+    "    }"
   end
 
   defp claude_exs_template do
@@ -1004,8 +1020,8 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-  defp update_meta_agent_if_needed(igniter, path) do
-    # Skip interactive prompts in test environment
+  defp check_meta_agent_and_notify(igniter, path) do
+    # Skip in test environment
     if igniter.assigns[:test_mode] || Mix.env() == :test do
       igniter
     else
@@ -1013,61 +1029,26 @@ defmodule Mix.Tasks.Claude.Install do
         {:ok, config} when is_map(config) ->
           subagents = Map.get(config, :subagents, [])
           
-          meta_agent_index = Enum.find_index(subagents, fn agent ->
+          has_meta_agent = Enum.any?(subagents, fn agent ->
             Map.get(agent, :name) == "Meta Agent"
           end)
           
-          if meta_agent_index do
-            existing_meta_agent = Enum.at(subagents, meta_agent_index)
-            
-            # Check if the Meta Agent differs from the default
-            if meta_agent_differs?(existing_meta_agent) do
-              # Ask user if they want to update
-              if Igniter.Util.IO.yes?(
-                   "Your project has a customized Meta Agent that differs from the latest version.\n" <>
-                   "Would you like to update it to the latest version?\n\n" <>
-                   "Note: This will overwrite your custom Meta Agent configuration."
-                 ) do
-                # Update the Meta Agent
-                updated_subagents = List.replace_at(subagents, meta_agent_index, @meta_agent_config)
-                updated_config = Map.put(config, :subagents, updated_subagents)
-                
-                # Generate new content
-                new_content = generate_claude_exs_content(updated_config)
-                
-                igniter
-                |> Igniter.update_file(path, fn source ->
-                  Rewrite.Source.update(source, :content, new_content)
-                end)
-                |> Igniter.add_notice("Meta Agent has been updated to the latest version.")
-              else
-                igniter
-                |> Igniter.add_notice("Keeping your existing Meta Agent configuration.")
-              end
-            else
-              # Meta Agent is already up to date
-              igniter
-            end
+          if has_meta_agent do
+            igniter
           else
-            # No Meta Agent exists, ask if they want to add it
-            if Igniter.Util.IO.yes?(
-                 "Your project doesn't have a Meta Agent configured.\n" <>
-                 "Would you like to add the Meta Agent? It helps create new subagents."
-               ) do
-              updated_subagents = subagents ++ [@meta_agent_config]
-              updated_config = Map.put(config, :subagents, updated_subagents)
-              
-              # Generate new content
-              new_content = generate_claude_exs_content(updated_config)
-              
-              igniter
-              |> Igniter.update_file(path, fn source ->
-                Rewrite.Source.update(source, :content, new_content)
-              end)
-              |> Igniter.add_notice("Meta Agent has been added to your .claude.exs file.")
-            else
-              igniter
-            end
+            # Show notice about how to add Meta Agent
+            igniter
+            |> Igniter.add_notice("""
+            
+            Your project doesn't have a Meta Agent configured.
+            The Meta Agent helps you create new subagents.
+            
+            To add it, copy the following to your .claude.exs subagents list:
+            
+            #{format_meta_agent_for_notice()}
+            
+            Then run `mix claude.install` again to generate the agent file.
+            """)
           end
           
         _ ->
@@ -1075,23 +1056,6 @@ defmodule Mix.Tasks.Claude.Install do
           igniter
       end
     end
-  end
-  
-  defp meta_agent_differs?(existing_agent) do
-    # Compare the existing agent with the default
-    existing_agent != @meta_agent_config
-  end
-  
-  defp generate_claude_exs_content(config) do
-    # For now, just use the original approach until we have a better solution
-    # The newlines in the prompt will be escaped, but at least it won't break
-    """
-    # .claude.exs - Claude configuration for this project
-    # This file is evaluated when Claude reads your project settings
-    # and merged with .claude/settings.json (this file takes precedence)
-
-    #{inspect(config, pretty: true, limit: :infinity, printable_limit: :infinity)}
-    """
   end
 
   defp tool_to_string(tool) when is_atom(tool) do
