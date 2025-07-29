@@ -564,6 +564,10 @@ defmodule Mix.Tasks.Claude.Install do
   defp remove_old_claude_hooks(hooks_config) do
     claude_patterns = [
       "mix claude hooks run",
+      ".claude/hooks/elixir_formatter.exs",
+      ".claude/hooks/compilation_checker.exs",
+      ".claude/hooks/pre_commit_check.exs",
+      ".claude/hooks/related_files.exs",
       ~r{\.claude/hooks/.*\.exs$}
     ]
 
