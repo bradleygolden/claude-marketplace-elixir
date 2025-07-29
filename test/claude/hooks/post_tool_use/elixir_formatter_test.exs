@@ -5,11 +5,13 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
   alias Claude.Hooks.PostToolUse.ElixirFormatter
 
   setup do
-    {test_dir, cleanup} = setup_hook_test(
-      files: %{
-        ".formatter.exs" => "[inputs: [\"**/*.{ex,exs}\"]]"
-      }
-    )
+    {test_dir, cleanup} =
+      setup_hook_test(
+        files: %{
+          ".formatter.exs" => "[inputs: [\"**/*.{ex,exs}\"]]"
+        }
+      )
+
     on_exit(cleanup)
     {:ok, test_dir: test_dir}
   end
@@ -27,9 +29,10 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       file_path = create_elixir_file(test_dir, "test.ex", unformatted_content)
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run(stdin_json)
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
 
       assert File.read!(file_path) == unformatted_content
       assert output =~ "File needs formatting: #{file_path}"
@@ -40,9 +43,10 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       file_path = create_elixir_file(test_dir, "test.exs", unformatted_content)
       stdin_json = build_tool_input(tool_name: "Write", file_path: file_path)
 
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run(stdin_json)
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
 
       assert File.read!(file_path) == unformatted_content
       assert output =~ "File needs formatting: #{file_path}"
@@ -53,9 +57,10 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       file_path = create_elixir_file(test_dir, "multi.ex", unformatted_content)
       stdin_json = build_tool_input(tool_name: "MultiEdit", file_path: file_path)
 
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run(stdin_json)
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
 
       assert File.read!(file_path) == unformatted_content
       assert output =~ "File needs formatting: #{file_path}"
@@ -73,9 +78,10 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       file_path = create_elixir_file(test_dir, "formatted.ex", properly_formatted)
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run(stdin_json)
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
 
       assert File.read!(file_path) == properly_formatted
       refute output =~ "File needs formatting"
@@ -86,7 +92,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       file_path = Path.join(test_dir, "test.js")
       content = "function  hello(  x  )  { return x; }"
       File.write!(file_path, content)
-      
+
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
       assert :ok = ElixirFormatter.run(stdin_json)
@@ -103,22 +109,25 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
     end
 
     test "handles missing file_path in tool_input gracefully" do
-      stdin_json = Jason.encode!(%{
-        "tool_name" => "Edit",
-        "tool_input" => %{"other_param" => "value"}
-      })
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{"other_param" => "value"}
+        })
 
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run(stdin_json)
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
 
       assert output == ""
     end
 
     test "handles invalid JSON input gracefully" do
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run("invalid json")
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run("invalid json")
+        end)
 
       assert output == ""
     end
@@ -133,9 +142,10 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       file_path = create_elixir_file(test_dir, "lib/test.ex", unformatted_content)
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run(stdin_json)
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
 
       assert File.read!(file_path) == unformatted_content
       assert output =~ "File needs formatting: #{file_path}"
@@ -148,14 +158,16 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       end
       """)
 
-      stdin_json = Jason.encode!(%{
-        "tool_name" => "Edit",
-        "tool_input" => %{}
-      })
+      stdin_json =
+        Jason.encode!(%{
+          "tool_name" => "Edit",
+          "tool_input" => %{}
+        })
 
-      output = capture_stderr(fn ->
-        assert :ok = ElixirFormatter.run(stdin_json)
-      end)
+      output =
+        capture_stderr(fn ->
+          assert :ok = ElixirFormatter.run(stdin_json)
+        end)
 
       assert output == ""
     end

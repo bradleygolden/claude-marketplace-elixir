@@ -5,11 +5,13 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   alias Claude.Hooks.PreToolUse.PreCommitCheck
 
   setup do
-    {test_dir, cleanup} = setup_hook_test(
-      files: %{
-        ".formatter.exs" => "[\n  inputs: [\"**/*.{ex,exs}\"]\n]\n"
-      }
-    )
+    {test_dir, cleanup} =
+      setup_hook_test(
+        files: %{
+          ".formatter.exs" => "[\n  inputs: [\"**/*.{ex,exs}\"]\n]\n"
+        }
+      )
+
     on_exit(cleanup)
     {:ok, test_dir: test_dir}
   end
@@ -53,15 +55,17 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       System.cmd("mix", ["format"], cd: test_dir)
 
-      input_json = build_tool_input(
-        tool_name: "Bash",
-        file_path: "dummy",  # Required by helper but not used for Bash
-        extra: %{
-          "session_id" => "test123",
-          "hook_event_name" => "PreToolUse",
-          "tool_input" => %{"command" => "git commit -m 'test commit'"}
-        }
-      )
+      input_json =
+        build_tool_input(
+          tool_name: "Bash",
+          # Required by helper but not used for Bash
+          file_path: "dummy",
+          extra: %{
+            "session_id" => "test123",
+            "hook_event_name" => "PreToolUse",
+            "tool_input" => %{"command" => "git commit -m 'test commit'"}
+          }
+        )
 
       stub(System, :halt, fn 0 -> :ok end)
 
@@ -71,12 +75,13 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "ignores non-git-commit bash commands" do
-      input_json = Jason.encode!(%{
-        "tool_name" => "Bash",
-        "tool_input" => %{
-          "command" => "ls -la"
-        }
-      })
+      input_json =
+        Jason.encode!(%{
+          "tool_name" => "Bash",
+          "tool_input" => %{
+            "command" => "ls -la"
+          }
+        })
 
       stub(System, :halt, fn 0 -> :ok end)
 
@@ -94,9 +99,10 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "handles missing fields gracefully" do
-      input_json = Jason.encode!(%{
-        "other_field" => "value"
-      })
+      input_json =
+        Jason.encode!(%{
+          "other_field" => "value"
+        })
 
       stub(System, :halt, fn 0 -> :ok end)
 
@@ -267,10 +273,11 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       File.write!(Path.join(test_dir, "mix.lock"), "%{}")
 
-      input_json = Jason.encode!(%{
-        "tool_name" => "Bash",
-        "tool_input" => %{"command" => "git commit -m 'good commit'"}
-      })
+      input_json =
+        Jason.encode!(%{
+          "tool_name" => "Bash",
+          "tool_input" => %{"command" => "git commit -m 'good commit'"}
+        })
 
       stub(System, :halt, fn 0 -> :ok end)
 
@@ -294,10 +301,11 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      input_json = Jason.encode!(%{
-        "tool_name" => "Bash",
-        "tool_input" => %{"command" => "git commit -m 'bad formatting'"}
-      })
+      input_json =
+        Jason.encode!(%{
+          "tool_name" => "Bash",
+          "tool_input" => %{"command" => "git commit -m 'bad formatting'"}
+        })
 
       stub(System, :halt, fn 2 -> :ok end)
 
