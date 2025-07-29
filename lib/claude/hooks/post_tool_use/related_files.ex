@@ -186,12 +186,9 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     end
   end
 
-  # Simple glob matching implementation
   defp glob_match?(path, pattern) do
-    # Normalize paths to be relative for matching
     relative_path = Path.relative_to_cwd(path)
 
-    # Convert glob pattern to regex
     regex_pattern =
       pattern
       |> String.replace(".", "\\.")

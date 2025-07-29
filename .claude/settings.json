@@ -10,9 +10,13 @@
           {
             "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/compilation_checker.exs",
             "type": "command"
+          },
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/related_files.exs",
+            "type": "command"
           }
         ],
-        "matcher": "Edit|Write|MultiEdit"
+        "matcher": "Write|Edit|MultiEdit"
       }
     ],
     "PreToolUse": [

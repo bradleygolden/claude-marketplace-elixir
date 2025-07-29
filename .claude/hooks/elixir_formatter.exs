@@ -1,5 +1,5 @@
 #!/usr/bin/env elixir
-# Hook script for Claude Code hook
+# Hook script for Checks if Elixir files need formatting after Claude edits them
 # This script is called with JSON input via stdin from Claude Code
 
 # Install dependencies
