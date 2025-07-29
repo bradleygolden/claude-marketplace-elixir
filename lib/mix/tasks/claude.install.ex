@@ -164,7 +164,6 @@ defmodule Mix.Tasks.Claude.Install do
 
   @default_formatter_inputs ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
 
-
   @impl Igniter.Mix.Task
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
@@ -289,6 +288,8 @@ defmodule Mix.Tasks.Claude.Install do
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, config} when is_map(config) ->
         existing_hooks = Map.get(config, :hooks, [])
+        
+        # Check if any default hooks are missing
         missing_hooks = default_hooks -- existing_hooks
         
         if missing_hooks != [] do
