@@ -46,10 +46,10 @@ defmodule Mix.Tasks.Claude.Install do
     #   MyProject.Hooks.CustomFormatter,
     #   MyProject.Hooks.SecurityChecker
     # ],
-    
+
     # MCP servers (Tidewave is automatically configured for Phoenix projects)
     # mcp_servers: [:tidewave],
-    # 
+    #
     # You can also specify custom configuration like port:
     # mcp_servers: [
     #   {:tidewave, [port: 5000]}
@@ -59,7 +59,7 @@ defmodule Mix.Tasks.Claude.Install do
     # mcp_servers: [
     #   {:tidewave, [port: 4000, enabled?: false]}
     # ],
-    
+
     # Subagents provide specialized expertise with their own context
     # subagents: [
     #   %{
@@ -366,12 +366,7 @@ defmodule Mix.Tasks.Claude.Install do
   defp generate_hook_script(hook_module, claude_dep) do
     module_name = Module.split(hook_module) |> Enum.join(".")
 
-    deps =
-      if claude_dep == "{:claude, path: \"../..\"}" do
-        "[#{claude_dep}, {:jason, \"~> 1.4\"}, {:igniter, \"~> 0.6\"}]"
-      else
-        "[#{claude_dep}, {:jason, \"~> 1.4\"}]"
-      end
+    deps = "[#{claude_dep}, {:jason, \"~> 1.4\"}]"
 
     description =
       if function_exported?(hook_module, :description, 0) do
@@ -401,7 +396,7 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp get_claude_dependency do
     if Mix.Project.get() == Claude.MixProject do
-      "{:claude, path: \"../..\"}"
+      "{:claude, path: \".\"}"
     else
       case get_claude_version_from_deps() do
         {:ok, version} -> "{:claude, \"#{version}\"}"
