@@ -35,10 +35,8 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   end
 
   describe "run/1 - :eof input" do
-    test "handles :eof input by exiting with code 0" do
-      expect(System, :halt, fn 0 -> :ok end)
-
-      PreCommitCheck.run(:eof)
+    test "returns :ok for :eof input" do
+      assert PreCommitCheck.run(:eof) == :ok
     end
   end
 
@@ -67,10 +65,9 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           }
         )
 
-      stub(System, :halt, fn 0 -> :ok end)
-
       assert capture_io([input: input_json], fn ->
-               PreCommitCheck.run(input_json)
+               result = PreCommitCheck.run(input_json)
+               assert result == :ok
              end) =~ "Pre-commit validation triggered"
     end
 
@@ -83,18 +80,16 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           }
         })
 
-      stub(System, :halt, fn 0 -> :ok end)
-
       assert capture_io([input: input_json], fn ->
-               PreCommitCheck.run(input_json)
+               result = PreCommitCheck.run(input_json)
+               assert result == :ok
              end) == ""
     end
 
     test "handles invalid JSON gracefully" do
-      stub(System, :halt, fn 1 -> :ok end)
-
       assert capture_io(:stderr, fn ->
-               PreCommitCheck.run("invalid json")
+               result = PreCommitCheck.run("invalid json")
+               assert result == {:error, :invalid_json}
              end) =~ "Failed to parse hook input JSON"
     end
 
@@ -104,10 +99,9 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           "other_field" => "value"
         })
 
-      stub(System, :halt, fn 0 -> :ok end)
-
       assert capture_io([input: input_json], fn ->
-               PreCommitCheck.run(input_json)
+               result = PreCommitCheck.run(input_json)
+               assert result == :ok
              end) == ""
     end
   end
@@ -259,8 +253,77 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
   end
 
-  describe "hook validation with different exit scenarios" do
-    test "exits with code 0 when validation passes", %{test_dir: test_dir} do
+  describe "hook validation return values" do
+    test "returns error when compilation validation fails", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/compile_error.ex", """
+      defmodule CompileError do
+        def hello do
+          undefined_var
+        end
+      end
+      """)
+
+      System.cmd("mix", ["format"], cd: test_dir)
+
+      input_json =
+        Jason.encode!(%{
+          "tool_name" => "Bash",
+          "tool_input" => %{"command" => "git commit -m 'compilation error'"}
+        })
+
+      stdout =
+        capture_io(fn ->
+          stderr =
+            capture_stderr(fn ->
+              result = PreCommitCheck.run(input_json)
+              assert result == {:error, :compilation_failed}
+            end)
+
+          assert stderr =~ "❌ Compilation check failed!"
+        end)
+
+      assert stdout =~ "✓ Code formatting is correct"
+    end
+
+    test "returns error when unused dependencies detected", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/good.ex", """
+      defmodule Good do
+        def hello do
+          :world
+        end
+      end
+      """)
+
+      System.cmd("mix", ["format"], cd: test_dir)
+
+      File.write!(Path.join(test_dir, "mix.lock"), """
+      %{
+        "unused_lib": {:hex, :unused_lib, "1.0.0", "abc123", [:mix], [], "hexpm", "def456"}
+      }
+      """)
+
+      input_json =
+        Jason.encode!(%{
+          "tool_name" => "Bash",
+          "tool_input" => %{"command" => "git commit -m 'unused deps'"}
+        })
+
+      stdout =
+        capture_io(fn ->
+          stderr =
+            capture_stderr(fn ->
+              result = PreCommitCheck.run(input_json)
+              assert result == {:error, :unused_dependencies}
+            end)
+
+          assert stderr =~ "❌ Unused dependencies detected!"
+        end)
+
+      assert stdout =~ "✓ Code formatting is correct"
+      assert stdout =~ "✓ Compilation successful"
+    end
+
+    test "returns ok when validation passes", %{test_dir: test_dir} do
       create_elixir_file(test_dir, "lib/valid.ex", """
       defmodule Valid do
         def greet(name) do
@@ -279,11 +342,10 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           "tool_input" => %{"command" => "git commit -m 'good commit'"}
         })
 
-      stub(System, :halt, fn 0 -> :ok end)
-
       output =
         capture_io([input: input_json], fn ->
-          PreCommitCheck.run(input_json)
+          result = PreCommitCheck.run(input_json)
+          assert result == :ok
         end)
 
       assert output =~ "Pre-commit validation triggered"
@@ -307,13 +369,12 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           "tool_input" => %{"command" => "git commit -m 'bad formatting'"}
         })
 
-      stub(System, :halt, fn 2 -> :ok end)
-
       stdout =
         capture_io(fn ->
           stderr =
             capture_stderr(fn ->
-              PreCommitCheck.run(input_json)
+              result = PreCommitCheck.run(input_json)
+              assert result == {:error, :formatting_failed}
             end)
 
           assert stderr =~ "❌ Formatting check failed!"

@@ -128,7 +128,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       # Now includes related_files by default from .claude.exs template
       assert length(post_tool_use_hooks) >= 2
-      
+
       hook_commands = Enum.map(post_tool_use_hooks, & &1["command"])
       assert Enum.any?(hook_commands, &String.contains?(&1, "elixir_formatter.exs"))
       assert Enum.any?(hook_commands, &String.contains?(&1, "compilation_checker.exs"))
@@ -630,7 +630,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       # New Claude hooks should be present
       assert Enum.any?(hook_commands, &String.contains?(&1, "elixir_formatter.exs"))
       assert Enum.any?(hook_commands, &String.contains?(&1, "compilation_checker.exs"))
-      
+
       # Test environment may include RelatedFiles if it's enabled in the project's .claude.exs
       # Just ensure we have at least the two required hooks
       assert length(hook_commands) >= 2
@@ -894,6 +894,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       # Settings should only contain valid hooks
       settings = File.read!(".claude/settings.json") |> Jason.decode!()
+
       all_commands =
         settings["hooks"]
         |> Map.values()

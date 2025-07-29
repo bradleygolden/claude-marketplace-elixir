@@ -11,5 +11,5 @@ input = IO.read(:stdio, :eof)
 # Reuse the existing hook module
 case Claude.Hooks.PreToolUse.PreCommitCheck.run(input) do
   :ok -> System.halt(0)
-  _ -> System.halt(1)
+  {:error, _reason} -> System.halt(2)
 end
