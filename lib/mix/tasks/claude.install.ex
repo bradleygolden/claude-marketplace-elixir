@@ -17,6 +17,7 @@ defmodule Mix.Tasks.Claude.Install do
   5. Generating any configured subagents for specialized assistance
   6. Configuring MCP servers (like Tidewave for Phoenix projects)
   7. Ensuring your project is properly configured for Claude Code integration
+  8. Adding .claude.exs to the formatter configuration for automatic formatting
 
   ## Example
 
@@ -26,6 +27,8 @@ defmodule Mix.Tasks.Claude.Install do
   """
 
   use Igniter.Mix.Task
+
+  @default_formatter_inputs ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
 
   @meta_agent_config %{
     name: "Meta Agent",
@@ -239,7 +242,7 @@ defmodule Mix.Tasks.Claude.Install do
     default_formatter = """
     # Used by "mix format"
     [
-      inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+      inputs: [".claude.exs" | #{inspect(@default_formatter_inputs)}]
     ]
     """
 
@@ -254,7 +257,7 @@ defmodule Mix.Tasks.Claude.Install do
           # Empty file - create the structure
           code =
             quote do
-              [inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]]
+              [inputs: [".claude.exs" | unquote(@default_formatter_inputs)]]
             end
 
           {:ok, Igniter.Code.Common.add_code(zipper, code)}
@@ -265,7 +268,7 @@ defmodule Mix.Tasks.Claude.Install do
           |> Sourceror.Zipper.rightmost()
           |> Igniter.Code.Keyword.put_in_keyword(
             [:inputs],
-            ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"],
+            @default_formatter_inputs,
             fn nested_zipper ->
               Igniter.Code.List.prepend_new_to_list(
                 nested_zipper,
@@ -284,7 +287,9 @@ defmodule Mix.Tasks.Claude.Install do
 
                Please add it manually to the inputs list:
 
-                   inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+                   inputs: [".claude.exs" | #{inspect(@default_formatter_inputs)}]
+
+               Then run `mix format` to apply the formatting.
                """}
           end
       end

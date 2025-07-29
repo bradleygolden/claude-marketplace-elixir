@@ -9,6 +9,52 @@ defmodule Mix.Tasks.Claude.InstallTest do
       |> assert_creates(".claude.exs")
     end
 
+    test "adds .claude.exs to formatter inputs" do
+      igniter =
+        test_project(
+          files: %{
+            ".formatter.exs" => """
+            [
+              inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+            ]
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_has_patch(igniter, ".formatter.exs", """
+        2   - |  inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+          2 + |  inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+      """)
+    end
+
+    test "handles missing .formatter.exs file" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      # Check that formatter content includes .claude.exs
+      source = Rewrite.source!(igniter.rewrite, ".formatter.exs")
+      content = Rewrite.Source.get(source, :content)
+      assert content =~ ~s|".claude.exs"|
+    end
+
+    test "formatter update is idempotent" do
+      igniter =
+        test_project(
+          files: %{
+            ".formatter.exs" => """
+            [
+              inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+            ]
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_unchanged(igniter, ".formatter.exs")
+    end
+
     test "creates CLAUDE.md through usage_rules.sync task" do
       igniter =
         test_project()
