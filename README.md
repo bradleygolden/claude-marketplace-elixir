@@ -4,9 +4,9 @@
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/claude/)
 [![License](https://img.shields.io/hexpm/l/claude.svg)](https://github.com/bradleygolden/claude/blob/main/LICENSE)
 
-**Make Claude Code write production-ready Elixir, every time.**
+**Help make Claude Code write production-ready Elixir, every time.**
 
-Claude is an elixir library, batteries-included integration that ensures every line of code Claude writes is properly formatted, compiles without warnings, and follows your project's conventions—automatically.
+Claude, not to be confused with _the_ Claude (probably should have picked a better name 😅), is an elixir library, batteries-included integration that ensures every line of code Claude writes is properly formatted, compiles without warnings, and follows your project's conventions—automatically.
 
 ## Quick Start
 
