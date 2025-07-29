@@ -27,153 +27,115 @@ defmodule Mix.Tasks.Claude.Install do
 
   use Igniter.Mix.Task
 
-  @claude_exs_template """
-  # .claude.exs - Claude configuration for this project
-  # This file is evaluated when Claude reads your project settings
-  # and merged with .claude/settings.json (this file takes precedence)
+  @meta_agent_config %{
+    name: "Meta Agent",
+    description: "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
+    prompt: """
+    # Purpose
 
-  # You can configure various aspects of Claude's behavior here:
-  # - Project metadata and context
-  # - Custom behaviors and preferences
-  # - Development workflow settings
-  # - Code generation patterns
-  # - And more as Claude evolves
+    Your sole purpose is to act as an expert agent architect. You will take a user's prompt describing a new subagent and generate a complete, ready-to-use subagent configuration for Elixir projects.
 
-  # Example configuration (uncomment and modify as needed):
-  %{
-    # Custom hooks can be registered here
-    # hooks: [
-    #   MyProject.Hooks.CustomFormatter,
-    #   MyProject.Hooks.SecurityChecker
-    # ],
+    ## Important Documentation
 
-    # MCP servers (Tidewave is automatically configured for Phoenix projects)
-    # mcp_servers: [:tidewave],
-    #
-    # You can also specify custom configuration like port:
-    # mcp_servers: [
-    #   {:tidewave, [port: 5000]}
-    # ],
-    #
-    # To disable a server without removing it:
-    # mcp_servers: [
-    #   {:tidewave, [port: 4000, enabled?: false]}
-    # ],
+    You MUST reference these official Claude Code documentation pages to ensure accurate subagent generation:
+    - **Subagents Guide**: https://docs.anthropic.com/en/docs/claude-code/sub-agents
+    - **Settings Reference**: https://docs.anthropic.com/en/docs/claude-code/settings  
+    - **Hooks System**: https://docs.anthropic.com/en/docs/claude-code/hooks
 
-    # Subagents provide specialized expertise with their own context
-    subagents: [
-      %{
-        name: "Meta Agent",
-        description: "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
-        prompt: \"\"\"
-        # Purpose
+    Use the WebSearch tool to look up specific details from these docs when needed, especially for:
+    - Tool naming conventions and available tools
+    - Subagent YAML frontmatter format
+    - Best practices for descriptions and delegation
+    - Settings.json structure and configuration options
 
-        Your sole purpose is to act as an expert agent architect. You will take a user's prompt describing a new subagent and generate a complete, ready-to-use subagent configuration for Elixir projects.
+    ## Instructions
 
-        ## Important Documentation
+    When invoked, you must follow these steps:
 
-        You MUST reference these official Claude Code documentation pages to ensure accurate subagent generation:
-        - **Subagents Guide**: https://docs.anthropic.com/en/docs/claude-code/sub-agents
-        - **Settings Reference**: https://docs.anthropic.com/en/docs/claude-code/settings  
-        - **Hooks System**: https://docs.anthropic.com/en/docs/claude-code/hooks
+    1. **Analyze Input:** Carefully analyze the user's request to understand the new agent's purpose, primary tasks, and domain
+       - Use WebSearch to consult the subagents documentation if you need clarification on best practices
 
-        Use the WebSearch tool to look up specific details from these docs when needed, especially for:
-        - Tool naming conventions and available tools
-        - Subagent YAML frontmatter format
-        - Best practices for descriptions and delegation
-        - Settings.json structure and configuration options
+    2. **Devise a Name:** Create a descriptive name (e.g., "Database Migration Agent", "API Integration Agent")
 
-        ## Instructions
+    3. **Write Delegation Description:** Craft a clear, action-oriented description. This is CRITICAL for automatic delegation:
+       - Use phrases like "MUST BE USED for...", "Use PROACTIVELY when...", "Expert in..."
+       - Be specific about WHEN to invoke
+       - Avoid overlap with existing agents
 
-        When invoked, you must follow these steps:
+    4. **Infer Necessary Tools:** Based on tasks, determine MINIMAL tools required:
+       - Code reviewer: `[:read, :grep, :glob]`
+       - Refactorer: `[:read, :edit, :multi_edit, :grep]`
+       - Test runner: `[:read, :edit, :bash, :grep]`
+       - Remember: No `:task` prevents delegation loops
 
-        1. **Analyze Input:** Carefully analyze the user's request to understand the new agent's purpose, primary tasks, and domain
-           - Use WebSearch to consult the subagents documentation if you need clarification on best practices
+    5. **Construct System Prompt:** Design the prompt considering:
+       - **Clean Slate**: Agent has NO memory between invocations
+       - **Context Discovery**: Specify exact files/patterns to check first
+       - **Performance**: Avoid reading entire directories
+       - **Self-Contained**: Never assume main chat context
 
-        2. **Devise a Name:** Create a descriptive name (e.g., "Database Migration Agent", "API Integration Agent")
+    6. **Check for Issues:**
+       - Read current `.claude.exs` to avoid description conflicts
+       - Ensure tools match actual needs (no extras)
+       - Verify usage_rules only reference existing dependencies
 
-        3. **Write Delegation Description:** Craft a clear, action-oriented description. This is CRITICAL for automatic delegation:
-           - Use phrases like "MUST BE USED for...", "Use PROACTIVELY when...", "Expert in..."
-           - Be specific about WHEN to invoke
-           - Avoid overlap with existing agents
+    7. **Generate Configuration:** Add the new subagent to `.claude.exs`:
 
-        4. **Infer Necessary Tools:** Based on tasks, determine MINIMAL tools required:
-           - Code reviewer: `[:read, :grep, :glob]`
-           - Refactorer: `[:read, :edit, :multi_edit, :grep]`
-           - Test runner: `[:read, :edit, :bash, :grep]`
-           - Remember: No `:task` prevents delegation loops
+        %{
+          name: "Generated Name",
+          description: "Generated action-oriented description",
+          prompt: \"""
+          # Purpose
+          You are [role definition].
 
-        5. **Construct System Prompt:** Design the prompt considering:
-           - **Clean Slate**: Agent has NO memory between invocations
-           - **Context Discovery**: Specify exact files/patterns to check first
-           - **Performance**: Avoid reading entire directories
-           - **Self-Contained**: Never assume main chat context
+          ## Instructions
+          When invoked, follow these steps:
+          1. [Specific startup sequence]
+          2. [Core task execution]
+          3. [Validation/verification]
 
-        6. **Check for Issues:**
-           - Read current `.claude.exs` to avoid description conflicts
-           - Ensure tools match actual needs (no extras)
-           - Verify usage_rules only reference existing dependencies
+          ## Context Discovery
+          Since you start fresh each time:
+          - Check: [specific files first]
+          - Pattern: [efficient search patterns]
+          - Limit: [what NOT to read]
 
-        7. **Generate Configuration:** Add the new subagent to `.claude.exs`:
+          ## Best Practices
+          - [Domain-specific guidelines]
+          - [Performance considerations]
+          - [Common pitfalls to avoid]
+          \""",
+          tools: [inferred tools],
+          usage_rules: [only if deps exist]
+        }
 
-            %{
-              name: "Generated Name",
-              description: "Generated action-oriented description",
-              prompt: \\\"""
-              # Purpose
-              You are [role definition].
+    8. **Final Actions:**
+       - Update `.claude.exs` with the new configuration
+       - Instruct user to run `mix claude.install`
 
-              ## Instructions
-              When invoked, follow these steps:
-              1. [Specific startup sequence]
-              2. [Core task execution]
-              3. [Validation/verification]
+    ## Key Principles
 
-              ## Context Discovery
-              Since you start fresh each time:
-              - Check: [specific files first]
-              - Pattern: [efficient search patterns]
-              - Limit: [what NOT to read]
+    **Avoid Common Pitfalls:**
+    - Context overflow: "Read all files in lib/" → "Read only specific module"
+    - Ambiguous delegation: "Database expert" → "MUST BE USED for Ecto migrations"
+    - Hidden dependencies: "Continue refactoring" → "Refactor to [explicit patterns]"
+    - Tool bloat: Only include tools actually needed
 
-              ## Best Practices
-              - [Domain-specific guidelines]
-              - [Performance considerations]
-              - [Common pitfalls to avoid]
-              \\\""",
-              tools: [inferred tools],
-              usage_rules: [only if deps exist]
-            }
+    **Performance Patterns:**
+    - Targeted reads over directory scans
+    - Specific grep patterns over broad searches
+    - Limited context gathering on startup
 
-        8. **Final Actions:**
-           - Update `.claude.exs` with the new configuration
-           - Instruct user to run `mix claude.install`
+    ## Output Format
 
-        ## Key Principles
-
-        **Avoid Common Pitfalls:**
-        - Context overflow: "Read all files in lib/" → "Read only specific module"
-        - Ambiguous delegation: "Database expert" → "MUST BE USED for Ecto migrations"
-        - Hidden dependencies: "Continue refactoring" → "Refactor to [explicit patterns]"
-        - Tool bloat: Only include tools actually needed
-
-        **Performance Patterns:**
-        - Targeted reads over directory scans
-        - Specific grep patterns over broad searches
-        - Limited context gathering on startup
-
-        ## Output Format
-
-        Your response should:
-        1. Show the complete subagent configuration to add
-        2. Explain key design decisions
-        3. Warn about any potential conflicts
-        4. Remind to run `mix claude.install`
-        \"\"\",
-        tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
-      }
-    ]
+    Your response should:
+    1. Show the complete subagent configuration to add
+    2. Explain key design decisions
+    3. Warn about any potential conflicts
+    4. Remind to run `mix claude.install`
+    """,
+    tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
   }
-  """
 
   @default_tidewave_port 4000
   @tidewave_setup_instructions """
@@ -253,12 +215,13 @@ defmodule Mix.Tasks.Claude.Install do
     path = igniter.assigns[:claude_exs_path]
 
     if Igniter.exists?(igniter, path) do
-      igniter
+      # If .claude.exs exists, check if we should update the Meta Agent
+      update_meta_agent_if_needed(igniter, path)
     else
       Igniter.create_new_file(
         igniter,
         path,
-        @claude_exs_template
+        claude_exs_template()
       )
     end
   end
@@ -269,6 +232,56 @@ defmodule Mix.Tasks.Claude.Install do
       {:usage_rules, "~> 0.1", only: [:dev]},
       on_exists: :skip
     )
+  end
+
+  defp format_meta_agent_for_template do
+    # Format the Meta Agent config for inclusion in the template
+    # We need to be careful with escaping the prompt
+    inspect(@meta_agent_config, pretty: true, limit: :infinity, printable_limit: :infinity)
+  end
+
+  defp claude_exs_template do
+    meta_agent_str = format_meta_agent_for_template()
+    
+    """
+    # .claude.exs - Claude configuration for this project
+    # This file is evaluated when Claude reads your project settings
+    # and merged with .claude/settings.json (this file takes precedence)
+
+    # You can configure various aspects of Claude's behavior here:
+    # - Project metadata and context
+    # - Custom behaviors and preferences
+    # - Development workflow settings
+    # - Code generation patterns
+    # - And more as Claude evolves
+
+    # Example configuration (uncomment and modify as needed):
+    %{
+      # Custom hooks can be registered here
+      # hooks: [
+      #   MyProject.Hooks.CustomFormatter,
+      #   MyProject.Hooks.SecurityChecker
+      # ],
+
+      # MCP servers (Tidewave is automatically configured for Phoenix projects)
+      # mcp_servers: [:tidewave],
+      #
+      # You can also specify custom configuration like port:
+      # mcp_servers: [
+      #   {:tidewave, [port: 5000]}
+      # ],
+      #
+      # To disable a server without removing it:
+      # mcp_servers: [
+      #   {:tidewave, [port: 4000, enabled?: false]}
+      # ],
+
+      # Subagents provide specialized expertise with their own context
+      subagents: [
+        #{meta_agent_str}
+      ]
+    }
+    """
   end
 
   defp install_hooks(igniter) do
@@ -991,6 +1004,98 @@ defmodule Mix.Tasks.Claude.Install do
     else
       igniter
     end
+  end
+
+  defp update_meta_agent_if_needed(igniter, path) do
+    # Skip interactive prompts in test environment
+    if igniter.assigns[:test_mode] || Mix.env() == :test do
+      igniter
+    else
+      case read_and_eval_claude_exs(igniter, path) do
+        {:ok, config} when is_map(config) ->
+          subagents = Map.get(config, :subagents, [])
+          
+          meta_agent_index = Enum.find_index(subagents, fn agent ->
+            Map.get(agent, :name) == "Meta Agent"
+          end)
+          
+          if meta_agent_index do
+            existing_meta_agent = Enum.at(subagents, meta_agent_index)
+            
+            # Check if the Meta Agent differs from the default
+            if meta_agent_differs?(existing_meta_agent) do
+              # Ask user if they want to update
+              if Igniter.Util.IO.yes?("""
+              
+              Your project has a customized Meta Agent that differs from the latest version.
+              Would you like to update it to the latest version?
+              
+              Note: This will overwrite your custom Meta Agent configuration.
+              """) do
+                # Update the Meta Agent
+                updated_subagents = List.replace_at(subagents, meta_agent_index, @meta_agent_config)
+                updated_config = Map.put(config, :subagents, updated_subagents)
+                
+                # Generate new content
+                new_content = generate_claude_exs_content(updated_config)
+                
+                igniter
+                |> Igniter.update_file(path, fn source ->
+                  Rewrite.Source.update(source, :content, new_content)
+                end)
+                |> Igniter.add_notice("Meta Agent has been updated to the latest version.")
+              else
+                igniter
+                |> Igniter.add_notice("Keeping your existing Meta Agent configuration.")
+              end
+            else
+              # Meta Agent is already up to date
+              igniter
+            end
+          else
+            # No Meta Agent exists, ask if they want to add it
+            if Igniter.Util.IO.yes?("""
+            
+            Your project doesn't have a Meta Agent configured.
+            Would you like to add the Meta Agent? It helps create new subagents.
+            """) do
+              updated_subagents = subagents ++ [@meta_agent_config]
+              updated_config = Map.put(config, :subagents, updated_subagents)
+              
+              # Generate new content
+              new_content = generate_claude_exs_content(updated_config)
+              
+              igniter
+              |> Igniter.update_file(path, fn source ->
+                Rewrite.Source.update(source, :content, new_content)
+              end)
+              |> Igniter.add_notice("Meta Agent has been added to your .claude.exs file.")
+            else
+              igniter
+            end
+          end
+          
+        _ ->
+          # If we can't read the file, just return the igniter unchanged
+          igniter
+      end
+    end
+  end
+  
+  defp meta_agent_differs?(existing_agent) do
+    # Compare the existing agent with the default
+    existing_agent != @meta_agent_config
+  end
+  
+  defp generate_claude_exs_content(config) do
+    # Convert the config map back to Elixir code
+    """
+    # .claude.exs - Claude configuration for this project
+    # This file is evaluated when Claude reads your project settings
+    # and merged with .claude/settings.json (this file takes precedence)
+
+    #{inspect(config, pretty: true, limit: :infinity, printable_limit: :infinity)}
+    """
   end
 
   defp tool_to_string(tool) when is_atom(tool) do
