@@ -286,7 +286,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "returns error when unused dependencies detected", %{test_dir: test_dir} do
-      # Create properly formatted and compilable file
       create_elixir_file(test_dir, "lib/good.ex", """
       defmodule Good do
         def hello do
@@ -297,7 +296,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       System.cmd("mix", ["format"], cd: test_dir)
 
-      # Add unused dependency to mix.lock
       File.write!(Path.join(test_dir, "mix.lock"), """
       %{
         "unused_lib": {:hex, :unused_lib, "1.0.0", "abc123", [:mix], [], "hexpm", "def456"}
