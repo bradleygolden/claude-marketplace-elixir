@@ -17,7 +17,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
   @impl Claude.Hooks.Hook.Behaviour
   def run(:eof) do
-    System.halt(0)
+    :ok
   end
 
   def run(json_input) when is_binary(json_input) do
@@ -27,7 +27,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
       {:error, _} ->
         IO.puts(:stderr, "Failed to parse hook input JSON")
-        System.halt(1)
+        {:error, :invalid_json}
     end
   end
 
@@ -38,21 +38,14 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
        when is_binary(command) do
     if String.contains?(command, "git commit") do
       IO.puts("Pre-commit validation triggered for: #{command}")
-
-      case validate_commit() do
-        :ok ->
-          System.halt(0)
-
-        {:error, _reason} ->
-          System.halt(2)
-      end
+      validate_commit()
     else
-      System.halt(0)
+      :ok
     end
   end
 
   defp handle_hook_input(_) do
-    System.halt(0)
+    :ok
   end
 
   defp validate_commit do

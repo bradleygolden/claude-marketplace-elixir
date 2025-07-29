@@ -113,7 +113,12 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
       {test_dir, cleanup} = setup_hook_test(compile: false)
 
       create_elixir_file(test_dir, "lib/my_app/user.ex", "defmodule MyApp.User do\nend")
-      create_elixir_file(test_dir, "test/my_app/user_test.exs", "defmodule MyApp.UserTest do\nend")
+
+      create_elixir_file(
+        test_dir,
+        "test/my_app/user_test.exs",
+        "defmodule MyApp.UserTest do\nend"
+      )
 
       json_input =
         build_tool_input(
@@ -138,7 +143,12 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
       {test_dir, cleanup} = setup_hook_test(compile: false)
 
       create_elixir_file(test_dir, "lib/my_app/user.ex", "defmodule MyApp.User do\nend")
-      create_elixir_file(test_dir, "test/my_app/user_test.exs", "defmodule MyApp.UserTest do\nend")
+
+      create_elixir_file(
+        test_dir,
+        "test/my_app/user_test.exs",
+        "defmodule MyApp.UserTest do\nend"
+      )
 
       json_input =
         build_tool_input(
@@ -162,8 +172,17 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
     test "handles nested directory structures" do
       {test_dir, cleanup} = setup_hook_test(compile: false)
 
-      create_elixir_file(test_dir, "lib/accounts/user.ex", "defmodule MyApp.Accounts.User do\nend")
-      create_elixir_file(test_dir, "test/accounts/user_test.exs", "defmodule MyApp.Accounts.UserTest do\nend")
+      create_elixir_file(
+        test_dir,
+        "lib/accounts/user.ex",
+        "defmodule MyApp.Accounts.User do\nend"
+      )
+
+      create_elixir_file(
+        test_dir,
+        "test/accounts/user_test.exs",
+        "defmodule MyApp.Accounts.UserTest do\nend"
+      )
 
       json_input =
         build_tool_input(
@@ -187,8 +206,17 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
     test "handles files with special characters in names" do
       {test_dir, cleanup} = setup_hook_test(compile: false)
 
-      create_elixir_file(test_dir, "lib/my_app/special-name.ex", "defmodule MyApp.SpecialName do\nend")
-      create_elixir_file(test_dir, "test/my_app/special-name_test.exs", "defmodule MyApp.SpecialNameTest do\nend")
+      create_elixir_file(
+        test_dir,
+        "lib/my_app/special-name.ex",
+        "defmodule MyApp.SpecialName do\nend"
+      )
+
+      create_elixir_file(
+        test_dir,
+        "test/my_app/special-name_test.exs",
+        "defmodule MyApp.SpecialNameTest do\nend"
+      )
 
       json_input =
         build_tool_input(
@@ -208,8 +236,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
 
       cleanup.()
     end
-
-
 
     test "does not suggest the same file being edited" do
       {test_dir, cleanup} = setup_hook_test(compile: false)
@@ -243,7 +269,12 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
       {test_dir, cleanup} = setup_hook_test(compile: false)
 
       create_elixir_file(test_dir, "lib/phoenix/channel.ex", "defmodule Phoenix.Channel do\nend")
-      create_elixir_file(test_dir, "test/phoenix/channel_test.exs", "defmodule Phoenix.ChannelTest do\nend")
+
+      create_elixir_file(
+        test_dir,
+        "test/phoenix/channel_test.exs",
+        "defmodule Phoenix.ChannelTest do\nend"
+      )
 
       json_input =
         build_tool_input(
@@ -293,6 +324,5 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
 
       assert RelatedFiles.run(json_input) == :ok
     end
-
   end
 end
