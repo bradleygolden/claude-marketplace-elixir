@@ -1,82 +1,46 @@
 # Claude
 
-Opinionated Claude Code integration for Elixir projects.
+[![Hex.pm](https://img.shields.io/hexpm/v/claude.svg)](https://hex.pm/packages/claude)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/claude/)
+[![License](https://img.shields.io/hexpm/l/claude.svg)](https://github.com/bradleygolden/claude/blob/main/LICENSE)
 
-## Our Opinions
+**Make Claude Code write production-ready Elixir, every time.**
 
-1. **Changes that Claude makes should always be production-ready** - Every edit is formatted and checked for compilation errors
-2. **Project-scoped by default** - No global state, each project is isolated
-3. **Zero configuration** - If you follow Elixir conventions, it just works
+Claude is a batteries-included integration that ensures every line of code Claude writes is properly formatted, compiles without warnings, and follows your project's conventions—automatically.
 
-## What You Get
+## Quick Start
 
-A Claude that writes code like an experienced Elixir developer (ideally).
+```bash
+# Install Claude
+mix igniter.install claude
 
-## Why Use This?
+# That's it! Claude now automatically:
+# ✓ Formats every file after editing
+# ✓ Checks for compilation errors
+# ✓ Validates code before commits
+```
 
-Without this library:
-- Claude might write unformatted code
-- Compilation errors only show up when you manually compile
-- You need to manually run `mix format` and `mix compile` after edits
-- Claude doesn't know about your project's specific conventions
+## The Problem
 
-With this library:
-- Every file Claude touches is automatically formatted
-- Compilation errors are caught immediately after edits
-- Your codebase stays consistent and error-free
-- Claude feels like a native Elixir developer
+When Claude Code writes Elixir, you often need to:
+- Run `mix format` manually after every edit
+- Discover compilation errors only when you run the code
+- Remember to update related test files
+- Ensure consistent code style across your team
 
-## Installation
+## The Solution
 
-Add `claude` to your list of dependencies in `mix.exs`:
+Claude hooks directly into Claude Code's workflow:
 
 ```elixir
-def deps do
-  [
-    {:claude, "~> 0.1.0", only: :dev, runtime: false}
-  ]
-end
-```
-
-## Usage
-
-Install Claude hooks (one time per project):
-```bash
-mix claude.install
-```
-
-That's it. Claude will now automatically:
-- Format every Elixir file it edits
-- Check for compilation errors after each edit
-
-To uninstall:
-```bash
-mix claude.uninstall
-```
-
-*Note: This only removes configuration added by this library. Your other Claude settings remain untouched.*
-
-## Our Opinionated Defaults
-
-- **Always format & check**: We believe all code should be formatted and compilable
-- **Project-local**: No global configs that could conflict between projects
-- **Fail silently**: If checks fail, we log but don't interrupt Claude
-- **Extensible**: Built on behaviours so you can add your own hooks
-
-## What It Does
-
-### Auto-formatting
-Before (what Claude writes):
-```elixir
+# Before Claude: Unformatted code that might not compile
 defmodule  MyModule  do
   def hello(  name  )  do
-    "Hello, #{ name }!"
+    "Hello, #{ nam }!"  # Oops, typo!
   end
 end
-```
 
-After (automatically formatted):
-```elixir
+# After Claude: Production-ready code, automatically
 defmodule MyModule do
   def hello(name) do
     "Hello, #{name}!"
@@ -84,148 +48,204 @@ defmodule MyModule do
 end
 ```
 
-### Compilation Checking
-If Claude introduces a compilation error:
+## Features
+
+### 🎯 **Smart Hooks**
+- **Format on save** - Every `.ex` and `.exs` file is automatically formatted
+- **Compile checks** - Catch errors immediately, not in production
+- **Pre-commit validation** - Block bad commits before they happen
+- **Related files** - "You edited the schema, want to check the Phoenix Context?"
+
+### 🔧 **Extensible**
 ```elixir
-defmodule MyModule do
-  def hello(name) do
-    "Hello, #{nam}!"  # Variable 'nam' is undefined
+# .claude.exs - Add your own hooks
+%{
+  hooks: [
+    MyApp.Hooks.SecurityScanner,
+    MyApp.Hooks.TestRunner
+  ]
+}
+```
+
+### 🤖 **Sub-agents**
+Create specialized AI assistants for your project with built-in best practices:
+
+```elixir
+%{
+  subagents: [
+    %{
+      name: "genserver-agent",
+      role: "Genserver agent",
+      instructions: "You are an writing and testing genservers...",
+      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]  # Automatically includes best practices!
+    }
+  ]
+}
+```
+
+**Usage Rules Integration:** The real power comes from [usage rules](https://hexdocs.pm/usage_rules/readme.html) - documentation from your dependencies that gets automatically injected into sub-agents, ensuring they follow library best practices.
+
+### 🔌 **MCP Server Support**
+Integrate with Phoenix development tools via Tidewave:
+```elixir
+%{
+  mcp_servers: [tidewave: [port: 4000]]  # Automatic Phoenix integration
+}
+```
+
+Tidewave will be added automatically if you're using Phoenix in your project.
+
+### 📚 **Best Practices**
+
+[Usage rules](https://hexdocs.pm/usage_rules/readme.html) will be added to your `CLAUDE.md` automatically so you can have the best chance of your agents following best practices.
+
+## Installation
+
+### Requirements
+- Elixir ~> 1.18
+- Claude Code (CLI)
+- Mix with Igniter support
+
+### Install via Igniter
+
+```bash
+mix igniter.install claude
+```
+
+This will:
+1. Add `claude` to your dependencies
+2. Generate `.claude.exs` configuration
+3. Install hooks in `.claude/settings.json` and `.claude/hooks`
+4. Create specialized sub-agents in `.claud/agents`
+
+## Configuration
+
+Claude uses `.claude.exs` for project-specific configuration:
+
+```elixir
+# .claude.exs
+%{
+  # Hooks to run (built-in + custom)
+  hooks: [
+    # Optional: Enable related files suggestions
+    Claude.Hooks.PostToolUse.RelatedFiles,
+
+    # Add your custom hooks
+    MyApp.Hooks.CredoChecker
+  ],
+
+  # MCP servers (for Phoenix projects, only tidewave is supported, use claude manually to add other mcp servers)
+  mcp_servers: [
+    # Simple configuration
+    :tidewave,
+
+    # Or with options
+    {:tidewave, [port: 5000]}
+  ],
+
+  # Specialized sub-agents
+  subagents: [
+    %{
+      name: "test_expert",
+      role: "ExUnit testing specialist",
+      instructions: "You excel at writing comprehensive test suites...",
+      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]
+    }
+  ]
+}
+```
+
+## Sub-agent Examples
+
+While Claude doesn't include pre-built sub-agents, here are some patterns you can use:
+
+### Meta Agent Pattern
+Create a sub-agent that helps design other sub-agents:
+```elixir
+%{
+  name: "meta_agent",
+  role: "Sub-agent architect",
+  instructions: """
+  You help create well-designed sub-agents by:
+  - Analyzing requirements and suggesting optimal configuration
+  - Choosing appropriate tools and permissions
+  - Including relevant usage rules from dependencies
+  - Following Claude Code best practices
+  """,
+  tools: [:write, :read, :edit]
+}
+```
+
+### Common Sub-agent Patterns
+- **Test Specialist** - Focused on writing and maintaining tests
+- **Documentation Manager** - Keeps docs in sync with code
+- **Database Expert** - Specializes in Ecto queries and migrations
+- **API Designer** - Creates consistent REST/GraphQL APIs
+- **Performance Optimizer** - Identifies and fixes bottlenecks
+
+## Creating Custom Hooks
+
+Extend Claude with your own hooks:
+
+```elixir
+defmodule MyApp.Hooks.CredoChecker do
+  use Claude.Hooks.Hook.Behaviour,
+    event: :post_tool_use,
+    matcher: [:edit, :write],
+    description: "Runs Credo on modified files"
+
+  @impl true
+  def run(json_input) do
+    # Your hook logic here
+    :ok
   end
 end
 ```
 
-You'll see immediately in the output:
-```
-⚠️  Compilation issues detected:
-error: undefined variable "nam"
-  lib/my_module.ex:3: MyModule.hello/1
-```
-
-## Current Features
-
-### Supported Hooks
-
-✅ **ElixirFormatter** (Post-tool-use)
-- Checks if Elixir files need formatting after edits
-- Runs after Write/Edit/MultiEdit operations on `.ex`/`.exs` files
-- Shows warnings when formatting is needed
-- Non-blocking: provides feedback without interrupting workflow
-
-✅ **CompilationChecker** (Post-tool-use)
-- Checks for compilation errors and warnings after edits
-- Runs after Write/Edit/MultiEdit operations on `.ex`/`.exs` files
-- Uses `mix compile --warnings-as-errors` to ensure code quality
-- Non-blocking: displays issues but doesn't prevent operations
-
-✅ **PreCommitCheck** (Pre-tool-use)
-- **Blocking hook** that validates code before git commits
-- Ensures all files are formatted before committing
-- Verifies code compiles without errors or warnings
-- Prevents commits if formatting or compilation issues exist
-
-### Tidewave Integration (Phoenix Projects)
-
-For Phoenix projects, Claude automatically configures [Tidewave](https://hexdocs.pm/tidewave) integration, providing Claude with access to your development tools and database through the Model Context Protocol (MCP).
-
-**Note:** Phoenix is an optional dependency. Claude will detect Phoenix whether it's a direct dependency, transitive dependency, or just present in your project.
-
-**Automatic Setup:**
-
-When you run `mix claude.install` in a Phoenix project, Tidewave is automatically configured. To complete the setup:
-
-1. Add Tidewave to your dependencies:
-   ```elixir
-   def deps do
-     [
-       {:tidewave, "~> 0.2.0", only: :dev}
-     ]
-   end
-   ```
-
-2. Run `mix deps.get`
-
-3. Configure Tidewave in `config/dev.exs` (see [Tidewave docs](https://hexdocs.pm/tidewave))
-
-4. Start your Phoenix server - the MCP endpoint will be available at `http://localhost:4000/tidewave/mcp`
-
-**Manual Configuration:**
-
-If needed, you can manually manage Tidewave:
-
-```bash
-# Reinstall Tidewave configuration
-mix claude.install.tidewave
-
-# Check MCP server status
-mix claude.mcp.list
-```
-
-## Coming Soon
-
-🚧 **Test runner** - Run stale tests automatically
-🚧 **Credo integration** - Ensure code quality standards
-🚧 **Dialyzer support** - Type checking on the fly
-
 ## How It Works
 
-This library uses [Claude Code Hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) to intercept file operations and run Mix tasks in response. When Claude edits an Elixir file, our PostToolUse hooks automatically:
+This library leverages [Claude Code's hook system](https://docs.anthropic.com/en/docs/claude-code/hooks) to intercept file operations:
 
-1. Format the file with `mix format`
-2. Check for compilation errors with `mix compile --warnings-as-errors`
+1. **Claude edits a file** → PostToolUse hook triggered
+2. **Hook runs Mix tasks** → `mix format`, `mix compile --warnings-as-errors`
+3. **Feedback provided** → Claude sees any issues and can fix them
+4. **Process repeats** → Until the code is production-ready
 
-The hook system is built on Elixir behaviours, making it easy to extend with your own custom hooks.
+This happens automatically, without interrupting Claude's workflow.
+
+## Documentation
+
+- [Full Documentation](https://hexdocs.pm/claude)
+- [Claude Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks)
+- TODO: Claude subagents guide
 
 ## Contributing
 
-We welcome contributions! The codebase follows standard Elixir conventions:
+We welcome contributions! See our [contributing guide](CONTRIBUTING.md) for details.
 
-- Run tests: `mix test`
-- Format code: `mix format`
+```bash
+# Run tests
+mix test
 
-## Releasing
+# Format code
+mix format
 
-### Release Process
+# Run quality checks
+mix compile --warnings-as-errors
+```
 
-1. **Update Version**
-   - Edit `mix.exs` and update the `@version` module attribute
-   - Example: change `@version "0.1.0"` to `@version "0.2.0"`
+## Support
 
-2. **Update Changelog**
-   - Add a new section to `CHANGELOG.md` with the version and date
-   - List all changes under Added/Changed/Fixed/Removed sections
-
-3. **Commit Changes**
-   ```bash
-   git add mix.exs CHANGELOG.md
-   git commit -m "Release v0.2.0"
-   ```
-
-4. **Create Git Tag**
-   ```bash
-   git tag -a v0.2.0 -m "Version 0.2.0"
-   ```
-
-5. **Push to GitHub**
-   ```bash
-   git push origin main
-   git push origin v0.2.0
-   ```
-
-6. **Publish to Hex**
-   ```bash
-   mix hex.publish
-   ```
-
-The GitHub Action will automatically create a release when you push the tag.
-
-### Version Guidelines
-
-Since this project uses zero-based versioning (0.x.y):
-
-- **Patch** (0.1.0 → 0.1.1): Bug fixes, minor improvements
-- **Minor** (0.1.0 → 0.2.0): New features, may include breaking changes
-- **Major** (0.x.y → 1.0.0): First stable release (not used until v1.0.0)
+- 📖 [Documentation](https://hexdocs.pm/claude)
+- 💬 [Discussions](https://github.com/bradleygolden/claude/discussions)
+- 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  Made with ❤️ by the Elixir community
+</p>

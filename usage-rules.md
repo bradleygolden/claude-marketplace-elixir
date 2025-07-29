@@ -1,6 +1,6 @@
 # Claude Usage Rules
 
-Claude (not to be confused with Claude/Claude Code) is an Elixir library that provides opinionated Claude Code integration for Elixir projects. It includes tooling for deeply integrating Claude Code into your project using Elixir.
+Claude (not to be confused with Claude/Claude Code) is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It includes tooling for deeply integrating Claude Code into your project using Elixir.
 
 ## Installation
 

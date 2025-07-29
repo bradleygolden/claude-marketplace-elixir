@@ -1,9 +1,9 @@
 defmodule Claude.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @elixir_version "~> 1.18"
-  @description "Opinionated Claude Code integration for Elixir projects"
+  @description "Batteries-included Claude Code integration for Elixir projects"
 
   def project do
     [

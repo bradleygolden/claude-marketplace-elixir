@@ -1,35 +1,36 @@
 defmodule Claude do
   @moduledoc """
-  Opinionated Claude Code integration for Elixir projects.
+  Batteries-included Claude Code integration for Elixir projects.
 
-  A Claude that writes code like an experienced Elixir developer.
+  **Make Claude Code write production-ready Elixir, every time.**
 
-  ## Our Opinions
+  Claude ensures every line of code Claude writes is properly formatted, compiles without warnings,
+  and follows your project's conventions—automatically.
 
-  1. Code should always be production-ready
-  2. Project-scoped by default
-  3. Zero configuration
+  ## Features
 
-  ## Installation
+  - 🎯 **Smart Hooks** - Format on save, compile checks, pre-commit validation
+  - 🤖 **Sub-agents** - Specialized AI assistants with built-in best practices
+  - 🔧 **Extensible** - Create custom hooks for your workflow
+  - 🔌 **MCP Support** - Phoenix integration via Tidewave
+  - 📚 **Best Practices** - Automatic usage rules from your dependencies
 
-  Add `claude` to your dependencies:
+  ## Quick Start
 
+      # Install via Igniter (recommended)
+      mix igniter.install claude
+
+      # Or add to your dependencies
       def deps do
         [
-          {:claude, "~> 0.1.0"}
+          {:claude, "~> 0.2.0", only: :dev, runtime: false}
         ]
       end
 
-  ## Usage
-
-  Install Claude hooks (one time per project):
-
+      # Then run
       mix claude.install
 
-  That's it. Claude will now automatically:
-  - Format every Elixir file it edits
-  - Check for compilation errors after each edit
-
-  For more information, see the [README](https://github.com/bradleygolden/claude).
+  For comprehensive documentation, examples, and configuration options, see the
+  [README](https://github.com/bradleygolden/claude#readme).
   """
 end

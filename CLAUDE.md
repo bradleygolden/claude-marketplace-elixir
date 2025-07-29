@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an Elixir library called "Claude" that provides opinionated Claude Code integration for Elixir projects. It automatically formats code and checks for compilation errors after Claude makes edits.
+This is an Elixir library called "Claude" that provides batteries-included Claude Code integration for Elixir projects. It automatically formats code and checks for compilation errors after Claude makes edits.
 
 ## Development Commands
 
