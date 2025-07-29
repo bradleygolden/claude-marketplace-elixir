@@ -77,7 +77,6 @@ defmodule Mix.Tasks.Claude.Install do
     6. **Check for Issues:**
        - Read current `.claude.exs` to avoid description conflicts
        - Ensure tools match actual needs (no extras)
-       - Verify usage_rules only reference existing dependencies
 
     7. **Generate Configuration:** Add the new subagent to `.claude.exs`:
 
@@ -105,8 +104,7 @@ defmodule Mix.Tasks.Claude.Install do
           - [Performance considerations]
           - [Common pitfalls to avoid]
           \""",
-          tools: [inferred tools],
-          usage_rules: [only if deps exist]
+          tools: [inferred tools]
         }
 
     8. **Final Actions:**
