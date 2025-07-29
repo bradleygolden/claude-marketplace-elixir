@@ -3,6 +3,12 @@
 # and merged with .claude/settings.json (this file takes precedence)
 
 %{
+  hooks: [
+    Claude.Hooks.PostToolUse.ElixirFormatter,
+    Claude.Hooks.PostToolUse.CompilationChecker,
+    Claude.Hooks.PreToolUse.PreCommitCheck,
+    Claude.Hooks.PostToolUse.RelatedFiles
+  ],
   subagents: [
     %{
       name: "Claude Code Specialist",

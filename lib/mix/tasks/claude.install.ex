@@ -29,7 +29,8 @@ defmodule Mix.Tasks.Claude.Install do
 
   @meta_agent_config %{
     name: "Meta Agent",
-    description: "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
+    description:
+      "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
     prompt: """
     # Purpose
 
@@ -162,8 +163,6 @@ defmodule Mix.Tasks.Claude.Install do
     write: "Write"
   }
 
-  @default_formatter_inputs ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
-
   @impl Igniter.Mix.Task
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
@@ -213,68 +212,32 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp add_claude_exs_to_formatter(igniter) do
-    # Default formatter content in case the file doesn't exist
-    default_formatter = """
-    # Used by "mix format"
-    [
-      inputs: [".claude.exs" | #{inspect(@default_formatter_inputs)}]
-    ]
-    """
+    # Check if .formatter.exs exists
+    if Igniter.exists?(igniter, ".formatter.exs") do
+      # Read the current formatter file to check if .claude.exs is already included
+      igniter
+      |> Igniter.add_notice("""
+      To format .claude.exs files, add \".claude.exs\" to your formatter inputs:
 
-    igniter
-    |> Igniter.include_or_create_file(".formatter.exs", default_formatter)
-    |> Igniter.update_elixir_file(".formatter.exs", fn zipper ->
-      # Navigate to the keyword list inside the formatter config
-      zipper
-      |> Igniter.Code.Common.move_to_do_block()
-      |> case do
-        {:ok, zipper} ->
-          # Look for the :inputs key
-          case Igniter.Code.Keyword.get_key(zipper, :inputs) do
-            {:ok, {_inputs_zipper, inputs_value}} ->
-              # Check if .claude.exs is already in the inputs
-              case inputs_value |> Sourceror.Zipper.node() do
-                [".claude.exs" | _] ->
-                  # Already configured correctly
-                  zipper
+          # .formatter.exs
+          [
+            inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+          ]
 
-                _other ->
-                  # Need to add .claude.exs to the beginning
-                  Igniter.Code.Keyword.set_keyword_key(zipper, :inputs,
-                    {:__block__, [],
-                     [
-                       [
-                         ".claude.exs",
-                         {:__block__, [], [:|]},
-                         Macro.var(:inputs, nil)
-                       ]
-                     ]}
-                  )
-              end
+      Then run `mix format` to apply the formatting.
+      """)
+    else
+      # Create a new .formatter.exs with .claude.exs included
+      default_formatter = """
+      # Used by "mix format"
+      [
+        inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+      ]
+      """
 
-            _ ->
-              # No :inputs key found, add it
-              Igniter.Code.Keyword.set_keyword_key(zipper, :inputs,
-                [".claude.exs" | @default_formatter_inputs]
-              )
-          end
-
-        _ ->
-          {:warning,
-           """
-           Could not update .formatter.exs automatically.
-           
-           Please add ".claude.exs" to your formatter inputs manually:
-           
-               # .formatter.exs
-               [
-                 inputs: [".claude.exs" | #{inspect(@default_formatter_inputs)}]
-               ]
-           
-           Then run `mix format` to apply the formatting.
-           """}
-      end
-    end)
+      igniter
+      |> Igniter.create_new_file(".formatter.exs", default_formatter)
+    end
   end
 
   defp ensure_default_hooks(igniter, path) do
@@ -283,17 +246,17 @@ defmodule Mix.Tasks.Claude.Install do
       Claude.Hooks.PostToolUse.CompilationChecker,
       Claude.Hooks.PreToolUse.PreCommitCheck
     ]
-    
+
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, config} when is_map(config) ->
         existing_hooks = Map.get(config, :hooks, [])
         missing_hooks = default_hooks -- existing_hooks
-        
+
         if missing_hooks != [] do
           igniter
           |> Igniter.add_notice("""
           Your .claude.exs is missing some default hooks. Add these to enable core functionality:
-          
+
           hooks: [
           #{Enum.map_join(missing_hooks, ",\n  ", &"  #{inspect(&1)}")}
           ],
@@ -301,7 +264,7 @@ defmodule Mix.Tasks.Claude.Install do
         else
           igniter
         end
-        
+
       _ ->
         igniter
     end
@@ -309,17 +272,17 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp read_hooks_from_claude_exs(igniter) do
     claude_exs_path = igniter.assigns[:claude_exs_path]
-    
+
     if Igniter.exists?(igniter, claude_exs_path) do
       case read_and_eval_claude_exs(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           hooks = Map.get(config, :hooks, [])
-          
+
           hooks
           |> List.wrap()
           |> Enum.map(&normalize_hook_module/1)
           |> Enum.reject(&is_nil/1)
-          
+
         _ ->
           []
       end
@@ -327,40 +290,40 @@ defmodule Mix.Tasks.Claude.Install do
       []
     end
   end
-  
+
   defp normalize_hook_module(hook_module) when is_atom(hook_module) do
     if Code.ensure_loaded?(hook_module) and function_exported?(hook_module, :config, 0) do
       script_name = hook_module_to_script_name(hook_module)
       script_path = ".claude/hooks/#{script_name}"
-      
-      description = 
+
+      description =
         if function_exported?(hook_module, :description, 0) do
           hook_module.description()
         else
           "Custom hook"
         end
-      
-      event_type = 
+
+      event_type =
         if function_exported?(hook_module, :__hook_event__, 0) do
           hook_module.__hook_event__()
         else
           :post_tool_use
         end
-        
-      matchers = 
+
+      matchers =
         if function_exported?(hook_module, :__hook_matcher__, 0) do
           matcher = hook_module.__hook_matcher__()
           String.split(matcher, "|")
         else
           []
         end
-      
+
       {hook_module, script_path, event_type, matchers, description}
     else
       nil
     end
   end
-  
+
   defp normalize_hook_module(_), do: nil
 
   defp hook_module_to_script_name(module) do
@@ -375,7 +338,7 @@ defmodule Mix.Tasks.Claude.Install do
     # Format the Meta Agent config for inclusion in the template
     inspect(@meta_agent_config, pretty: true, limit: :infinity, printable_limit: :infinity)
   end
-  
+
   defp format_meta_agent_for_notice do
     # Format the Meta Agent config for display in notices
     # Build it manually to show proper formatting
@@ -383,19 +346,19 @@ defmodule Mix.Tasks.Claude.Install do
     description = inspect(@meta_agent_config.description)
     tools = inspect(@meta_agent_config.tools)
     prompt = @meta_agent_config.prompt
-    
+
     # Manually build the string to preserve formatting
     "    %{\n" <>
-    "      name: #{name},\n" <>
-    "      description: #{description},\n" <>
-    "      prompt: \"\"\"\n#{prompt}\"\"\",\n" <>
-    "      tools: #{tools}\n" <>
-    "    }"
+      "      name: #{name},\n" <>
+      "      description: #{description},\n" <>
+      "      prompt: \"\"\"\n#{prompt}\"\"\",\n" <>
+      "      tools: #{tools}\n" <>
+      "    }"
   end
 
   defp claude_exs_template do
     meta_agent_str = format_meta_agent_for_template()
-    
+
     """
     # .claude.exs - Claude configuration for this project
     # This file is evaluated when Claude reads your project settings
@@ -446,7 +409,7 @@ defmodule Mix.Tasks.Claude.Install do
     relative_settings_path = Path.relative_to_cwd(settings_path)
 
     claude_exs_hooks = read_hooks_from_claude_exs(igniter)
-    
+
     igniter
     |> Igniter.assign(claude_exs_hooks: claude_exs_hooks)
     |> install_hooks_claude_code_hooks_dir()
@@ -455,14 +418,13 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp add_hooks_notice(igniter, relative_settings_path, hooks) do
-    
-    hooks_message = 
+    hooks_message =
       if hooks == [] do
         "No hooks configured in .claude.exs"
       else
         format_hooks_list(hooks)
       end
-    
+
     igniter
     |> Igniter.add_notice("""
     Claude hooks have been installed to #{relative_settings_path}
@@ -498,7 +460,7 @@ defmodule Mix.Tasks.Claude.Install do
   defp build_hooks_settings(settings_map, igniter) when is_map(settings_map) do
     cleaned_settings = remove_all_hooks(settings_map)
     cleaned_hooks = Map.get(cleaned_settings, "hooks", %{})
-    
+
     all_hooks = igniter.assigns[:claude_exs_hooks] || []
 
     hooks_by_event_and_matcher =
@@ -581,6 +543,7 @@ defmodule Mix.Tasks.Claude.Install do
               hooks_list
               |> Enum.reject(fn hook ->
                 command = Map.get(hook, "command", "")
+
                 Enum.any?(claude_patterns, fn pattern ->
                   case pattern do
                     %Regex{} -> Regex.match?(pattern, command)
@@ -649,11 +612,10 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp install_hooks_claude_code_hooks_dir(igniter) do
     claude_dep = get_claude_dependency()
-    
+
     all_hooks = igniter.assigns[:claude_exs_hooks] || []
 
-    Enum.reduce(all_hooks, igniter, fn {module, script_path, _event, _matchers, _desc},
-                                              acc ->
+    Enum.reduce(all_hooks, igniter, fn {module, script_path, _event, _matchers, _desc}, acc ->
       content = generate_hook_script(module, claude_dep)
 
       Igniter.create_or_update_file(acc, script_path, content, fn source ->
@@ -1198,29 +1160,30 @@ defmodule Mix.Tasks.Claude.Install do
       case read_and_eval_claude_exs(igniter, path) do
         {:ok, config} when is_map(config) ->
           subagents = Map.get(config, :subagents, [])
-          
-          has_meta_agent = Enum.any?(subagents, fn agent ->
-            Map.get(agent, :name) == "Meta Agent"
-          end)
-          
+
+          has_meta_agent =
+            Enum.any?(subagents, fn agent ->
+              Map.get(agent, :name) == "Meta Agent"
+            end)
+
           if has_meta_agent do
             igniter
           else
             # Show notice about how to add Meta Agent
             igniter
             |> Igniter.add_notice("""
-            
+
             Your project doesn't have a Meta Agent configured.
             The Meta Agent helps you create new subagents.
-            
+
             To add it, copy the following to your .claude.exs subagents list:
-            
+
             #{format_meta_agent_for_notice()}
-            
+
             Then run `mix claude.install` again to generate the agent file.
             """)
           end
-          
+
         _ ->
           # If we can't read the file, just return the igniter unchanged
           igniter
