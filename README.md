@@ -85,7 +85,7 @@ Create specialized AI assistants for your project with built-in best practices:
 
 **Built-in Meta Agent:** Claude includes a Meta Agent by default that helps you create new sub-agents following best practices. Just ask: "Create a sub-agent for handling GraphQL queries" and the Meta Agent will:
 - Generate a complete sub-agent configuration
-- Choose appropriate tools and permissions  
+- Choose appropriate tools and permissions
 - Include relevant usage rules from your dependencies
 - Add it to your `.claude.exs` file
 
@@ -174,13 +174,6 @@ The Meta Agent is your sub-agent architect. It helps you create new, well-design
 
 **Usage:** Just ask Claude to create a new sub-agent, and the Meta Agent will automatically help.
 
-### Common Sub-agent Patterns
-- **Test Specialist** - Focused on writing and maintaining tests
-- **Documentation Manager** - Keeps docs in sync with code
-- **Database Expert** - Specializes in Ecto queries and migrations
-- **API Designer** - Creates consistent REST/GraphQL APIs
-- **Performance Optimizer** - Identifies and fixes bottlenecks
-
 ## Creating Custom Hooks
 
 Extend Claude with your own hooks:
@@ -214,8 +207,8 @@ This happens automatically, without interrupting Claude's workflow.
 ## Documentation
 
 - [Full Documentation](https://hexdocs.pm/claude)
-- [Claude Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks)
-- TODO: Claude subagents guide
+- [Anthropic's Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks)
+- [Anthropic's Subagents Guide](https://docs.anthropic.com/en/docs/claude-code/sub-agents)
 
 ## Contributing
 
@@ -237,6 +230,30 @@ mix compile --warnings-as-errors
 - 📖 [Documentation](https://hexdocs.pm/claude)
 - 💬 [Discussions](https://github.com/bradleygolden/claude/discussions)
 - 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
+
+## Roadmap
+
+### 🚀 Coming Soon
+
+**Custom Slash Commands**
+- `/create-subagent` - Generate a new sub-agent with guided prompts
+- `/create-hook` - Scaffold a new custom hook with boilerplate
+- Auto-generate commands in `.claude/commands/` during installation
+
+**Context-Aware CLAUDE.md**
+- Directory-specific instructions (e.g., `*_web/CLAUDE.md` for Phoenix)
+- Automatic inheritance from parent directories
+
+**More MCP Servers**
+- Database tools (PostgreSQL, MySQL, Redis)
+- Testing and documentation servers
+- Auto-configuration based on project dependencies
+
+**Dynamic Sub-agents**
+- Generate sub-agents for each dependency automatically
+- Common workflow templates (LiveView, GraphQL, Testing)
+
+Want to contribute? Open an issue on [GitHub](https://github.com/bradleygolden/claude/issues)!
 
 ## License
 
