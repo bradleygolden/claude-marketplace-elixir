@@ -238,9 +238,8 @@ mix compile --warnings-as-errors
 - `/create-hook` - Scaffold a new custom hook with boilerplate
 - Auto-generate commands in `.claude/commands/` during installation
 
-**Context-Aware CLAUDE.md**
+**Scoped CLAUDE.md's**
 - Directory-specific instructions (e.g., `*_web/CLAUDE.md` for Phoenix)
-- Automatic inheritance from parent directories
 
 **More MCP Servers**
 - Database tools (PostgreSQL, MySQL, Redis)
