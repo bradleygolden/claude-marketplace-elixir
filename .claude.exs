@@ -7,7 +7,34 @@
     Claude.Hooks.PostToolUse.ElixirFormatter,
     Claude.Hooks.PostToolUse.CompilationChecker,
     Claude.Hooks.PreToolUse.PreCommitCheck,
-    Claude.Hooks.PostToolUse.RelatedFiles
+    {Claude.Hooks.PostToolUse.RelatedFiles, %{
+      patterns: [
+        # When README updates, check related docs
+        {"README.md", ["CHANGELOG.md", "deps/*/usage-rules.md", "CLAUDE.md"]},
+        
+        # When usage rules update, check README
+        {"deps/*/usage-rules.md", ["README.md", "CLAUDE.md"]},
+        
+        # When CHANGELOG updates, check README for version info
+        {"CHANGELOG.md", "README.md"},
+        
+        # When lib files change, suggest updating tests
+        {"lib/**/*.ex", "test/**/*_test.exs"},
+        
+        # When test files change, suggest checking lib files
+        {"test/**/*_test.exs", "lib/**/*.ex"},
+        
+        # When hooks change, check documentation
+        {"lib/claude/hooks/**/*.ex", ["README.md", "CLAUDE.md"]},
+        
+        # When mix.exs changes (version bumps), check docs
+        {"mix.exs", ["README.md", "CHANGELOG.md"]},
+        
+        # When new features are added, check all docs
+        {"lib/mix/tasks/*.ex", ["README.md", "CLAUDE.md"]},
+        {"lib/claude/*.ex", ["README.md", "CLAUDE.md"]}
+      ]
+    }}
   ],
   subagents: [
     %{

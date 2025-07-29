@@ -102,14 +102,20 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
   end
 
   @impl Claude.Hooks.Hook.Behaviour
-  def run(json_input, _user_config) when is_binary(json_input) do
-    run(json_input)
+  def run(json_input, user_config) when is_binary(json_input) do
+    case Claude.Hooks.Events.PostToolUse.Input.from_json(json_input) do
+      {:ok, %Claude.Hooks.Events.PostToolUse.Input{} = input} ->
+        process_file_change(input, user_config)
+
+      {:error, _} ->
+        :ok
+    end
   end
 
-  defp process_file_change(input) do
+  defp process_file_change(input, user_config \\ %{}) do
     with :ok <- validate_tool(input.tool_name),
          {:ok, file_path} <- extract_file_path(input.tool_input) do
-      related_files = find_related_files(file_path)
+      related_files = find_related_files(file_path, user_config)
 
       if related_files != [] do
         suggest_updates(file_path, related_files)
@@ -133,8 +139,10 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     Helpers.extract_file_path(tool_input)
   end
 
-  defp find_related_files(file_path) do
-    default_patterns()
+  defp find_related_files(file_path, user_config) do
+    patterns = get_patterns(user_config)
+    
+    patterns
     |> Enum.flat_map(fn {source_glob, target_transform} ->
       if glob_match?(file_path, source_glob) do
         target_transform
@@ -242,6 +250,14 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     - Behavioral changes
     - Type specs or documentation
     """
+  end
+
+  defp get_patterns(user_config) do
+    case Map.get(user_config, :patterns) do
+      nil -> default_patterns()
+      patterns when is_list(patterns) -> patterns
+      _ -> default_patterns()
+    end
   end
 
   defp default_patterns do
