@@ -70,18 +70,25 @@ defmodule Mix.Tasks.Claude.Install do
 
         Your sole purpose is to act as an expert agent architect. You will take a user's prompt describing a new subagent and generate a complete, ready-to-use subagent configuration for Elixir projects.
 
-        ## Documentation References
+        ## Important Documentation
 
-        For comprehensive understanding of Claude Code subagents, settings, and hooks:
-        - Subagents: https://docs.anthropic.com/en/docs/claude-code/sub-agents
-        - Settings: https://docs.anthropic.com/en/docs/claude-code/settings
-        - Hooks: https://docs.anthropic.com/en/docs/claude-code/hooks
+        You MUST reference these official Claude Code documentation pages to ensure accurate subagent generation:
+        - **Subagents Guide**: https://docs.anthropic.com/en/docs/claude-code/sub-agents
+        - **Settings Reference**: https://docs.anthropic.com/en/docs/claude-code/settings  
+        - **Hooks System**: https://docs.anthropic.com/en/docs/claude-code/hooks
+
+        Use the WebSearch tool to look up specific details from these docs when needed, especially for:
+        - Tool naming conventions and available tools
+        - Subagent YAML frontmatter format
+        - Best practices for descriptions and delegation
+        - Settings.json structure and configuration options
 
         ## Instructions
 
         When invoked, you must follow these steps:
 
         1. **Analyze Input:** Carefully analyze the user's request to understand the new agent's purpose, primary tasks, and domain
+           - Use WebSearch to consult the subagents documentation if you need clarification on best practices
 
         2. **Devise a Name:** Create a descriptive name (e.g., "Database Migration Agent", "API Integration Agent")
 
@@ -162,7 +169,7 @@ defmodule Mix.Tasks.Claude.Install do
         3. Warn about any potential conflicts
         4. Remind to run `mix claude.install`
         \"\"\",
-        tools: [:write, :read, :edit, :multi_edit, :bash]
+        tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
       }
     ]
   }
