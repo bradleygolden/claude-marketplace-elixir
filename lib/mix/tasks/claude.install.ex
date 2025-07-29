@@ -192,7 +192,6 @@ defmodule Mix.Tasks.Claude.Install do
     path = igniter.assigns[:claude_exs_path]
 
     if Igniter.exists?(igniter, path) do
-      # If .claude.exs exists, ensure it has default hooks and check for Meta Agent
       igniter
       |> ensure_default_hooks(path)
       |> check_meta_agent_and_notify(path)
@@ -288,8 +287,6 @@ defmodule Mix.Tasks.Claude.Install do
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, config} when is_map(config) ->
         existing_hooks = Map.get(config, :hooks, [])
-        
-        # Check if any default hooks are missing
         missing_hooks = default_hooks -- existing_hooks
         
         if missing_hooks != [] do
