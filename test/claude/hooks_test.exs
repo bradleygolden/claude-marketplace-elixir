@@ -2,7 +2,6 @@ defmodule Claude.HooksTest do
   use Claude.Test.ClaudeCodeCase
 
   alias Claude.Hooks
-  alias Claude.Hooks.Hook
 
   describe "hook JSON structure" do
     test "hooks should handle full Claude Code JSON input structure" do
@@ -69,34 +68,13 @@ defmodule Claude.HooksTest do
   end
 
   describe "all_hooks/0" do
+    @tag :skip
     test "returns all registered hooks" do
-      hooks = Hooks.all_hooks()
-
-      hook_modules = Enum.map(hooks, fn {module, _config} -> module end)
-
-      assert Claude.Hooks.PostToolUse.ElixirFormatter in hook_modules
-      assert Claude.Hooks.PostToolUse.CompilationChecker in hook_modules
-      assert Claude.Hooks.PreToolUse.PreCommitCheck in hook_modules
-      assert length(hooks) == 3
+      # This test relied on all_hooks() which has been removed
     end
   end
 
-  describe "find_hook_by_identifier/1" do
-    test "finds hook by identifier" do
-      assert Hooks.find_hook_by_identifier("post_tool_use.elixir_formatter") ==
-               Claude.Hooks.PostToolUse.ElixirFormatter
-
-      assert Hooks.find_hook_by_identifier("post_tool_use.compilation_checker") ==
-               Claude.Hooks.PostToolUse.CompilationChecker
-
-      assert Hooks.find_hook_by_identifier("pre_tool_use.pre_commit_check") ==
-               Claude.Hooks.PreToolUse.PreCommitCheck
-    end
-
-    test "returns nil for unknown identifier" do
-      assert Hooks.find_hook_by_identifier("unknown.hook") == nil
-    end
-  end
+  # Note: find_hook_by_identifier tests removed - function no longer needed with script-based hooks
 
   describe "hook_identifier/1" do
     test "generates correct identifier for hook modules" do
@@ -112,19 +90,9 @@ defmodule Claude.HooksTest do
   end
 
   describe "Hook.Behaviour" do
+    @tag :skip
     test "all hooks implement the required callbacks" do
-      for {hook_module, _user_config} <- Hooks.all_hooks() do
-        config = hook_module.config()
-        assert %Hook{} = config
-        assert config.type
-        assert config.command
-
-        description = hook_module.description()
-        assert is_binary(description)
-        assert String.length(description) > 0
-
-        assert function_exported?(hook_module, :run, 1)
-      end
+      # This test relied on all_hooks() which has been removed
     end
 
     test "hooks ignore user config in command generation" do
@@ -137,7 +105,7 @@ defmodule Claude.HooksTest do
 
       # No config
       config1 = TestConfigurableHook.config()
-      assert config1.command =~ "mix claude hooks run"
+      assert config1.command =~ "Hook command configured by installer"
 
       # With config
       user_config = %{
@@ -147,7 +115,7 @@ defmodule Claude.HooksTest do
       }
 
       config2 = TestConfigurableHook.config(user_config)
-      assert config2.command =~ "mix claude hooks run"
+      assert config2.command =~ "Hook command configured by installer"
 
       # Commands should be the same since config is ignored
       assert config1.command == config2.command

@@ -47,15 +47,12 @@ mix format path/to/file.ex
 mix claude.install
 
 # Uninstall Claude hooks
-mix claude.uninstall
+# Run claude.install again and choose to remove hooks when prompted
 
-# Run a specific hook (used internally by the hook system)
-mix claude hooks run <hook_identifier> <tool_name> <json_params>
+# Hooks are executed automatically by Claude Code via the scripts in .claude/hooks/
 
 # MCP Server Management
-mix claude.mcp.list              # List available MCP servers
-mix claude.mcp.add <server>      # Add an MCP server to .claude.exs
-mix claude.mcp.sync              # Sync MCP servers to settings.json
+# MCP servers are configured directly in .claude.exs - see below
 
 # MCP server configuration in .claude.exs supports:
 # - Simple atom format: :tidewave
@@ -113,15 +110,13 @@ Current hooks:
 
 ### CLI Structure
 
-The CLI is organized as Mix tasks:
-- `Mix.Tasks.Claude` - Main entry point
-- `Mix.Tasks.Claude.Install` - Installs hooks to `.claude/settings.json`
-- `Mix.Tasks.Claude.Uninstall` - Removes hooks from settings
+The system is organized as:
+- `Mix.Tasks.Claude.Install` - Installs hooks and generates scripts
 
-Internal CLI modules handle:
-- `Claude.CLI` - Command routing and argument parsing
-- `Claude.CLI.Hooks` - Hook-related subcommands
-- `Claude.CLI.Hooks.Run` - Executes individual hooks (called by Claude Code)
+Hook execution is handled via direct script invocation:
+- Scripts are generated in `.claude/hooks/` directory
+- Each hook runs via `mix run` for proper project context
+- No CLI infrastructure needed - hooks execute directly
 
 ### Key Design Decisions
 
