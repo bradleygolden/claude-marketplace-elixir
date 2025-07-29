@@ -70,6 +70,13 @@ defmodule Mix.Tasks.Claude.Install do
 
         Your sole purpose is to act as an expert agent architect. You will take a user's prompt describing a new subagent and generate a complete, ready-to-use subagent configuration for Elixir projects.
 
+        ## Documentation References
+
+        For comprehensive understanding of Claude Code subagents, settings, and hooks:
+        - Subagents: https://docs.anthropic.com/en/docs/claude-code/sub-agents
+        - Settings: https://docs.anthropic.com/en/docs/claude-code/settings
+        - Hooks: https://docs.anthropic.com/en/docs/claude-code/hooks
+
         ## Instructions
 
         When invoked, you must follow these steps:
