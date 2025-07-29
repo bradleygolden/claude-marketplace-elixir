@@ -9,6 +9,52 @@ defmodule Mix.Tasks.Claude.InstallTest do
       |> assert_creates(".claude.exs")
     end
 
+    test "adds .claude.exs to formatter inputs" do
+      igniter =
+        test_project(
+          files: %{
+            ".formatter.exs" => """
+            [
+              inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+            ]
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_has_patch(igniter, ".formatter.exs", """
+        2   - |  inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+          2 + |  inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+      """)
+    end
+
+    test "handles missing .formatter.exs file" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      # Check that formatter content includes .claude.exs
+      source = Rewrite.source!(igniter.rewrite, ".formatter.exs")
+      content = Rewrite.Source.get(source, :content)
+      assert content =~ ~s|".claude.exs"|
+    end
+
+    test "formatter update is idempotent" do
+      igniter =
+        test_project(
+          files: %{
+            ".formatter.exs" => """
+            [
+              inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+            ]
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_unchanged(igniter, ".formatter.exs")
+    end
+
     test "creates CLAUDE.md through usage_rules.sync task" do
       igniter =
         test_project()
@@ -307,7 +353,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
       source = Rewrite.source!(igniter.rewrite, ".claude/agents/meta-agent.md")
       content = Rewrite.Source.get(source, :content)
       assert String.contains?(content, "name: meta-agent")
-      assert String.contains?(content, "description: Generates new, complete Claude Code subagent")
+
+      assert String.contains?(
+               content,
+               "description: Generates new, complete Claude Code subagent"
+             )
     end
 
     test "generates subagents with correct YAML frontmatter format" do
@@ -335,7 +385,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
 
       # Verify YAML frontmatter format
-      assert content =~ ~r/^---\nname: test-agent\ndescription: A test agent for verification\ntools: Read, Grep\n---\n\n/
+      assert content =~
+               ~r/^---\nname: test-agent\ndescription: A test agent for verification\ntools: Read, Grep\n---\n\n/
 
       # Verify the prompt is included after the frontmatter
       assert content =~ "You are a test agent that helps with testing."
@@ -365,7 +416,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
 
       # Verify YAML frontmatter format without tools line
-      assert content =~ ~r/^---\nname: no-tools-agent\ndescription: An agent with no tool restrictions\n---\n\n/
+      assert content =~
+               ~r/^---\nname: no-tools-agent\ndescription: An agent with no tool restrictions\n---\n\n/
+
       refute content =~ ~r/tools:/
     end
   end
