@@ -83,6 +83,12 @@ Create specialized AI assistants for your project with built-in best practices:
 }
 ```
 
+**Built-in Meta Agent:** Claude includes a Meta Agent by default that helps you create new sub-agents following best practices. Just ask: "Create a sub-agent for handling GraphQL queries" and the Meta Agent will:
+- Generate a complete sub-agent configuration
+- Choose appropriate tools and permissions  
+- Include relevant usage rules from your dependencies
+- Add it to your `.claude.exs` file
+
 **Usage Rules Integration:** The real power comes from [usage rules](https://hexdocs.pm/usage_rules/readme.html) - documentation from your dependencies that gets automatically injected into sub-agents, ensuring they follow library best practices.
 
 ### 🔌 **MCP Server Support**
@@ -155,26 +161,18 @@ Claude uses `.claude.exs` for project-specific configuration:
 }
 ```
 
-## Sub-agent Examples
+## Built-in Sub-agents
 
-While Claude doesn't include pre-built sub-agents, here are some patterns you can use:
+Claude includes a Meta Agent by default to help you create new sub-agents.
 
-### Meta Agent Pattern
-Create a sub-agent that helps design other sub-agents:
-```elixir
-%{
-  name: "meta_agent",
-  role: "Sub-agent architect",
-  instructions: """
-  You help create well-designed sub-agents by:
-  - Analyzing requirements and suggesting optimal configuration
-  - Choosing appropriate tools and permissions
-  - Including relevant usage rules from dependencies
-  - Following Claude Code best practices
-  """,
-  tools: [:write, :read, :edit]
-}
-```
+### Meta Agent
+The Meta Agent is your sub-agent architect. It helps you create new, well-designed sub-agents by:
+- Analyzing your requirements and suggesting optimal configuration
+- Choosing appropriate tools and permissions
+- Integrating usage rules from your dependencies
+- Following Claude Code best practices for performance and context management
+
+**Usage:** Just ask Claude to create a new sub-agent, and the Meta Agent will automatically help.
 
 ### Common Sub-agent Patterns
 - **Test Specialist** - Focused on writing and maintaining tests

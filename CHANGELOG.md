@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Settings are written to `.claude/settings.json` during `mix claude.install`
 - **Claude Code Sub-agent Support**: Generate custom AI agents from `.claude.exs` configuration
   - Define subagents with name, role, and instructions
-  - Built-in sub-agents: meta agent, igniter specialist, claude code specialist, README manager, changelog manager, release operations manager
+  - Built-in Meta Agent included by default to help create new sub-agents
   - Optional usage_rules integration from dependencies
   - Markdown files are generated in `.claude/agents/` during `mix claude.install`
 - **OTP Application**: Claude now starts as an OTP application (with empty supervisor)
