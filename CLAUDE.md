@@ -157,6 +157,8 @@ Each sub-agent is designed with:
 - Minimal tool sets (performance optimization)
 - Context discovery patterns (what to read first)
 - Self-contained prompts (no memory between invocations)
+- Optional visual customization (color property)
+- Optional model selection (model property)
 
 <!-- usage-rules-start -->
 <!-- usage-rules-header -->

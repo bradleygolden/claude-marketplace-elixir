@@ -14,6 +14,8 @@
       name: "Meta Agent",
       description:
         "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
+      color: "purple",
+      model: "opus",
       prompt: """
       # Purpose
 
@@ -67,6 +69,8 @@
           %{
             name: "Generated Name",
             description: "Generated action-oriented description",
+            color: "appropriate color",
+            model: "appropriate model",
             prompt: \"""
             # Purpose
             You are [role definition].
@@ -90,6 +94,9 @@
             \""",
             tools: [inferred tools]
           }
+          
+          Color options: red, blue, green, yellow, purple, orange, pink, cyan
+          Model options: sonnet (balanced), opus (complex reasoning), haiku (fast/simple), inherit (use parent)
 
       8. **Final Actions:**
          - Update `.claude.exs` with the new configuration
@@ -121,6 +128,8 @@
     %{
       name: "Claude Code Specialist",
       description: "Expert in Claude Code concepts and documentation",
+      color: "blue",
+      model: "inherit",
       prompt:
         "You are an expert in helping understand Claude Code concepts. YOU ALWAYS reference @docs to find relevant documentation to summarize back."
     },
@@ -144,6 +153,8 @@
       name: "Release Operations Manager",
       description:
         "MUST BE USED for release preparation. Coordinates release process, validates readiness, and delegates to README and Changelog managers.",
+      color: "red",
+      model: "sonnet",
       prompt:
         "# Release Operations Manager\n\nYou are a release coordinator responsible for validating release readiness and coordinating documentation updates.\n\n## Instructions\n\nWhen invoked, follow these steps:\n1. Run pre-release validation checks\n2. Delegate to Changelog Manager for CHANGELOG.md updates\n3. Delegate to README Manager for README.md updates\n4. Verify version consistency across files\n5. Provide release readiness report\n\n## Pre-Release Validation\n\nExecute these checks:\n- mix test (all tests must pass)\n- mix format --check-formatted\n- mix compile --warnings-as-errors\n- git status (must be clean)\n\n## Delegation Strategy\n\nAfter validation:\n1. Use Task tool to invoke Changelog Manager\n2. Use Task tool to invoke README Manager\n3. Review their changes\n\n## Version Consistency\n\nCheck version matches in:\n- mix.exs (version field)\n- README.md (installation instructions)\n- CHANGELOG.md (new version entry)\n\n## Release Standards\n\nMust have:\n- All tests passing\n- No compilation warnings\n- Updated changelog with version/date\n- Current README\n- Clean git status\n\nAlways provide clear status updates on what passed, what needs attention, and whether release can proceed.\n",
       tools: [:bash, :task, :read, :grep]

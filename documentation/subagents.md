@@ -24,13 +24,25 @@ Sub-agents are configured in `.claude.exs`:
   subagents: [
     %{
       name: "test-expert",
-      role: "ExUnit testing specialist",
-      instructions: "You excel at writing comprehensive test suites...",
-      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]
+      description: "ExUnit testing specialist",
+      prompt: "You excel at writing comprehensive test suites...",
+      usage_rules: ["usage_rules:elixir", "usage_rules:otp"],
+      color: "green",
+      model: "sonnet"
     }
   ]
 }
 ```
+
+### Configuration Options
+
+- **name** (required): The human-readable name of the sub-agent
+- **description** (required): When to use this sub-agent (critical for automatic delegation)
+- **prompt** (required): The system prompt/instructions for the sub-agent
+- **tools** (optional): List of tool atoms (e.g., `:read`, `:write`). Defaults to all tools
+- **usage_rules** (optional): List of usage rules to inject
+- **color** (optional): Visual color in Claude Code UI. Options: `"red"`, `"blue"`, `"green"`, `"yellow"`, `"purple"`, `"orange"`, `"pink"`, `"cyan"`
+- **model** (optional): AI model to use. Options: `"sonnet"`, `"opus"`, `"haiku"`, `"inherit"`
 
 ## Creating Sub-Agents
 
@@ -55,8 +67,8 @@ You can also manually add sub-agents to `.claude.exs`:
   subagents: [
     %{
       name: "database-specialist",
-      role: "Database and Ecto expert",
-      instructions: """
+      description: "Database and Ecto expert for schema, queries, and migrations",
+      prompt: """
       You are an expert in Ecto and database operations.
       
       When invoked, you should:
@@ -65,7 +77,9 @@ You can also manually add sub-agents to `.claude.exs`:
       3. Handle migrations properly
       """,
       tools: [:read, :write, :edit, :bash, :grep],
-      usage_rules: ["usage_rules:ecto", "usage_rules:elixir"]
+      usage_rules: ["usage_rules:ecto", "usage_rules:elixir"],
+      color: "blue",
+      model: "inherit"
     }
   ]
 }

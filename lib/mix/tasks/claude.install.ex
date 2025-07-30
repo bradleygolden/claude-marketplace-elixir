@@ -739,7 +739,14 @@ defmodule Mix.Tasks.Claude.Install do
 
     This will help Claude Code understand how to use your project's dependencies.
     """)
-    |> Igniter.add_task("usage_rules.sync", ["CLAUDE.md", "--all", "--inline", "usage_rules:all", "--link-to-folder", "deps"])
+    |> Igniter.add_task("usage_rules.sync", [
+      "CLAUDE.md",
+      "--all",
+      "--inline",
+      "usage_rules:all",
+      "--link-to-folder",
+      "deps"
+    ])
   end
 
   defp generate_subagents(igniter) do
@@ -806,7 +813,9 @@ defmodule Mix.Tasks.Claude.Install do
           name: name,
           description: config.description,
           prompt: enhanced_prompt,
-          tools: config[:tools] || []
+          tools: config[:tools] || [],
+          model: config[:model],
+          color: config[:color]
         })
 
       {:ok, {name, relative_path, content}}
@@ -819,24 +828,57 @@ defmodule Mix.Tasks.Claude.Install do
 
     if missing_keys == [] do
       # Validate tools if present
-      case config[:tools] do
-        nil ->
-          :ok
-
-        tools when is_list(tools) ->
-          if Enum.all?(tools, &is_atom/1) do
-            :ok
-          else
-            {:error, "Tools must be a list of atoms"}
-          end
-
-        _ ->
-          {:error, "Tools must be a list"}
+      with :ok <- validate_tools(config[:tools]),
+           :ok <- validate_model(config[:model]),
+           :ok <- validate_color(config[:color]) do
+        :ok
       end
     else
       {:error, "Missing required keys: #{inspect(missing_keys)}"}
     end
   end
+
+  defp validate_tools(nil), do: :ok
+
+  defp validate_tools(tools) when is_list(tools) do
+    if Enum.all?(tools, &is_atom/1) do
+      :ok
+    else
+      {:error, "Tools must be a list of atoms"}
+    end
+  end
+
+  defp validate_tools(_), do: {:error, "Tools must be a list"}
+
+  defp validate_model(nil), do: :ok
+
+  defp validate_model(model) when is_binary(model) do
+    # Allow shorthand model names
+    if model in ["sonnet", "opus", "haiku", "inherit"] do
+      :ok
+    else
+      # Allow full model names that match Claude naming patterns
+      if Regex.match?(~r/^claude-\d+(-\d+)?-(opus|sonnet|haiku)(-\d+)?$/, model) do
+        :ok
+      else
+        {:error,
+         "Invalid model: #{model}. Must be one of: sonnet, opus, haiku, inherit, or a full Claude model name like claude-3-5-sonnet-20241022"}
+      end
+    end
+  end
+
+  defp validate_model(_), do: {:error, "Model must be a string"}
+
+  defp validate_color(nil), do: :ok
+
+  defp validate_color(color)
+       when color in ["red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan"],
+       do: :ok
+
+  defp validate_color(color),
+    do:
+      {:error,
+       "Invalid color: #{color}. Must be one of: red, blue, green, yellow, purple, orange, pink, cyan"}
 
   defp maybe_add_usage_rules(config) do
     case config[:usage_rules] do
@@ -944,6 +986,22 @@ defmodule Mix.Tasks.Claude.Install do
       "name: #{name}",
       "description: #{subagent.description}"
     ]
+
+    # Add model line if specified
+    lines =
+      if Map.has_key?(subagent, :model) && subagent.model do
+        lines ++ ["model: #{subagent.model}"]
+      else
+        lines
+      end
+
+    # Add color line if specified
+    lines =
+      if Map.has_key?(subagent, :color) && subagent.color do
+        lines ++ ["color: #{subagent.color}"]
+      else
+        lines
+      end
 
     # Add tools line only if tools are specified
     lines =

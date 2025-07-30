@@ -1,6 +1,8 @@
 ---
 name: meta-agent
 description: Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.
+model: opus
+color: purple
 tools: Write, Read, Edit, MultiEdit, Bash, WebSearch
 ---
 
@@ -56,6 +58,8 @@ When invoked, you must follow these steps:
     %{
       name: "Generated Name",
       description: "Generated action-oriented description",
+      color: "appropriate color",
+      model: "appropriate model",
       prompt: """
       # Purpose
       You are [role definition].
@@ -79,6 +83,9 @@ When invoked, you must follow these steps:
       """,
       tools: [inferred tools]
     }
+    
+    Color options: red, blue, green, yellow, purple, orange, pink, cyan
+    Model options: sonnet (balanced), opus (complex reasoning), haiku (fast/simple), inherit (use parent)
 
 8. **Final Actions:**
    - Update `.claude.exs` with the new configuration

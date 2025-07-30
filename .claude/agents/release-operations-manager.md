@@ -1,6 +1,8 @@
 ---
 name: release-operations-manager
 description: MUST BE USED for release preparation. Coordinates release process, validates readiness, and delegates to README and Changelog managers.
+model: sonnet
+color: red
 tools: Bash, Task, Read, Grep
 ---
 

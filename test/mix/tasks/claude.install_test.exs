@@ -334,6 +334,60 @@ defmodule Mix.Tasks.Claude.InstallTest do
              end)
     end
 
+    test "validates color values in subagent configuration" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Invalid Color Agent",
+                  description: "An agent with invalid color",
+                  prompt: "Test agent.",
+                  color: "invalid-color"
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should have a warning about failed subagent generation due to invalid color
+      assert Enum.any?(igniter.warnings, fn warning ->
+               String.contains?(warning, "Failed to generate some subagents") and
+                 String.contains?(warning, "Invalid color")
+             end)
+    end
+
+    test "validates model values in subagent configuration" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Invalid Model Agent",
+                  description: "An agent with invalid model",
+                  prompt: "Test agent.",
+                  model: "invalid-model"
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should have a warning about failed subagent generation due to invalid model
+      assert Enum.any?(igniter.warnings, fn warning ->
+               String.contains?(warning, "Failed to generate some subagents") and
+                 String.contains?(warning, "Invalid model")
+             end)
+    end
+
     test "creates meta agent by default" do
       igniter =
         test_project()
@@ -415,6 +469,102 @@ defmodule Mix.Tasks.Claude.InstallTest do
                ~r/^---\nname: no-tools-agent\ndescription: An agent with no tool restrictions\n---\n\n/
 
       refute content =~ ~r/tools:/
+    end
+
+    test "generates subagents with model and color properties" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Advanced Agent",
+                  description: "An agent with model and color specified",
+                  prompt: "You are an advanced agent with custom settings.",
+                  tools: [:read, :write],
+                  model: "claude-4-0-opus",
+                  color: "purple"
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Get the generated content
+      source = Rewrite.source!(igniter.rewrite, ".claude/agents/advanced-agent.md")
+      content = Rewrite.Source.get(source, :content)
+
+      # Verify YAML frontmatter includes model and color
+      assert content =~
+               ~r/^---\nname: advanced-agent\ndescription: An agent with model and color specified\nmodel: claude-4-0-opus\ncolor: purple\ntools: Read, Write\n---\n\n/
+
+      # Verify the prompt is included after the frontmatter
+      assert content =~ "You are an advanced agent with custom settings."
+    end
+
+    test "generates subagents with only model property" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Model Only Agent",
+                  description: "An agent with only model specified",
+                  prompt: "You are an agent using a specific model.",
+                  model: "claude-3-5-sonnet-20241022"
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Get the generated content
+      source = Rewrite.source!(igniter.rewrite, ".claude/agents/model-only-agent.md")
+      content = Rewrite.Source.get(source, :content)
+
+      # Verify YAML frontmatter includes model but not color
+      assert content =~
+               ~r/^---\nname: model-only-agent\ndescription: An agent with only model specified\nmodel: claude-3-5-sonnet-20241022\n---\n\n/
+
+      refute content =~ ~r/color:/
+    end
+
+    test "generates subagents with only color property" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Colorful Agent",
+                  description: "An agent with only color specified",
+                  prompt: "You are a colorful agent.",
+                  color: "blue"
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Get the generated content
+      source = Rewrite.source!(igniter.rewrite, ".claude/agents/colorful-agent.md")
+      content = Rewrite.Source.get(source, :content)
+
+      # Verify YAML frontmatter includes color but not model
+      assert content =~
+               ~r/^---\nname: colorful-agent\ndescription: An agent with only color specified\ncolor: blue\n---\n\n/
+
+      refute content =~ ~r/model:/
     end
   end
 
