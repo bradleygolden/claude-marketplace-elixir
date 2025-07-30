@@ -739,7 +739,7 @@ defmodule Mix.Tasks.Claude.Install do
 
     This will help Claude Code understand how to use your project's dependencies.
     """)
-    |> Igniter.add_task("usage_rules.sync", ["CLAUDE.md", "--all", "--link-to-folder", "deps"])
+    |> Igniter.add_task("usage_rules.sync", ["CLAUDE.md", "--all", "--inline", "usage_rules:all", "--link-to-folder", "deps"])
   end
 
   defp generate_subagents(igniter) do
