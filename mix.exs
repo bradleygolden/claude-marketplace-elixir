@@ -54,14 +54,20 @@ defmodule Claude.MixProject do
       },
       maintainers: ["Bradley Golden"],
       files:
-        ~w(lib .formatter.exs mix.exs README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+        ~w(lib .formatter.exs mix.exs documentation/quickstart.md documentation/hooks.md documentation/subagents.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
   defp docs do
     [
-      main: "readme",
-      extras: ["README.md", "CHANGELOG.md"],
+      main: "quickstart",
+      extras: [
+        {"documentation/quickstart.md", title: "Quickstart"},
+        {"README.md", title: "Overview"},
+        {"documentation/hooks.md", title: "Hooks"},
+        {"documentation/subagents.md", title: "Sub-Agents"},
+        {"CHANGELOG.md", title: "Changelog"}
+      ],
       source_ref: "v#{@version}",
       source_url: "https://github.com/bradleygolden/claude"
     ]
