@@ -1,7 +1,7 @@
 defmodule Claude.MixProject do
   use Mix.Project
 
-  @version "0.2.1"
+  @version "0.2.2"
   @elixir_version "~> 1.18"
   @description "Batteries-included Claude Code integration for Elixir projects"
 
@@ -53,7 +53,8 @@ defmodule Claude.MixProject do
         "GitHub" => "https://github.com/bradleygolden/claude"
       },
       maintainers: ["Bradley Golden"],
-      files: ~w(lib .formatter.exs mix.exs README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+      files:
+        ~w(lib .formatter.exs mix.exs README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
