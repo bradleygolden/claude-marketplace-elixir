@@ -34,7 +34,25 @@ Sub-agents are configured in `.claude.exs`:
 
 ## Creating Sub-Agents
 
-The easiest way to create a new sub-agent is to ask Claude:
+### Using the Generator
+
+The easiest way to create a new sub-agent is with the interactive generator:
+
+```bash
+mix claude.gen.subagent
+```
+
+This will guide you through:
+- Choosing a name (lowercase-hyphen-separated)
+- Writing a description for when to invoke
+- Selecting allowed tools
+- Creating the system prompt
+
+See the [Generators Documentation](generators.md#sub-agent-generator) for full details.
+
+### Using the Meta Agent
+
+You can also ask Claude to create a sub-agent:
 
 ```
 Create a sub-agent for handling GraphQL queries
