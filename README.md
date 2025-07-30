@@ -6,7 +6,11 @@
 
 **Help make Claude Code write production-ready Elixir, every time.**
 
-Claude, not to be confused with _the_ Claude (probably should have picked a better name 😅), is an elixir library, batteries-included integration that ensures every line of code Claude writes is properly formatted, compiles without warnings, and follows your project's conventions—automatically.
+Claude, not to be confused with _the_ Claude (probably should have picked a better name 😅), is an elixir library, batteries-included integration that helps ensure every line of code Claude writes is checked for proper formatting, compiles without warnings, and follows your project's conventions—automatically.
+
+## 🚀 [Quickstart](documentation/quickstart.md)
+
+New to Claude? Our [quickstart guide](documentation/quickstart.md) walks you through a complete setup with real examples.
 
 ## Quick Start
 
@@ -15,8 +19,8 @@ Claude, not to be confused with _the_ Claude (probably should have picked a bett
 mix igniter.install claude
 
 # That's it! Now Claude:
-# ✓ Formats every file after editing
-# ✓ Checks for compilation errors
+# ✓ Checks if files need formatting after editing
+# ✓ Detects compilation errors immediately
 # ✓ Validates code before commits
 ```
 
@@ -33,17 +37,38 @@ When Claude Code writes Elixir, you often need to:
 Claude hooks directly into Claude Code's workflow:
 
 ```elixir
-# Before Claude: Unformatted code that might not compile
-defmodule  MyModule  do
-  def hello(  name  )  do
-    "Hello, #{ nam }!"  # Oops, typo!
+# When Claude writes this code with formatting and compilation issues:
+defmodule MyModule do
+  def process_user_data(user, options) do
+    {:ok, %{id: user.id, name: user.name, email: user.email, created_at: user.created_at, updated_at: user.updated_at, status: user.status, role: user.role}}
+  end
+
+  def calculate_total(items) do
+    Enum.reduce(items, 0, fn item, acc -> acc + item.price * item.quantty end)  # Typo!
   end
 end
 
-# After Claude: Production-ready code, automatically
+# Claude immediately sees:
+# ⚠️ File needs formatting (line too long)
+# ❌ Compilation error: undefined function quantty/0
+# 
+# And can fix both issues to produce:
 defmodule MyModule do
-  def hello(name) do
-    "Hello, #{name}!"
+  def process_user_data(user, options) do
+    {:ok,
+     %{
+       id: user.id,
+       name: user.name,
+       email: user.email,
+       created_at: user.created_at,
+       updated_at: user.updated_at,
+       status: user.status,
+       role: user.role
+     }}
+  end
+
+  def calculate_total(items) do
+    Enum.reduce(items, 0, fn item, acc -> acc + item.price * item.quantity end)
   end
 end
 ```
@@ -51,53 +76,19 @@ end
 ## Features
 
 ### 🎯 **Smart Hooks**
-- **Format on save** - Every `.ex` and `.exs` file is automatically formatted
-- **Compile checks** - Catch errors immediately, not in production
-- **Pre-commit validation** - Block bad commits before they happen
-- **Related files** - "You edited the schema, want to check the Phoenix Context?"
+Automatically check formatting, catch compilation errors, validate commits, and more.
 
-### 🔧 **Extensible**
-```elixir
-# .claude.exs - Add your own hooks
-%{
-  hooks: [
-    MyApp.Hooks.SecurityScanner,
-    MyApp.Hooks.TestRunner
-  ]
-}
-```
+→ See [Hooks Documentation](documentation/hooks.md) for details and configuration.
 
 ### 🤖 **Sub-agents**
-Create specialized AI assistants for your project with built-in best practices:
+Create specialized AI assistants with built-in best practices from your dependencies.
 
-```elixir
-%{
-  subagents: [
-    %{
-      name: "genserver-agent",
-      role: "Genserver agent",
-      instructions: "You are an writing and testing genservers...",
-      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]  # Automatically includes best practices!
-    }
-  ]
-}
-```
-
-**Built-in Meta Agent:** Claude includes a Meta Agent by default that helps you create new sub-agents following best practices. Just ask: "Create a sub-agent for handling GraphQL queries" and the Meta Agent will:
-- Generate a complete sub-agent configuration
-- Choose appropriate tools and permissions
-- Include relevant usage rules from your dependencies
-- Add it to your `.claude.exs` file
-
-**Usage Rules Integration:** The real power comes from [usage rules](https://hexdocs.pm/usage_rules/readme.html) - documentation from your dependencies that gets automatically injected into sub-agents, ensuring they follow library best practices.
+→ See [Sub-Agents Documentation](documentation/subagents.md) for details and examples.
 
 ### 🔌 **MCP Server Support**
-Integrate with Phoenix development tools via Tidewave:
-```elixir
-%{
-  mcp_servers: [tidewave: [port: 4000]]
-}
-```
+Integrate with Phoenix development tools via Tidewave.
+
+→ See [Quickstart](documentation/quickstart.md#enable-more-features) for configuration.
 
 ### 📚 **Best Practices**
 
@@ -120,83 +111,21 @@ This will:
 1. Add `claude` to your dependencies
 2. Generate `.claude.exs` configuration
 3. Install hooks in `.claude/settings.json` and `.claude/hooks`
-4. Create specialized sub-agents in `.claud/agents`
+4. Create specialized sub-agents in `.claude/agents`
 
 ## Configuration
 
-Claude uses `.claude.exs` for project-specific configuration:
-
-```elixir
-# .claude.exs
-%{
-  # Hooks to run (built-in + custom)
-  hooks: [
-    # Optional: Enable related files suggestions
-    Claude.Hooks.PostToolUse.RelatedFiles,
-
-    # Add your custom hooks
-    MyApp.Hooks.CredoChecker
-  ],
-
-  # MCP servers (for Phoenix projects, only tidewave is supported, use claude manually to add other mcp servers)
-  mcp_servers: [
-    # Simple configuration
-    :tidewave,
-
-    # Or with options
-    {:tidewave, [port: 5000]}
-  ],
-
-  # Specialized sub-agents
-  subagents: [
-    %{
-      name: "test_expert",
-      role: "ExUnit testing specialist",
-      instructions: "You excel at writing comprehensive test suites...",
-      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]
-    }
-  ]
-}
-```
-
-## Built-in Sub-agents
-
-Claude includes a Meta Agent by default to help you create new sub-agents.
-
-### Meta Agent
-The Meta Agent is your sub-agent architect. It helps you create new, well-designed sub-agents by:
-- Analyzing your requirements and suggesting optimal configuration
-- Choosing appropriate tools and permissions
-- Integrating usage rules from your dependencies
-- Following Claude Code best practices for performance and context management
-
-**Usage:** Just ask Claude to create a new sub-agent, and the Meta Agent will automatically help.
-
-## Creating Custom Hooks
-
-Extend Claude with your own hooks:
-
-```elixir
-defmodule MyApp.Hooks.CredoChecker do
-  use Claude.Hooks.Hook.Behaviour,
-    event: :post_tool_use,
-    matcher: [:edit, :write],
-    description: "Runs Credo on modified files"
-
-  @impl true
-  def run(json_input) do
-    # Your hook logic here
-    :ok
-  end
-end
-```
+Claude uses `.claude.exs` for project-specific configuration. See our guides for:
+- [Configuring Hooks](documentation/hooks.md#configuration)
+- [Creating Sub-Agents](documentation/subagents.md#configuration)
+- [Quickstart Examples](documentation/quickstart.md)
 
 ## How It Works
 
 This library leverages [Claude Code's hook system](https://docs.anthropic.com/en/docs/claude-code/hooks) to intercept file operations:
 
 1. **Claude edits a file** → PostToolUse hook triggered
-2. **Hook runs Mix tasks** → `mix format`, `mix compile --warnings-as-errors`
+2. **Hook runs Mix tasks** → `mix format --check-formatted`, `mix compile --warnings-as-errors`
 3. **Feedback provided** → Claude sees any issues and can fix them
 4. **Process repeats** → Until the code is production-ready
 
@@ -205,6 +134,9 @@ This happens automatically, without interrupting Claude's workflow.
 ## Documentation
 
 - [Full Documentation](https://hexdocs.pm/claude)
+- [Quickstart Guide](documentation/quickstart.md)
+- [Hooks Reference](documentation/hooks.md) - Available hooks and configuration
+- [Sub-Agents Reference](documentation/subagents.md) - Creating specialized AI assistants
 - [Anthropic's Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks)
 - [Anthropic's Subagents Guide](https://docs.anthropic.com/en/docs/claude-code/sub-agents)
 
