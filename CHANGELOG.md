@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-07-29
+
+### Fixed
+
+- Updated usage rules and included sub rules in the hex package
+
 ## [0.2.1] - 2025-07-29
 
 ### Fixed
