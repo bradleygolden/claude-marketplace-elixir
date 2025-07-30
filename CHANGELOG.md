@@ -48,7 +48,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/bradleygolden/claude/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/bradleygolden/claude/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bradleygolden/claude/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/bradleygolden/claude/releases/tag/v0.1.0
