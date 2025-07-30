@@ -1,6 +1,6 @@
 # Claude Usage Rules
 
-Claude (not to be confused with Claude/Claude Code) is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It includes tooling for deeply integrating Claude Code into your project using Elixir.
+Claude (not to be confused with Claude/Claude Code) is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It automatically formats code, checks for compilation errors after Claude makes edits, and includes tooling for deeply integrating Claude Code into your project using Elixir.
 
 ## Installation
 
@@ -10,15 +10,13 @@ Claude only supports igniter installation:
 mix igniter.install claude
 ```
 
-## Uninstalling hooks
+## Core Commands
 
-To uninstall hooks, run the install command again and choose to remove hooks when prompted:
-
+### Installation
 ```bash
+# Install Claude hooks for the current project
 mix claude.install
 ```
-
-This will allow you to remove all settings created by this project from your project settings.
 
 ## Hook System
 
@@ -26,13 +24,13 @@ Claude provides a behavior-based hook system that integrates with Claude Code. A
 
 ### Built-in Hooks
 
-1. **ElixirFormatter** - Automatically formats .ex/.exs files after edits
-2. **CompilationChecker** - Checks for compilation errors after edits
-3. **PreCommitCheck** - Validates formatting, compilation, and unused dependencies before commits
+1. **ElixirFormatter** - Checks if Elixir files need formatting after Claude edits them (PostToolUse hook for Write, Edit, MultiEdit)
+2. **CompilationChecker** - Checks for compilation errors after Claude edits Elixir files (PostToolUse hook for Write, Edit, MultiEdit)
+3. **PreCommitCheck** - Validates formatting, compilation, and unused dependencies before allowing git commits (PreToolUse hook for Bash)
 
 ### Optional Hooks
 
-1. **RelatedFiles** - Trigger Claude to view related files after edits
+1. **RelatedFiles** - Suggests updating related files based on naming patterns after edits (PostToolUse hook for Write, Edit, MultiEdit)
 
 #### RelatedFiles Hook Examples
 
@@ -155,24 +153,107 @@ defmodule MyProject.MyHook do
 end
 ```
 
+## MCP Server Support
+
+Claude supports Model Context Protocol (MCP) servers, currently with built-in support for Tidewave (Phoenix development tools).
+
+### Configuring MCP Servers
+
+MCP servers are configured in `.claude.exs`:
+
+```elixir
+%{
+  mcp_servers: [
+    # Simple atom format (uses default port 4000)
+    :tidewave,
+
+    # Custom port configuration
+    {:tidewave, [port: 5000]},
+
+    # Disable without removing
+    {:tidewave, [port: 4000, enabled?: false]}
+  ]
+}
+```
+
+**Note**: While only Tidewave is officially supported through the installer, you can manually add other MCP servers to your Claude settings.
+
+## Sub-agents
+
+Claude supports creating specialized AI assistants (sub-agents) for your project with built-in best practices.
+
+### Built-in Meta Agent
+
+Claude includes a Meta Agent by default that helps you create new sub-agents following best practices. The Meta Agent:
+- Analyzes your requirements and suggests optimal configuration
+- Chooses appropriate tools and permissions
+- Integrates usage rules from your dependencies
+- Follows Claude Code best practices for performance and context management
+
+**Usage**: Just ask Claude to create a new sub-agent, and the Meta Agent will automatically help.
+
+### Creating Sub-agents
+
+Configure sub-agents in `.claude.exs`:
+
+```elixir
+%{
+  subagents: [
+    %{
+      name: "genserver-agent",
+      role: "GenServer specialist",
+      instructions: "You excel at writing and testing GenServers...",
+      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]  # Automatically includes best practices!
+    }
+  ]
+}
+```
+
+**Usage Rules Integration**: Sub-agents can automatically include usage rules from your dependencies, ensuring they follow library best practices.
+
 ## Settings Management
 
 Claude uses `.claude.exs` to configure specific settings for your project that are then ported to
 the `.claude` directory for use by Claude Code.
 
-### Example `.claude.exs` configuration:
+### Complete `.claude.exs` configuration example:
 
 ```elixir
 # .claude.exs - Claude configuration for this project
 %{
-  # Register custom hooks (for discovery by mix claude.install)
+  # Register hooks (built-in + custom)
   hooks: [
+    # Optional: Enable related files suggestions
+    Claude.Hooks.PostToolUse.RelatedFiles,
+
+    # Add your custom hooks
     MyProject.Hooks.CustomFormatter,
     MyProject.Hooks.SecurityChecker
+  ],
+
+  # MCP servers configuration
+  mcp_servers: [
+    # For Phoenix projects
+    {:tidewave, [port: 4000]}
+  ],
+
+  # Specialized sub-agents
+  subagents: [
+    %{
+      name: "test_expert",
+      role: "ExUnit testing specialist",
+      instructions: "You excel at writing comprehensive test suites...",
+      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]
+    }
   ]
 }
 ```
 
-For reference to the official claude settings, please see:
+## Reference Documentation
 
- * https://docs.anthropic.com/en/docs/claude-code/settings
+For official Claude Code documentation:
+
+ * Hooks: https://docs.anthropic.com/en/docs/claude-code/hooks
+ * Hooks Guide: https://docs.anthropic.com/en/docs/claude-code/hooks-guide
+ * Settings: https://docs.anthropic.com/en/docs/claude-code/settings
+ * Sub-agents: https://docs.anthropic.com/en/docs/claude-code/sub-agents

@@ -28,8 +28,14 @@ mix test
 # Run a specific test file
 mix test test/path/to/test_file.exs
 
+# Run tests with trace for debugging
+mix test --trace
+
 # Run tests matching a pattern
 mix test --trace test/**/*_test.exs
+
+# Important: Tests use Mimic for mocking - see test/test_helper.exs
+# Mock modules include: Mix.Task, System, File, IO, Claude.Hooks.Telemetry
 ```
 
 ### Code Quality
@@ -58,6 +64,9 @@ mix claude.install
 # - Simple atom format: :tidewave
 # - Custom port: {:tidewave, [port: 5000]}
 # - Disable without removing: {:tidewave, [port: 4000, enabled?: false]}
+
+# Install via Igniter
+mix igniter.install claude
 ```
 
 ## Reference Docs
@@ -124,6 +133,30 @@ Hook execution is handled via direct script invocation:
 2. **Behaviour-based extensibility** - New hooks can be added by implementing the behaviour
 3. **Fail-safe execution** - Hooks log errors but don't interrupt Claude's workflow
 4. **Zero configuration** - Works out of the box with Elixir conventions
+
+### Testing Architecture
+
+The test suite is organized with these key patterns:
+- **Mimic-based mocking** - All system interactions are mocked for reliable testing
+- **Test support modules** - `test/support/` contains shared testing utilities
+- **Parallel structure** - Tests mirror the `lib/` structure for easy navigation
+- **Mix task testing** - Special setup required using `Claude.TestHelpers.setup_mix_tasks/0`
+- **Temporary directories** - Use `Claude.TestHelpers.in_tmp/1` for filesystem tests
+
+### Sub-Agent System
+
+The project includes several specialized sub-agents in `.claude.exs`:
+- **Meta Agent** - Generates new sub-agents from user descriptions (proactive)
+- **README Manager** - Maintains project documentation
+- **Changelog Manager** - Handles version history using Keep a Changelog format
+- **Release Operations Manager** - Coordinates release processes and validation
+- **Claude Code Specialist** - Expert in Claude Code concepts using local docs
+
+Each sub-agent is designed with:
+- Clear delegation triggers (when to invoke)
+- Minimal tool sets (performance optimization)
+- Context discovery patterns (what to read first)
+- Self-contained prompts (no memory between invocations)
 
 <!-- usage-rules-start -->
 <!-- usage-rules-header -->
