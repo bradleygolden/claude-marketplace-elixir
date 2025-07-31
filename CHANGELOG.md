@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - New `mix claude.gen.hook` and `mix claude.gen.subagent` for code generation. See [documentation/generators.md](documentation/generators.md) for details.
 
+## [0.2.3] - 2025-07-30
+
+### Changed
+
+- Updated `claude.install` task to use `--inline usage_rules:all` argument when syncing usage rules, ensuring sub-rules from the usage_rules package are inlined directly into CLAUDE.md
+
 ## [0.2.2] - 2025-07-29
 
 ### Fixed
@@ -51,7 +57,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/bradleygolden/claude/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/bradleygolden/claude/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/bradleygolden/claude/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bradleygolden/claude/compare/v0.1.0...v0.2.0
