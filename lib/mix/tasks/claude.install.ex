@@ -1086,6 +1086,10 @@ defmodule Mix.Tasks.Claude.Install do
       igniter = Igniter.include_existing_file(igniter, path)
       source = Rewrite.source!(igniter.rewrite, path)
       content = Rewrite.Source.get(source, :content)
+
+      # Security Note: Code.eval_string evaluates arbitrary Elixir code from user files.
+      # This is acceptable for development tooling where users control their own files.
+      # The evaluated code runs with the same permissions as the mix task.
       {result, _binding} = Code.eval_string(content, [], file: path)
       {:ok, result}
     rescue
