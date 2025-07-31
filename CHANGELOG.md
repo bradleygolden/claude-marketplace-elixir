@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - New `mix claude.gen.hook` and `mix claude.gen.subagent` for code generation. See [documentation/generators.md](documentation/generators.md) for details.
 
+### Fixed
+
+- Output MCP server configuration to correct `.mcp.json` location instead of `.claude/settings.json`.
+
 ## [0.2.4] - 2025-08-01
 
 ### Fixed
