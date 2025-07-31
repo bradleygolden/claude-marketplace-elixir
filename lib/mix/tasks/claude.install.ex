@@ -27,6 +27,8 @@ defmodule Mix.Tasks.Claude.Install do
 
   use Igniter.Mix.Task
 
+  alias Claude.MCP.Config
+
   @meta_agent_config %{
     name: "Meta Agent",
     description:
@@ -136,7 +138,7 @@ defmodule Mix.Tasks.Claude.Install do
     tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
   }
 
-  @default_tidewave_port 4000
+  # @default_tidewave_port 4000 - no longer used
   @tidewave_setup_instructions """
   Tidewave integrates with your Phoenix application:
   1. Add to your deps in mix.exs: {:tidewave, "~> 0.2.0"}
@@ -1005,57 +1007,78 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp setup_tidewave_if_configured(igniter) do
-    relative_settings_path = Path.join(igniter.assigns.claude_dir_path, "settings.json")
-
-    case get_tidewave_config(igniter) do
-      {:ok, port} ->
+    case get_mcp_servers_config(igniter) do
+      {:ok, servers} when servers != [] ->
         igniter
-        |> update_settings_with_tidewave(relative_settings_path, port)
-        |> Igniter.add_notice("""
-        Tidewave MCP server has been configured in #{relative_settings_path}
+        |> Config.write_mcp_config(servers)
+        |> add_mcp_notices(servers)
 
-        Port: #{port}
-        Endpoint: http://localhost:#{port}/tidewave/mcp
-
-        #{@tidewave_setup_instructions}
-        """)
-
-      :not_configured ->
+      _ ->
+        # No MCP servers configured or disabled
         igniter
-
-      :disabled ->
-        igniter
-        |> remove_tidewave_from_settings(relative_settings_path)
     end
   end
 
-  defp get_tidewave_config(igniter) do
+  defp get_mcp_servers_config(igniter) do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
       case read_and_eval_claude_exs(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           case Map.get(config, :mcp_servers, []) do
-            [] ->
-              :not_configured
-
             servers when is_list(servers) ->
-              case find_tidewave_in_servers(servers) do
-                {:ok, port} -> {:ok, port}
-                :disabled -> :disabled
-                :not_found -> :not_configured
-              end
+              {:ok, servers}
 
             _ ->
-              :not_configured
+              {:error, "Invalid mcp_servers configuration"}
           end
 
-        _ ->
-          :not_configured
+        {:ok, _} ->
+          {:error, "Configuration must be a map"}
+
+        error ->
+          error
       end
     else
-      :not_configured
+      {:ok, []}
     end
+  end
+
+  defp add_mcp_notices(igniter, servers) do
+    notices =
+      servers
+      |> Enum.filter(fn
+        {:tidewave, opts} -> Keyword.get(opts, :enabled?, true)
+        :tidewave -> true
+        _ -> false
+      end)
+      |> Enum.map(fn
+        :tidewave ->
+          """
+          Tidewave MCP server has been configured in .mcp.json
+
+          Type: SSE (Server-Sent Events)
+          URL: http://localhost:4000/tidewave/mcp
+
+          #{@tidewave_setup_instructions}
+          """
+
+        {:tidewave, opts} ->
+          port = Keyword.get(opts, :port, 4000)
+
+          """
+          Tidewave MCP server has been configured in .mcp.json
+
+          Type: SSE (Server-Sent Events)
+          URL: http://localhost:#{port}/tidewave/mcp
+
+          #{@tidewave_setup_instructions}
+          """
+      end)
+
+    Enum.reduce(notices, igniter, fn notice, acc ->
+      Igniter.add_notice(acc, notice)
+    end)
   end
 
   defp read_and_eval_claude_exs(igniter, path) do
@@ -1074,92 +1097,11 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-  defp find_tidewave_in_servers([]), do: :not_found
-  defp find_tidewave_in_servers([:tidewave | _]), do: {:ok, @default_tidewave_port}
+  # Removed - no longer needed since MCP config goes in .mcp.json
 
-  defp find_tidewave_in_servers([{:tidewave, opts} | _]) when is_list(opts) do
-    if Keyword.get(opts, :enabled?, true) do
-      port = Keyword.get(opts, :port, @default_tidewave_port)
-      {:ok, port}
-    else
-      :disabled
-    end
-  end
+  # Removed - no longer needed since MCP config goes in .mcp.json
 
-  defp find_tidewave_in_servers([_ | rest]), do: find_tidewave_in_servers(rest)
-
-  defp update_settings_with_tidewave(igniter, relative_settings_path, port) do
-    initial_settings = %{}
-    initial_content = Jason.encode!(initial_settings, pretty: true) <> "\n"
-
-    igniter
-    |> Igniter.create_or_update_file(relative_settings_path, initial_content, fn source ->
-      content = Rewrite.Source.get(source, :content)
-
-      new_content =
-        case Jason.decode(content) do
-          {:ok, settings} ->
-            tidewave_config = %{
-              "tidewave" => %{
-                "type" => "sse",
-                "url" => "http://localhost:#{port}/tidewave/mcp"
-              }
-            }
-
-            updated_settings = Map.put(settings, "mcpServers", tidewave_config)
-            Jason.encode!(updated_settings, pretty: true) <> "\n"
-
-          {:error, _} ->
-            settings = %{
-              "mcpServers" => %{
-                "tidewave" => %{
-                  "type" => "sse",
-                  "url" => "http://localhost:#{port}/tidewave/mcp"
-                }
-              }
-            }
-
-            Jason.encode!(settings, pretty: true) <> "\n"
-        end
-
-      Rewrite.Source.update(source, :content, new_content)
-    end)
-  end
-
-  defp remove_tidewave_from_settings(igniter, relative_settings_path) do
-    if Igniter.exists?(igniter, relative_settings_path) do
-      igniter
-      |> Igniter.update_file(relative_settings_path, fn source ->
-        content = Rewrite.Source.get(source, :content)
-
-        case Jason.decode(content) do
-          {:ok, settings} ->
-            case Map.get(settings, "mcpServers") do
-              %{"tidewave" => _} = mcp_servers ->
-                updated_mcp = Map.delete(mcp_servers, "tidewave")
-
-                updated_settings =
-                  if map_size(updated_mcp) == 0 do
-                    Map.delete(settings, "mcpServers")
-                  else
-                    Map.put(settings, "mcpServers", updated_mcp)
-                  end
-
-                new_content = Jason.encode!(updated_settings, pretty: true) <> "\n"
-                Rewrite.Source.update(source, :content, new_content)
-
-              _ ->
-                source
-            end
-
-          {:error, _} ->
-            source
-        end
-      end)
-    else
-      igniter
-    end
-  end
+  # Removed - no longer needed since MCP config goes in .mcp.json
 
   defp check_meta_agent_and_notify(igniter, path) do
     # Skip in test environment

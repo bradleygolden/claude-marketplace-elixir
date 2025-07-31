@@ -86,7 +86,7 @@ Create specialized AI assistants with built-in best practices from your dependen
 → See [Sub-Agents Documentation](documentation/subagents.md) for details and examples.
 
 ### 🔌 **MCP Server Support**
-Integrate with Phoenix development tools via Tidewave.
+Integrate with Phoenix development tools via Tidewave. MCP servers are configured in `.claude.exs` and automatically synced to `.mcp.json`.
 
 → See [Quickstart](documentation/quickstart.md#enable-more-features) for configuration.
 

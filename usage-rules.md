@@ -159,7 +159,7 @@ Claude supports Model Context Protocol (MCP) servers, currently with built-in su
 
 ### Configuring MCP Servers
 
-MCP servers are configured in `.claude.exs`:
+MCP servers are configured in `.claude.exs` and automatically synced to `.mcp.json`:
 
 ```elixir
 %{
@@ -176,7 +176,9 @@ MCP servers are configured in `.claude.exs`:
 }
 ```
 
-**Note**: While only Tidewave is officially supported through the installer, you can manually add other MCP servers to your Claude settings.
+When you run `mix claude.install`, this configuration is automatically written to `.mcp.json` in the correct format for Claude Code to recognize. The `.mcp.json` file follows the [official MCP configuration format](https://docs.anthropic.com/en/docs/claude-code/mcp).
+
+**Note**: While only Tidewave is officially supported through the installer, you can manually add other MCP servers to `.mcp.json` following the Claude Code documentation.
 
 ## Sub-agents
 
