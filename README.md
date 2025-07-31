@@ -51,7 +51,7 @@ end
 # Claude immediately sees:
 # ⚠️ File needs formatting (line too long)
 # ❌ Compilation error: undefined function quantty/0
-# 
+#
 # And can fix both issues to produce:
 defmodule MyModule do
   def process_user_data(user, options) do
@@ -163,7 +163,7 @@ mix compile --warnings-as-errors
 
 ## Roadmap
 
-### 🆕 New in v0.3.0
+### 🚀 Coming Soon
 
 **Mix Task Generators**
 - `mix claude.gen.hook <module_name>` - Generate a new hook module with options:
@@ -175,8 +175,6 @@ mix compile --warnings-as-errors
   - Tool selection with warnings
   - Multi-line prompt support
   - Automatic `.claude.exs` integration
-
-### 🚀 Coming Soon
 
 **Custom Slash Commands**
 - `/create-subagent` - Generate a new sub-agent with guided prompts (wraps mix task)
