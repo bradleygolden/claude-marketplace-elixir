@@ -10,7 +10,7 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
     matcher: [:write, :edit, :multi_edit],
     description: "Checks for compilation errors after Claude edits Elixir files"
 
-  alias Claude.Hooks.Helpers
+  alias Claude.Hooks.{Helpers, JsonOutput}
 
   @elixir_extensions [".ex", ".exs"]
 
@@ -26,15 +26,18 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
           check_compilation(file_path)
         else
           {:skip, _reason} ->
-            :ok
+            JsonOutput.success(suppress_output: true)
+            |> JsonOutput.write_and_exit()
 
           {:error, reason} ->
-            Helpers.print_error("Claude compilation check error: #{reason}")
-            :ok
+            # Use JSON output to provide feedback to Claude
+            JsonOutput.block_post_tool("Claude compilation check error: #{reason}")
+            |> JsonOutput.write_and_exit()
         end
 
       {:error, _} ->
-        :ok
+        JsonOutput.success(suppress_output: true)
+        |> JsonOutput.write_and_exit()
     end
   end
 
@@ -62,17 +65,19 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
     Helpers.in_project_dir(file_path, fn ->
       case System.cmd("mix", ["compile", "--warnings-as-errors"], stderr_to_stdout: true) do
         {_output, 0} ->
-          :ok
+          # Compilation successful
+          JsonOutput.success(suppress_output: true)
+          |> JsonOutput.write_and_exit()
 
         {output, _exit_code} ->
-          IO.puts(:stderr, "\n⚠️  Compilation issues detected:")
-          IO.puts(:stderr, output)
-          :ok
+          # Compilation issues detected - provide feedback to Claude
+          JsonOutput.block_post_tool("Compilation issues detected:\n#{output}")
+          |> JsonOutput.write_and_exit()
       end
     end)
   rescue
     error ->
-      Helpers.print_error("Compilation check error: #{inspect(error)}")
-      :ok
+      JsonOutput.block_post_tool("Compilation check error: #{inspect(error)}")
+      |> JsonOutput.write_and_exit()
   end
 end

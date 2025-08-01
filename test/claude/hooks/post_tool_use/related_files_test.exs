@@ -11,7 +11,13 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
     end
 
     test "returns :ok when JSON parsing fails" do
-      assert RelatedFiles.run("invalid json") == :ok
+      output =
+        capture_io(fn ->
+          RelatedFiles.run("invalid json")
+        end)
+
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
 
     test "returns :ok for non-edit tools" do
@@ -22,7 +28,13 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      assert RelatedFiles.run(json_input) == :ok
+      output =
+        capture_io(fn ->
+          RelatedFiles.run(json_input)
+        end)
+
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
 
     test "returns :ok when no related files exist" do
@@ -33,17 +45,21 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      assert RelatedFiles.run(json_input) == :ok
+      output =
+        capture_io(fn ->
+          RelatedFiles.run(json_input)
+        end)
+
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
 
-    test "exits with code 2 when related test file exists" do
+    test "outputs block JSON when related test file exists" do
       {test_dir, cleanup} = setup_hook_test(compile: false)
 
-      # Create files with relative paths since RelatedFiles works with relative paths
       create_elixir_file(test_dir, "lib/example.ex", "defmodule Example do\nend")
       create_elixir_file(test_dir, "test/example_test.exs", "defmodule ExampleTest do\nend")
 
-      # Use relative path for the hook input
       json_input =
         build_tool_input(
           tool_name: "Write",
@@ -51,14 +67,17 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "Related files need updating"
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "Related files need updating"
+      assert json["reason"] =~ "test/example_test.exs"
 
       cleanup.()
     end
@@ -70,7 +89,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
       create_elixir_file(test_dir, "lib/mymodule.ex", "defmodule MyModule do\nend")
       create_elixir_file(test_dir, "test/mymodule_test.exs", "defmodule MyModuleTest do\nend")
 
-      # Use relative path for the hook input
       json_input =
         build_tool_input(
           tool_name: "Edit",
@@ -78,16 +96,18 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "Related files need updating"
-      assert output =~ "lib/mymodule.ex"
-      assert output =~ "You modified: test/mymodule_test.exs"
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "Related files need updating"
+      assert json["reason"] =~ "lib/mymodule.ex"
+      assert json["reason"] =~ "You modified: test/mymodule_test.exs"
 
       cleanup.()
     end
@@ -104,7 +124,13 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
 
       user_config = %{patterns: [{"custom", "pattern"}]}
 
-      assert RelatedFiles.run(json_input, user_config) == :ok
+      output =
+        capture_io(fn ->
+          RelatedFiles.run(json_input, user_config)
+        end)
+
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
   end
 
@@ -127,14 +153,16 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "test/my_app/user_test.exs"
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "test/my_app/user_test.exs"
 
       cleanup.()
     end
@@ -157,14 +185,16 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "lib/my_app/user.ex"
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "lib/my_app/user.ex"
 
       cleanup.()
     end
@@ -191,14 +221,16 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "test/accounts/user_test.exs"
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "test/accounts/user_test.exs"
 
       cleanup.()
     end
@@ -225,14 +257,16 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "test/my_app/special-name_test.exs"
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "test/my_app/special-name_test.exs"
 
       cleanup.()
     end
@@ -250,15 +284,17 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "test/example_test.exs"
-      refute output =~ ~r/lib\/example\.ex.*lib\/example\.ex/
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "test/example_test.exs"
+      refute json["reason"] =~ ~r/lib\/example\.ex.*lib\/example\.ex/
 
       cleanup.()
     end
@@ -283,14 +319,16 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      expect_halt(2)
+      expect(System, :halt, fn 0 -> :ok end)
 
       output =
-        capture_stderr(fn ->
-          assert {:halt, 2} = RelatedFiles.run(json_input)
+        capture_io(fn ->
+          assert :ok = RelatedFiles.run(json_input)
         end)
 
-      assert output =~ "test/phoenix/channel_test.exs"
+      json = Jason.decode!(output)
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "test/phoenix/channel_test.exs"
 
       cleanup.()
     end
@@ -307,7 +345,13 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      assert RelatedFiles.run(json_input) == :ok
+      output =
+        capture_io(fn ->
+          RelatedFiles.run(json_input)
+        end)
+
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
 
       cleanup.()
     end
@@ -322,7 +366,13 @@ defmodule Claude.Hooks.PostToolUse.RelatedFilesTest do
           extra: %{"hook_event_name" => "PostToolUse"}
         )
 
-      assert RelatedFiles.run(json_input) == :ok
+      output =
+        capture_io(fn ->
+          RelatedFiles.run(json_input)
+        end)
+
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
   end
 end

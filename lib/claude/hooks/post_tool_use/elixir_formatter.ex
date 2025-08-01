@@ -11,7 +11,7 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
     matcher: [:write, :edit, :multi_edit],
     description: "Checks if Elixir files need formatting after Claude edits them"
 
-  alias Claude.Hooks.Helpers
+  alias Claude.Hooks.{Helpers, JsonOutput}
 
   @elixir_extensions [".ex", ".exs"]
 
@@ -27,15 +27,18 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
           format_file(file_path)
         else
           {:skip, _reason} ->
-            :ok
+            JsonOutput.success(suppress_output: true)
+            |> JsonOutput.write_and_exit()
 
           {:error, reason} ->
-            Helpers.print_error("Claude format hook error: #{reason}")
-            :ok
+            # Use JSON output to provide feedback to Claude
+            JsonOutput.block_post_tool("Claude format hook error: #{reason}")
+            |> JsonOutput.write_and_exit()
         end
 
       {:error, _} ->
-        :ok
+        JsonOutput.success(suppress_output: true)
+        |> JsonOutput.write_and_exit()
     end
   end
 
@@ -63,21 +66,27 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
     Helpers.in_project_dir(file_path, fn ->
       case System.cmd("mix", ["format", "--check-formatted", file_path], stderr_to_stdout: true) do
         {_output, 0} ->
-          :ok
+          # File is properly formatted
+          JsonOutput.success(suppress_output: true)
+          |> JsonOutput.write_and_exit()
 
         {output, exit_code} ->
           if exit_code == 1 do
-            Helpers.print_warning("File needs formatting: #{file_path}")
+            # File needs formatting - provide feedback to Claude
+            JsonOutput.block_post_tool(
+              "File needs formatting: #{file_path}. Run 'mix format #{file_path}' to fix."
+            )
+            |> JsonOutput.write_and_exit()
           else
-            Helpers.print_error("Mix format check failed: #{output}")
+            # Other error occurred
+            JsonOutput.block_post_tool("Mix format check failed: #{output}")
+            |> JsonOutput.write_and_exit()
           end
-
-          :ok
       end
     end)
   rescue
     error ->
-      Helpers.print_error("Format check error: #{inspect(error)}")
-      :ok
+      JsonOutput.block_post_tool("Format check error: #{inspect(error)}")
+      |> JsonOutput.write_and_exit()
   end
 end

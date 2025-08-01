@@ -647,11 +647,13 @@ defmodule Mix.Tasks.Claude.Install do
     # Read JSON from stdin
     input = IO.read(:stdio, :eof)
 
-    # Reuse the existing hook module
-    case #{module_name}.run(input) do
-      :ok -> System.halt(0)
-      _ -> System.halt(1)
-    end
+    # Run the hook module
+    # The hook now handles JSON output internally using JsonOutput.write_and_exit/1
+    # which will output JSON and exit with code 0
+    #{module_name}.run(input)
+
+    # If we reach here, the hook didn't exit properly, so we exit with success
+    System.halt(0)
     """
   end
 
@@ -739,7 +741,14 @@ defmodule Mix.Tasks.Claude.Install do
 
     This will help Claude Code understand how to use your project's dependencies.
     """)
-    |> Igniter.add_task("usage_rules.sync", ["CLAUDE.md", "--all", "--inline", "usage_rules:all", "--link-to-folder", "deps"])
+    |> Igniter.add_task("usage_rules.sync", [
+      "CLAUDE.md",
+      "--all",
+      "--inline",
+      "usage_rules:all",
+      "--link-to-folder",
+      "deps"
+    ])
   end
 
   defp generate_subagents(igniter) do

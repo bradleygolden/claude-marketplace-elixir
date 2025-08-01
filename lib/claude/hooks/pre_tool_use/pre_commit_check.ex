@@ -13,7 +13,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
     matcher: :bash,
     description: "Validates formatting, compilation, and dependencies before allowing commits"
 
-  alias Claude.Hooks.Helpers
+  alias Claude.Hooks.{Helpers, JsonOutput}
 
   @impl Claude.Hooks.Hook.Behaviour
   def run(:eof) do
@@ -26,8 +26,9 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
         handle_hook_input(input)
 
       {:error, _} ->
-        IO.puts(:stderr, "Failed to parse hook input JSON")
-        {:error, :invalid_json}
+        # Use JSON output for consistent error handling
+        JsonOutput.deny_pre_tool("Failed to parse hook input JSON")
+        |> JsonOutput.write_and_exit()
     end
   end
 
@@ -37,15 +38,19 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
        })
        when is_binary(command) do
     if String.contains?(command, "git commit") do
-      IO.puts("Pre-commit validation triggered for: #{command}")
+      # Validate before allowing the commit
       validate_commit()
     else
-      :ok
+      # Allow non-commit commands
+      JsonOutput.allow_pre_tool()
+      |> JsonOutput.write_and_exit()
     end
   end
 
   defp handle_hook_input(_) do
-    :ok
+    # Allow tools that aren't Bash or don't have the expected structure
+    JsonOutput.allow_pre_tool()
+    |> JsonOutput.write_and_exit()
   end
 
   defp validate_commit do
@@ -53,56 +58,81 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
       with :ok <- check_formatting(),
            :ok <- check_compilation(),
            :ok <- check_unused_dependencies() do
-        :ok
+        # All checks passed - allow the commit
+        JsonOutput.allow_pre_tool("Pre-commit checks passed")
+        |> JsonOutput.write_and_exit()
+      else
+        {:error, reason} ->
+          # One or more checks failed - deny the commit
+          error_message = format_error_message(reason)
+
+          JsonOutput.deny_pre_tool(error_message)
+          |> JsonOutput.write_and_exit()
       end
     end)
   end
 
   defp check_formatting do
-    IO.puts("Checking code formatting...")
-
     case System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true) do
       {_output, 0} ->
-        IO.puts("✓ Code formatting is correct")
         :ok
 
       {output, _exit_code} ->
-        IO.puts(:stderr, "\n❌ Formatting check failed!")
-        IO.puts(:stderr, output)
-        IO.puts(:stderr, "\nPlease run 'mix format' to fix formatting issues before committing.")
-        {:error, :formatting_failed}
+        {:error, {:formatting_failed, output}}
     end
   end
 
   defp check_compilation do
-    IO.puts("Checking compilation...")
-
     case System.cmd("mix", ["compile", "--warnings-as-errors"], stderr_to_stdout: true) do
       {_output, 0} ->
-        IO.puts("✓ Compilation successful")
         :ok
 
       {output, _exit_code} ->
-        IO.puts(:stderr, "\n❌ Compilation check failed!")
-        IO.puts(:stderr, output)
-        IO.puts(:stderr, "\nPlease fix compilation errors and warnings before committing.")
-        {:error, :compilation_failed}
+        {:error, {:compilation_failed, output}}
     end
   end
 
   defp check_unused_dependencies do
-    IO.puts("Checking for unused dependencies...")
-
     case System.cmd("mix", ["deps.unlock", "--check-unused"], stderr_to_stdout: true) do
       {_output, 0} ->
-        IO.puts("✓ No unused dependencies found")
         :ok
 
       {output, _exit_code} ->
-        IO.puts(:stderr, "\n❌ Unused dependencies detected!")
-        IO.puts(:stderr, output)
-        IO.puts(:stderr, "\nPlease run 'mix deps.unlock --unused' to remove unused dependencies.")
-        {:error, :unused_dependencies}
+        {:error, {:unused_dependencies, output}}
     end
+  end
+
+  defp format_error_message({:formatting_failed, output}) do
+    """
+    Pre-commit check failed: Formatting issues detected!
+
+    #{output}
+
+    Please run 'mix format' to fix formatting issues before committing.
+    """
+  end
+
+  defp format_error_message({:compilation_failed, output}) do
+    """
+    Pre-commit check failed: Compilation errors detected!
+
+    #{output}
+
+    Please fix compilation errors and warnings before committing.
+    """
+  end
+
+  defp format_error_message({:unused_dependencies, output}) do
+    """
+    Pre-commit check failed: Unused dependencies detected!
+
+    #{output}
+
+    Please run 'mix deps.unlock --unused' to remove unused dependencies.
+    """
+  end
+
+  defp format_error_message(reason) do
+    "Pre-commit check failed: #{inspect(reason)}"
   end
 end
