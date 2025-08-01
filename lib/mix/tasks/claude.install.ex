@@ -212,9 +212,7 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp add_claude_exs_to_formatter(igniter) do
-    # Check if .formatter.exs exists
     if Igniter.exists?(igniter, ".formatter.exs") do
-      # Read the current formatter file to check if .claude.exs is already included
       igniter
       |> Igniter.add_notice("""
       To format .claude.exs files, add \".claude.exs\" to your formatter inputs:
@@ -335,19 +333,15 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp format_meta_agent_for_template do
-    # Format the Meta Agent config for inclusion in the template
     inspect(@meta_agent_config, pretty: true, limit: :infinity, printable_limit: :infinity)
   end
 
   defp format_meta_agent_for_notice do
-    # Format the Meta Agent config for display in notices
-    # Build it manually to show proper formatting
     name = inspect(@meta_agent_config.name)
     description = inspect(@meta_agent_config.description)
     tools = inspect(@meta_agent_config.tools)
     prompt = @meta_agent_config.prompt
 
-    # Manually build the string to preserve formatting
     "    %{\n" <>
       "      name: #{name},\n" <>
       "      description: #{description},\n" <>
@@ -827,7 +821,6 @@ defmodule Mix.Tasks.Claude.Install do
     missing_keys = required_keys -- Map.keys(config)
 
     if missing_keys == [] do
-      # Validate tools if present
       with :ok <- validate_tools(config[:tools]),
            :ok <- validate_model(config[:model]),
            :ok <- validate_color(config[:color]) do
@@ -853,11 +846,9 @@ defmodule Mix.Tasks.Claude.Install do
   defp validate_model(nil), do: :ok
 
   defp validate_model(model) when is_binary(model) do
-    # Allow shorthand model names
     if model in ["sonnet", "opus", "haiku", "inherit"] do
       :ok
     else
-      # Allow full model names that match Claude naming patterns
       if Regex.match?(~r/^claude-\d+(-\d+)?-(opus|sonnet|haiku)(-\d+)?$/, model) do
         :ok
       else
@@ -974,7 +965,6 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp generate_frontmatter(subagent) do
-    # Convert name to lowercase with hyphens as per Claude Code conventions
     name =
       subagent.name
       |> String.downcase()
@@ -987,7 +977,6 @@ defmodule Mix.Tasks.Claude.Install do
       "description: #{subagent.description}"
     ]
 
-    # Add model line if specified
     lines =
       if Map.has_key?(subagent, :model) && subagent.model do
         lines ++ ["model: #{subagent.model}"]
@@ -995,7 +984,6 @@ defmodule Mix.Tasks.Claude.Install do
         lines
       end
 
-    # Add color line if specified
     lines =
       if Map.has_key?(subagent, :color) && subagent.color do
         lines ++ ["color: #{subagent.color}"]
@@ -1003,7 +991,6 @@ defmodule Mix.Tasks.Claude.Install do
         lines
       end
 
-    # Add tools line only if tools are specified
     lines =
       if subagent.tools != [] do
         tools_line =
