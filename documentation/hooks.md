@@ -34,7 +34,19 @@ Claude's hooks are configured in `.claude.exs`. You can add optional hooks or cr
 
 ## Creating Custom Hooks
 
-You can extend Claude with your own hooks using the `Claude.Hooks.Hook.Behaviour`:
+### Using the Generator
+
+The easiest way to create a new hook is with the generator:
+
+```bash
+mix claude.gen.hook MyCustomChecker --event post_tool_use --matcher "Write|Edit" --description "My custom validation hook"
+```
+
+See the [Generators Documentation](generators.md#hook-generator) for full details.
+
+### Manual Creation
+
+You can also extend Claude with your own hooks using the `Claude.Hooks.Hook.Behaviour`:
 
 ```elixir
 defmodule MyApp.Hooks.CustomChecker do
