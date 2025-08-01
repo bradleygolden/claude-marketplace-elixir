@@ -86,7 +86,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     matcher: [:write, :edit, :multi_edit],
     description: "Suggests updating related files based on naming patterns"
 
-  alias Claude.Hooks.Helpers
+  alias Claude.Hooks.{Helpers, JsonOutput}
 
   @impl Claude.Hooks.Hook.Behaviour
   def run(:eof), do: :ok
@@ -97,7 +97,8 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
         process_file_change(input)
 
       {:error, _} ->
-        :ok
+        JsonOutput.success(suppress_output: true)
+        |> JsonOutput.write_and_exit()
     end
   end
 
@@ -114,10 +115,13 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
       if related_files != [] do
         suggest_updates(file_path, related_files)
       else
-        :ok
+        JsonOutput.success(suppress_output: true)
+        |> JsonOutput.write_and_exit()
       end
     else
-      _ -> :ok
+      _ ->
+        JsonOutput.success(suppress_output: true)
+        |> JsonOutput.write_and_exit()
     end
   end
 
@@ -216,8 +220,8 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
   defp suggest_updates(modified_file, related_files) do
     message = build_feedback_message(modified_file, related_files)
 
-    IO.puts(:stderr, message)
-    System.halt(2)
+    JsonOutput.block_post_tool(message)
+    |> JsonOutput.write_and_exit()
   end
 
   defp build_feedback_message(modified_file, related_files) do

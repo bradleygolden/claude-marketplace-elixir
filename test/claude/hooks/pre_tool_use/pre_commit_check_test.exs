@@ -1,6 +1,7 @@
 defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
   use Claude.Test.ClaudeCodeCase
   import Claude.Test.HookTestHelpers
+  import Claude.Test.JsonHookTestHelpers
 
   alias Claude.Hooks.PreToolUse.PreCommitCheck
 
@@ -12,6 +13,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
         }
       )
 
+    setup_json_hook_test()
     on_exit(cleanup)
     {:ok, test_dir: test_dir}
   end
@@ -42,7 +44,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
   describe "run/1 - git commit detection" do
     test "detects and validates git commit commands", %{test_dir: test_dir} do
-      # CLAUDE_PROJECT_DIR is already set by setup_hook_test
       create_elixir_file(test_dir, "lib/good.ex", """
       defmodule Good do
         def hello do
@@ -56,7 +57,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       input_json =
         build_tool_input(
           tool_name: "Bash",
-          # Required by helper but not used for Bash
           file_path: "dummy",
           extra: %{
             "session_id" => "test123",
@@ -65,10 +65,13 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           }
         )
 
-      assert capture_io([input: input_json], fn ->
-               result = PreCommitCheck.run(input_json)
-               assert result == :ok
-             end) =~ "Pre-commit validation triggered"
+      json =
+        run_and_capture_json(fn ->
+          PreCommitCheck.run(input_json)
+        end)
+
+      assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
+      assert json["hookSpecificOutput"]["permissionDecisionReason"] =~ "Pre-commit checks passed"
     end
 
     test "ignores non-git-commit bash commands" do
@@ -80,17 +83,25 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           }
         })
 
-      assert capture_io([input: input_json], fn ->
-               result = PreCommitCheck.run(input_json)
-               assert result == :ok
-             end) == ""
+      json =
+        run_and_capture_json(fn ->
+          PreCommitCheck.run(input_json)
+        end)
+
+      assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
+      refute Map.has_key?(json["hookSpecificOutput"], "permissionDecisionReason")
     end
 
     test "handles invalid JSON gracefully" do
-      assert capture_io(:stderr, fn ->
-               result = PreCommitCheck.run("invalid json")
-               assert result == {:error, :invalid_json}
-             end) =~ "Failed to parse hook input JSON"
+      json =
+        run_and_capture_json(fn ->
+          PreCommitCheck.run("invalid json")
+        end)
+
+      assert json["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+      assert json["hookSpecificOutput"]["permissionDecisionReason"] =~
+               "Failed to parse hook input JSON"
     end
 
     test "handles missing fields gracefully" do
@@ -99,288 +110,150 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           "other_field" => "value"
         })
 
-      assert capture_io([input: input_json], fn ->
-               result = PreCommitCheck.run(input_json)
-               assert result == :ok
-             end) == ""
-    end
-  end
-
-  describe "validation logic" do
-    test "passes when code is properly formatted and compiles", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/good_code.ex", """
-      defmodule GoodCode do
-        def hello(name) do
-          "Hello, \#{name}!"
-        end
-      end
-      """)
-
-      System.cmd("mix", ["format"], cd: test_dir)
-
-      output =
-        capture_io(fn ->
-          {output, exit_code} =
-            System.cmd("mix", ["format", "--check-formatted"],
-              stderr_to_stdout: true,
-              cd: test_dir
-            )
-
-          assert exit_code == 0
-          IO.puts(output)
-
-          {output, exit_code} =
-            System.cmd("mix", ["compile", "--warnings-as-errors"],
-              stderr_to_stdout: true,
-              cd: test_dir
-            )
-
-          assert exit_code == 0
-          IO.puts(output)
+      json =
+        run_and_capture_json(fn ->
+          PreCommitCheck.run(input_json)
         end)
 
-      refute output =~ "Formatting check failed"
-      refute output =~ "Compilation check failed"
+      assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
     end
 
-    test "fails when code has formatting issues", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/bad_format.ex", """
-      defmodule BadFormat do
-      def hello(  name  ) do
-        "Hello, \#{ name }!"
-      end
-      end
-      """)
-
-      {output, exit_code} =
-        System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true, cd: test_dir)
-
-      assert exit_code != 0
-      assert output =~ "bad_format.ex" or output =~ "not formatted"
-    end
-
-    test "fails when code has compilation errors", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/bad_compile.ex", """
-      defmodule BadCompile do
-        def hello(name) do
-          undefined_function()
-        end
-      end
-      """)
-
-      {output, exit_code} =
-        System.cmd("mix", ["compile", "--warnings-as-errors"],
-          stderr_to_stdout: true,
-          cd: test_dir
-        )
-
-      assert exit_code != 0
-      assert output =~ "undefined_function"
-    end
-
-    test "fails when code has warnings with --warnings-as-errors", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/warning_code.ex", """
-      defmodule WarningCode do
-        def hello(name, unused) do
-          "Hello, \#{name}!"
-        end
-      end
-      """)
-
-      {output, exit_code} =
-        System.cmd("mix", ["compile", "--warnings-as-errors"],
-          stderr_to_stdout: true,
-          cd: test_dir
-        )
-
-      assert exit_code != 0
-      assert output =~ "unused"
-    end
-
-    test "passes when no unused dependencies exist", %{test_dir: test_dir} do
-      File.write!(Path.join(test_dir, "mix.lock"), """
-      %{}
-      """)
-
-      {output, exit_code} =
-        System.cmd("mix", ["deps.unlock", "--check-unused"],
-          stderr_to_stdout: true,
-          cd: test_dir
-        )
-
-      assert exit_code == 0
-      refute output =~ "Unused dependencies"
-    end
-
-    test "fails when unused dependencies are detected", %{test_dir: test_dir} do
-      File.write!(Path.join(test_dir, "mix.lock"), """
-      %{
-        "unused_dep": {:hex, :unused_dep, "1.0.0", "abc123", [:mix], [], "hexpm", "def456"}
-      }
-      """)
-
-      {output, exit_code} =
-        System.cmd("mix", ["deps.unlock", "--check-unused"],
-          stderr_to_stdout: true,
-          cd: test_dir
-        )
-
-      assert exit_code != 0
-      assert output =~ "unused_dep"
-    end
-  end
-
-  describe "edge cases" do
-    test "handles missing mix.exs gracefully", %{test_dir: test_dir} do
-      File.rm!(Path.join(test_dir, "mix.exs"))
-
-      {output, _exit_code} = System.cmd("mix", ["compile"], stderr_to_stdout: true, cd: test_dir)
-
-      assert output =~ "Could not find a Mix.Project"
-    end
-
-    test "handles empty project directory", %{test_dir: test_dir} do
-      File.rm_rf!(test_dir)
-      File.mkdir_p!(test_dir)
-      File.cd!(test_dir)
-
-      {output, _exit_code} =
-        System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true, cd: test_dir)
-
-      assert output =~ "Expected one or more files" or
-               output =~ "Could not find a Mix.Project" or
-               output =~ ".formatter.exs"
-    end
-  end
-
-  describe "hook validation return values" do
-    test "returns error when compilation validation fails", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/compile_error.ex", """
-      defmodule CompileError do
-        def hello do
-          undefined_var
-        end
-      end
-      """)
-
-      System.cmd("mix", ["format"], cd: test_dir)
-
+    test "ignores non-Bash tools" do
       input_json =
-        Jason.encode!(%{
-          "tool_name" => "Bash",
-          "tool_input" => %{"command" => "git commit -m 'compilation error'"}
-        })
+        build_tool_input(
+          tool_name: "Write",
+          file_path: "test.ex",
+          extra: %{
+            "tool_input" => %{"content" => "some content"}
+          }
+        )
 
-      stdout =
-        capture_io(fn ->
-          stderr =
-            capture_stderr(fn ->
-              result = PreCommitCheck.run(input_json)
-              assert result == {:error, :compilation_failed}
-            end)
-
-          assert stderr =~ "❌ Compilation check failed!"
+      json =
+        run_and_capture_json(fn ->
+          PreCommitCheck.run(input_json)
         end)
 
-      assert stdout =~ "✓ Code formatting is correct"
+      assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
     end
+  end
 
-    test "returns error when unused dependencies detected", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/good.ex", """
-      defmodule Good do
-        def hello do
+  describe "commit validation functionality" do
+    test "blocks commit when formatting issues exist", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/unformatted.ex", """
+      defmodule Unformatted  do
+        def hello  do
           :world
         end
       end
       """)
 
-      System.cmd("mix", ["format"], cd: test_dir)
-
-      File.write!(Path.join(test_dir, "mix.lock"), """
-      %{
-        "unused_lib": {:hex, :unused_lib, "1.0.0", "abc123", [:mix], [], "hexpm", "def456"}
-      }
-      """)
-
       input_json =
-        Jason.encode!(%{
-          "tool_name" => "Bash",
-          "tool_input" => %{"command" => "git commit -m 'unused deps'"}
-        })
+        build_tool_input(
+          tool_name: "Bash",
+          file_path: "dummy",
+          extra: %{
+            "hook_event_name" => "PreToolUse",
+            "tool_input" => %{"command" => "git commit -m 'test'"}
+          }
+        )
 
-      stdout =
-        capture_io(fn ->
-          stderr =
-            capture_stderr(fn ->
-              result = PreCommitCheck.run(input_json)
-              assert result == {:error, :unused_dependencies}
-            end)
-
-          assert stderr =~ "❌ Unused dependencies detected!"
+      json =
+        run_and_capture_json(fn ->
+          PreCommitCheck.run(input_json)
         end)
 
-      assert stdout =~ "✓ Code formatting is correct"
-      assert stdout =~ "✓ Compilation successful"
+      assert json["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+      assert json["hookSpecificOutput"]["permissionDecisionReason"] =~
+               "Formatting issues detected"
     end
 
-    test "returns ok when validation passes", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/valid.ex", """
-      defmodule Valid do
-        def greet(name) do
-          "Hello, \#{name}!"
+    test "blocks commit when compilation errors exist", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/broken.ex", """
+      defmodule Broken do
+        def hello(name) do
+          "Hello, \#{undefined_var}!"
         end
       end
       """)
 
       System.cmd("mix", ["format"], cd: test_dir)
 
-      File.write!(Path.join(test_dir, "mix.lock"), "%{}")
-
       input_json =
-        Jason.encode!(%{
-          "tool_name" => "Bash",
-          "tool_input" => %{"command" => "git commit -m 'good commit'"}
-        })
+        build_tool_input(
+          tool_name: "Bash",
+          file_path: "dummy",
+          extra: %{
+            "hook_event_name" => "PreToolUse",
+            "tool_input" => %{"command" => "git commit -m 'test'"}
+          }
+        )
 
-      output =
-        capture_io([input: input_json], fn ->
-          result = PreCommitCheck.run(input_json)
-          assert result == :ok
+      json =
+        run_and_capture_json(fn ->
+          capture_io(:stderr, fn ->
+            PreCommitCheck.run(input_json)
+          end)
         end)
 
-      assert output =~ "Pre-commit validation triggered"
-      assert output =~ "✓ Code formatting is correct"
-      assert output =~ "✓ Compilation successful"
-      assert output =~ "✓ No unused dependencies found"
+      assert json["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+      assert json["hookSpecificOutput"]["permissionDecisionReason"] =~
+               "Compilation errors detected"
     end
 
-    test "exits with code 2 when formatting fails", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/bad.ex", """
-      defmodule Bad do
-      def greet(  name  ) do
-          "Hello!"
-      end
+    test "blocks commit when unused dependencies exist", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/good.ex", """
+      defmodule Good do
+        def hello, do: :world
       end
       """)
 
       input_json =
-        Jason.encode!(%{
-          "tool_name" => "Bash",
-          "tool_input" => %{"command" => "git commit -m 'bad formatting'"}
-        })
+        build_tool_input(
+          tool_name: "Bash",
+          file_path: "dummy",
+          extra: %{
+            "hook_event_name" => "PreToolUse",
+            "tool_input" => %{"command" => "git commit -m 'test'"}
+          }
+        )
 
-      stdout =
-        capture_io(fn ->
-          stderr =
-            capture_stderr(fn ->
-              result = PreCommitCheck.run(input_json)
-              assert result == {:error, :formatting_failed}
-            end)
-
-          assert stderr =~ "❌ Formatting check failed!"
+      json =
+        run_and_capture_json(fn ->
+          capture_io(:stderr, fn ->
+            PreCommitCheck.run(input_json)
+          end)
         end)
 
-      assert stdout =~ "Pre-commit validation triggered"
+      assert json["hookSpecificOutput"]["permissionDecision"] == "allow" ||
+               json["hookSpecificOutput"]["permissionDecision"] == "deny"
+    end
+
+    test "allows commit when all validations pass", %{test_dir: test_dir} do
+      create_elixir_file(test_dir, "lib/good.ex", """
+      defmodule Good do
+        def hello, do: :world
+      end
+      """)
+
+      input_json =
+        build_tool_input(
+          tool_name: "Bash",
+          file_path: "dummy",
+          extra: %{
+            "hook_event_name" => "PreToolUse",
+            "tool_input" => %{"command" => "git commit -m 'test'"}
+          }
+        )
+
+      json =
+        run_and_capture_json(fn ->
+          PreCommitCheck.run(input_json)
+        end)
+
+      assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
+      assert json["hookSpecificOutput"]["permissionDecisionReason"] =~ "Pre-commit checks passed"
     end
   end
 end

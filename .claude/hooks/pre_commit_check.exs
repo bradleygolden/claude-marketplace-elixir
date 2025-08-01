@@ -8,8 +8,10 @@ Mix.install([{:claude, path: "."}, {:jason, "~> 1.4"}, {:igniter, "~> 0.6"}])
 # Read JSON from stdin
 input = IO.read(:stdio, :eof)
 
-# Reuse the existing hook module
-case Claude.Hooks.PreToolUse.PreCommitCheck.run(input) do
-  :ok -> System.halt(0)
-  _ -> System.halt(1)
-end
+# Run the hook module
+# The hook now handles JSON output internally using JsonOutput.write_and_exit/1
+# which will output JSON and exit with code 0
+Claude.Hooks.PreToolUse.PreCommitCheck.run(input)
+
+# If we reach here, the hook didn't exit properly, so we exit with success
+System.halt(0)

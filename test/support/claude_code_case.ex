@@ -62,7 +62,17 @@ defmodule Claude.Test.ClaudeCodeCase do
       import ExUnit.CaptureIO
       import Claude.Test.SystemHaltHelpers
       import Claude.TestHelpers
-      import Claude.Test.ClaudeCodeCase, only: [isolate_project: 1, cmd: 1, cmd: 2]
+
+      import Claude.Test.ClaudeCodeCase,
+        only: [
+          isolate_project: 1,
+          cmd: 1,
+          cmd: 2,
+          test_project: 0,
+          test_project: 1,
+          phx_test_project: 0,
+          phx_test_project: 1
+        ]
 
       setup :set_mimic_from_context
 
@@ -198,5 +208,47 @@ defmodule Claude.Test.ClaudeCodeCase do
         Port.close(port)
         {acc <> "\n[Command timed out after 5s]", 124}
     end
+  end
+
+  @doc """
+  Creates an Igniter test project with a default .formatter.exs file.
+
+  This wraps Igniter.Test.test_project/1 and ensures a .formatter.exs file
+  is always present to avoid errors in newer versions of Igniter.
+  """
+  def test_project(opts \\ []) do
+    default_files = %{
+      ".formatter.exs" => """
+      [
+        inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+      ]
+      """
+    }
+
+    files = Map.merge(default_files, Keyword.get(opts, :files, %{}))
+    opts = Keyword.put(opts, :files, files)
+
+    Igniter.Test.test_project(opts)
+  end
+
+  @doc """
+  Creates an Igniter test project simulating a Phoenix project.
+
+  This wraps Igniter.Test.phx_test_project/1 and ensures a .formatter.exs file
+  is always present to avoid errors in newer versions of Igniter.
+  """
+  def phx_test_project(opts \\ []) do
+    default_files = %{
+      ".formatter.exs" => """
+      [
+        inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+      ]
+      """
+    }
+
+    files = Map.merge(default_files, Keyword.get(opts, :files, %{}))
+    opts = Keyword.put(opts, :files, files)
+
+    Igniter.Test.phx_test_project(opts)
   end
 end

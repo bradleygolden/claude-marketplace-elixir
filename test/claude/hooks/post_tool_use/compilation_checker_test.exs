@@ -1,11 +1,13 @@
 defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
   use Claude.Test.ClaudeCodeCase, async: false
   import Claude.Test.HookTestHelpers
+  import Claude.Test.JsonHookTestHelpers
 
   alias Claude.Hooks.PostToolUse.CompilationChecker
 
   setup do
     {test_dir, cleanup} = setup_hook_test()
+    setup_json_hook_test()
     on_exit(cleanup)
     {:ok, test_dir: test_dir}
   end
@@ -15,9 +17,12 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       file_path = create_elixir_file(test_dir, "lib/test.ex")
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
-      assert capture_stderr(fn ->
-               assert :ok = CompilationChecker.run(stdin_json)
-             end) == ""
+      json =
+        assert_json_success(fn ->
+          CompilationChecker.run(stdin_json)
+        end)
+
+      assert json["suppressOutput"] == true
     end
 
     test "reports compilation errors", %{test_dir: test_dir} do
@@ -32,13 +37,13 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
 
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
-      output =
-        capture_stderr(fn ->
-          assert :ok = CompilationChecker.run(stdin_json)
+      json =
+        assert_json_block(fn ->
+          CompilationChecker.run(stdin_json)
         end)
 
-      assert output =~ "Compilation issues detected"
-      assert output =~ "undefined variable"
+      assert json["reason"] =~ "Compilation issues detected"
+      assert json["reason"] =~ "undefined variable"
     end
 
     test "reports warnings as errors", %{test_dir: test_dir} do
@@ -54,13 +59,13 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
 
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
-      output =
-        capture_stderr(fn ->
-          assert :ok = CompilationChecker.run(stdin_json)
+      json =
+        assert_json_block(fn ->
+          CompilationChecker.run(stdin_json)
         end)
 
-      assert output =~ "Compilation issues detected"
-      assert output =~ "unused"
+      assert json["reason"] =~ "Compilation issues detected"
+      assert json["reason"] =~ "unused"
     end
 
     test "works with .exs files", %{test_dir: test_dir} do
@@ -71,9 +76,12 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
 
       stdin_json = build_tool_input(tool_name: "Write", file_path: file_path)
 
-      assert capture_stderr(fn ->
-               assert :ok = CompilationChecker.run(stdin_json)
-             end) == ""
+      json =
+        assert_json_success(fn ->
+          CompilationChecker.run(stdin_json)
+        end)
+
+      assert json["suppressOutput"] == true
     end
 
     test "works with MultiEdit tool", %{test_dir: test_dir} do
@@ -86,9 +94,12 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
 
       stdin_json = build_tool_input(tool_name: "MultiEdit", file_path: file_path)
 
-      assert capture_stderr(fn ->
-               assert :ok = CompilationChecker.run(stdin_json)
-             end) == ""
+      json =
+        assert_json_success(fn ->
+          CompilationChecker.run(stdin_json)
+        end)
+
+      assert json["suppressOutput"] == true
     end
 
     test "ignores non-Elixir files", %{test_dir: test_dir} do
@@ -98,11 +109,12 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
       output =
-        capture_stderr(fn ->
+        capture_io(fn ->
           assert :ok = CompilationChecker.run(stdin_json)
         end)
 
-      assert output == ""
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
 
     test "ignores non-edit tools", %{test_dir: test_dir} do
@@ -116,11 +128,12 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
       stdin_json = build_tool_input(tool_name: "Read", file_path: file_path)
 
       output =
-        capture_stderr(fn ->
+        capture_io(fn ->
           assert :ok = CompilationChecker.run(stdin_json)
         end)
 
-      assert output == ""
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
 
     test "handles missing file_path in tool_input gracefully" do
@@ -131,20 +144,22 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
         })
 
       output =
-        capture_stderr(fn ->
+        capture_io(fn ->
           assert :ok = CompilationChecker.run(stdin_json)
         end)
 
-      assert output == ""
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
 
     test "handles invalid JSON input gracefully" do
       output =
-        capture_stderr(fn ->
+        capture_io(fn ->
           assert :ok = CompilationChecker.run("invalid json")
         end)
 
-      assert output == ""
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
 
     test "handles :eof input gracefully" do
@@ -152,7 +167,6 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
     end
 
     test "uses CLAUDE_PROJECT_DIR when available", %{test_dir: test_dir} do
-      # CLAUDE_PROJECT_DIR is already set by setup_hook_test
       file_path =
         create_elixir_file(test_dir, "lib/subdir/test.ex", """
         defmodule SubdirTest do
@@ -162,9 +176,13 @@ defmodule Claude.Hooks.PostToolUse.CompilationCheckerTest do
 
       stdin_json = build_tool_input(tool_name: "Edit", file_path: file_path)
 
-      assert capture_stderr(fn ->
-               assert :ok = CompilationChecker.run(stdin_json)
-             end) == ""
+      output =
+        capture_io(fn ->
+          assert :ok = CompilationChecker.run(stdin_json)
+        end)
+
+      json = Jason.decode!(output)
+      assert json["suppressOutput"] == true
     end
   end
 end
