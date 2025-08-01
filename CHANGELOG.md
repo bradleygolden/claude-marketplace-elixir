@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - New `mix claude.gen.hook` and `mix claude.gen.subagent` for code generation. See [documentation/generators.md](documentation/generators.md) for details.
 
+### Fixed
+
+- Fixed a bug where hooks weren't configured properly which prevented them from being useful to claude claude code. Please run `mix claude.install` to sync the new settings and pull in the fix.
+
 ## [0.2.3] - 2025-07-30
 
 ### Changed
