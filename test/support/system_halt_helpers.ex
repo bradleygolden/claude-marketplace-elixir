@@ -32,9 +32,13 @@ defmodule Claude.Test.SystemHaltHelpers do
   """
   def trap_unexpected_halts(_context \\ %{}) do
     try do
-      stub(System, :halt, fn exit_code ->
-        raise "Unexpected System.halt(#{exit_code}) called! " <>
-                "If this is expected, add `expect(System, :halt, fn #{exit_code} -> :ok end)` to your test."
+      stub(System, :halt, fn
+        0 ->
+          :ok
+
+        exit_code ->
+          raise "Unexpected System.halt(#{exit_code}) called! " <>
+                  "If this is expected, add `expect(System, :halt, fn #{exit_code} -> :ok end)` to your test."
       end)
     rescue
       ArgumentError -> :ok
@@ -53,7 +57,7 @@ defmodule Claude.Test.SystemHaltHelpers do
         stub_halt_as_return()
         :ok
       end
-      
+
       test "returns correct exit code" do
         assert {:halt, 2} = MyModule.function_that_halts()
       end
@@ -69,7 +73,7 @@ defmodule Claude.Test.SystemHaltHelpers do
         expect_halt(2)
         assert {:halt, 2} = MyModule.function_that_halts()
       end
-      
+
   Note: This will override any previous stub/expect, including trap_unexpected_halts.
   Only the specified exit code will be allowed.
   """

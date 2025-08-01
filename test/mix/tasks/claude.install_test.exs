@@ -1,6 +1,8 @@
 defmodule Mix.Tasks.Claude.InstallTest do
-  use ExUnit.Case
-  import Igniter.Test
+  use Claude.Test.ClaudeCodeCase, trap_halts: false
+
+  import Igniter.Test,
+    except: [test_project: 0, test_project: 1, phx_test_project: 0, phx_test_project: 1]
 
   describe "claude.install" do
     test "creates .claude.exs file in a new project" do
