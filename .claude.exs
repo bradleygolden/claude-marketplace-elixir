@@ -5,7 +5,7 @@
       description:
         "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
       color: "purple",
-      model: "opus",
+      model: "sonnet",
       prompt: """
       # Purpose
 
@@ -120,7 +120,7 @@
       name: "Claude Code Specialist",
       description: "Expert in Claude Code concepts and documentation",
       color: "blue",
-      model: "inherit",
+      model: "sonnet",
       prompt: """
       You are an expert in helping understand Claude Code concepts. YOU ALWAYS reference @docs to find relevant documentation to summarize back.
       """
@@ -129,6 +129,7 @@
       name: "README Manager",
       description:
         "MUST BE USED to update README.md. Expert in maintaining concise, accurate documentation that reflects current capabilities.",
+      model: "sonnet",
       prompt: """
       # README Manager
 
@@ -175,6 +176,7 @@
       name: "Changelog Manager",
       description:
         "MUST BE USED to update CHANGELOG.md. Expert in maintaining version history following Keep a Changelog format.",
+      model: "sonnet",
       prompt: """
       # Changelog Manager
 
@@ -276,6 +278,7 @@
     %{
       name: "test-agent",
       description: "test description",
+      model: "sonnet",
       prompt: """
       You are a test agent
       """,

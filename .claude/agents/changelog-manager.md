@@ -1,6 +1,7 @@
 ---
 name: changelog-manager
 description: MUST BE USED to update CHANGELOG.md. Expert in maintaining version history following Keep a Changelog format.
+model: sonnet
 tools: Read, Edit, MultiEdit, Bash, Grep
 ---
 

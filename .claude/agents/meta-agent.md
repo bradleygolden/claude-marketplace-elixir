@@ -1,7 +1,7 @@
 ---
 name: meta-agent
 description: Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.
-model: opus
+model: sonnet
 color: purple
 tools: Write, Read, Edit, MultiEdit, Bash, WebSearch
 ---

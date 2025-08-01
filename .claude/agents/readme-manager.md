@@ -1,6 +1,7 @@
 ---
 name: readme-manager
 description: MUST BE USED to update README.md. Expert in maintaining concise, accurate documentation that reflects current capabilities.
+model: sonnet
 tools: Read, Edit, MultiEdit, Grep, Glob
 ---
 

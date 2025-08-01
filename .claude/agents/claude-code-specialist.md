@@ -1,7 +1,7 @@
 ---
 name: claude-code-specialist
 description: Expert in Claude Code concepts and documentation
-model: inherit
+model: sonnet
 color: blue
 ---
 
