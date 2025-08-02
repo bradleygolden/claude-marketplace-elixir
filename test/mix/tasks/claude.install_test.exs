@@ -468,8 +468,70 @@ defmodule Mix.Tasks.Claude.InstallTest do
       # Check that tidewave configuration notice with custom port is shown
       assert Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "Tidewave MCP server has been configured") &&
-                 String.contains?(notice, "Port: 5000")
+                 String.contains?(notice, "http://localhost:5000/tidewave/mcp")
              end)
+    end
+
+    test "creates .mcp.json file with tidewave configuration" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              mcp_servers: [:tidewave]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.exists?(igniter, ".mcp.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".mcp.json")
+      content = Rewrite.Source.get(source, :content)
+      {:ok, json} = Jason.decode(content)
+
+      assert json["mcpServers"]["tidewave"]["type"] == "sse"
+      assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:4000/tidewave/mcp"
+    end
+
+    test "creates .mcp.json with custom port configuration" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              mcp_servers: [{:tidewave, [port: 5000]}]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.exists?(igniter, ".mcp.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".mcp.json")
+      content = Rewrite.Source.get(source, :content)
+      {:ok, json} = Jason.decode(content)
+
+      assert json["mcpServers"]["tidewave"]["type"] == "sse"
+      assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:5000/tidewave/mcp"
+    end
+
+    test "does not create .mcp.json when tidewave is disabled" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              mcp_servers: [{:tidewave, [enabled?: false]}]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      refute Igniter.exists?(igniter, ".mcp.json")
     end
   end
 

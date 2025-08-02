@@ -128,7 +128,7 @@ You've just experienced Claude's core features:
 
 - **[Configure Additional Hooks](hooks.md)** - Enable related files suggestions and more
 - **[Create Sub-Agents](subagents.md)** - Build specialized AI assistants for your project
-- **Phoenix MCP Server** - Add `mcp_servers: [:tidewave]` to your `.claude.exs`
+- **Phoenix MCP Server** - Add `mcp_servers: [:tidewave]` to your `.claude.exs` (creates `.mcp.json` automatically)
 
 ### Learn More
 

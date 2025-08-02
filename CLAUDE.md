@@ -58,12 +58,15 @@ mix claude.install
 # Hooks are executed automatically by Claude Code via the scripts in .claude/hooks/
 
 # MCP Server Management
-# MCP servers are configured directly in .claude.exs - see below
+# MCP servers are configured in .claude.exs and synced to .mcp.json
+# See https://docs.anthropic.com/en/docs/claude-code/mcp for details
 
 # MCP server configuration in .claude.exs supports:
 # - Simple atom format: :tidewave
 # - Custom port: {:tidewave, [port: 5000]}
 # - Disable without removing: {:tidewave, [port: 4000, enabled?: false]}
+
+# This creates a .mcp.json file with the proper MCP server configuration
 
 # Install via Igniter
 mix igniter.install claude
@@ -98,9 +101,9 @@ To reference claude code sub agents, please see @ai/anthropic/claude_code/build_
    - Ensures project-scoped configuration
 
 4. **MCP Server System** (`lib/claude/mcp/`)
-   - **Catalog** - Tidewave configuration for Phoenix projects
+   - **Config** - Manages .mcp.json file creation and updates
    - **Registry** - Reads mcp_servers from `.claude.exs` (supports both atom and tuple formats)
-   - **Installer** - Syncs MCP configuration to settings.json
+   - **Installer** - Syncs MCP configuration to .mcp.json (not settings.json)
    - **Automatic** - Tidewave is auto-configured for Phoenix projects
    - **Custom Config** - Supports port customization: `{:tidewave, [port: 5000]}`
    - **Enable/Disable** - Servers can be disabled with `enabled?: false` option

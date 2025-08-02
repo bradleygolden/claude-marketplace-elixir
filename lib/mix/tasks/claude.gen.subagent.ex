@@ -378,18 +378,21 @@ defmodule Mix.Tasks.Claude.Gen.Subagent do
       ",\n" <> indent <> "  description: " <> inspect(description)
     ]
 
-    parts = 
+    parts =
       if prompt do
-        parts ++ [
-          ",\n" <> indent <> "  prompt: \"\"\"\n" <>
-          indent_lines(escaped_prompt, indent <> "  ") <>
-          "\n" <> indent <> "  \"\"\""
-        ]
+        parts ++
+          [
+            ",\n" <>
+              indent <>
+              "  prompt: \"\"\"\n" <>
+              indent_lines(escaped_prompt, indent <> "  ") <>
+              "\n" <> indent <> "  \"\"\""
+          ]
       else
         parts
       end
 
-    parts = 
+    parts =
       if tools != [] do
         parts ++ [",\n" <> indent <> "  tools: " <> tools_str]
       else
