@@ -138,7 +138,6 @@ defmodule Mix.Tasks.Claude.Install do
     tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
   }
 
-  # @default_tidewave_port 4000 - no longer used
   @tidewave_setup_instructions """
   Tidewave integrates with your Phoenix application:
   1. Add to your deps in mix.exs: {:tidewave, "~> 0.2.0"}

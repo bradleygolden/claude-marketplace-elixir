@@ -126,7 +126,6 @@ defmodule Claude.MCP.Config do
   end
 
   defp build_server_config(name, _opts) do
-    # Generic fallback - would need to be customized per server
     %{
       "command" => Atom.to_string(name),
       "args" => [],
