@@ -6,16 +6,23 @@ defmodule Claude.Hook do
   of JSON I/O and response formatting while giving direct access to the
   Claude Code native event structures.
 
+  ## Matcher System
+
+  The `matcher` option filters which tools trigger your hook. Claude Code only
+  invokes hooks when the tool matches, so you don't need to check `tool_name`
+  in your `handle/1` function. For example, if you specify `matcher: [:write, :edit]`,
+  your hook will only be called for Write and Edit tools - never for other tools.
+
   ## Example
 
       defmodule MyApp.Hooks.ElixirFormatter do
         use Claude.Hook,
           event: :post_tool_use,
-          matcher: [:write, :edit, :multi_edit]  # Can also use "Write|Edit|MultiEdit" for regex
+          matcher: [:write, :edit, :multi_edit]  # Hook only called for these tools
         
         @impl true
         def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
-          # Skip if not an Elixir file
+          # No need to check tool_name - matcher already filtered for us
           case input.tool_input do
             %{file_path: path} when is_binary(path) ->
               if Path.extname(path) in [".ex", ".exs"] do

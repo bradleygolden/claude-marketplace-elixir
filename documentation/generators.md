@@ -1,10 +1,14 @@
 # Generators
 
-Claude provides Mix task generators to help you quickly create hooks and sub-agents following best practices.
+Claude provides Mix task generators for development and extending the library.
 
-## Hook Generator
+## Hook Generator (Internal Development)
 
-Generate a new hook module using the `Claude.Hook` macro.
+> **Note**: The hook generator is primarily intended for internal development of the Claude library.
+> Due to current limitations with hook module loading in isolated script contexts, custom project
+> hooks may not work as expected. We recommend using the built-in hooks provided by Claude.
+
+Generate a new hook module using the `Claude.Hook` macro for extending the Claude library itself.
 
 ### Interactive Mode
 

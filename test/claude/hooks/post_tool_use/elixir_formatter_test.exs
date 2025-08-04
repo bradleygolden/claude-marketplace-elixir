@@ -106,23 +106,6 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
       assert json["suppressOutput"] == true
     end
 
-    test "ignores non-edit tools", %{test_dir: test_dir} do
-      unformatted_content = "defmodule  Read  do\nend"
-      file_path = create_file(test_dir, "read.ex", unformatted_content)
-
-      input =
-        Fixtures.post_tool_use_input(
-          tool_name: "Read",
-          tool_input: Fixtures.tool_input(:read, file_path: file_path)
-        )
-
-      json = run_hook(ElixirFormatter, input)
-
-      assert json["continue"] == true
-      assert File.read!(file_path) == unformatted_content
-      assert json["suppressOutput"] == true
-    end
-
     test "handles missing file_path in tool_input gracefully" do
       input_json =
         Jason.encode!(%{

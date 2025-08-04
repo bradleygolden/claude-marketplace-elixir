@@ -89,22 +89,18 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
 
   @impl true
   def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
-    if input.tool_name in ["Write", "Edit", "MultiEdit"] do
-      case extract_file_path(input.tool_input) do
-        {:ok, file_path} ->
-          related_files = find_related_files(file_path)
+    case extract_file_path(input.tool_input) do
+      {:ok, file_path} ->
+        related_files = find_related_files(file_path)
 
-          if related_files != [] do
-            suggest_updates(file_path, related_files)
-          else
-            :ok
-          end
-
-        _ ->
+        if related_files != [] do
+          suggest_updates(file_path, related_files)
+        else
           :ok
-      end
-    else
-      :ok
+        end
+
+      _ ->
+        :ok
     end
   end
 

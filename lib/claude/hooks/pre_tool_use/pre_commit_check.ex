@@ -17,20 +17,16 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
 
   @impl true
   def handle(%Claude.Hooks.Events.PreToolUse.Input{} = input) do
-    if input.tool_name == "Bash" do
-      case input.tool_input do
-        %ToolInputs.Bash{command: command} when is_binary(command) ->
-          if String.contains?(command, "git commit") do
-            validate_commit()
-          else
-            :ok
-          end
-
-        _ ->
+    case input.tool_input do
+      %ToolInputs.Bash{command: command} when is_binary(command) ->
+        if String.contains?(command, "git commit") do
+          validate_commit()
+        else
           :ok
-      end
-    else
-      :ok
+        end
+
+      _ ->
+        :ok
     end
   end
 

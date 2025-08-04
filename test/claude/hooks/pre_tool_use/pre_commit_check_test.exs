@@ -82,18 +82,6 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
     end
-
-    test "ignores non-Bash tools" do
-      input =
-        Fixtures.pre_tool_use_input(
-          tool_name: "Write",
-          tool_input: Fixtures.tool_input(:write, file_path: "test.ex", content: "some content")
-        )
-
-      json = run_hook(PreCommitCheck, input)
-
-      assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
-    end
   end
 
   describe "commit validation functionality" do

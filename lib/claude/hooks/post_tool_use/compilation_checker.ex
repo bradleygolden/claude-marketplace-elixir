@@ -14,20 +14,16 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
 
   @impl true
   def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
-    if input.tool_name in ["Write", "Edit", "MultiEdit"] do
-      case input.tool_input do
-        %{file_path: path} when is_binary(path) ->
-          if Path.extname(path) in [".ex", ".exs"] do
-            check_compilation(path)
-          else
-            :ok
-          end
-
-        _ ->
+    case input.tool_input do
+      %{file_path: path} when is_binary(path) ->
+        if Path.extname(path) in [".ex", ".exs"] do
+          check_compilation(path)
+        else
           :ok
-      end
-    else
-      :ok
+        end
+
+      _ ->
+        :ok
     end
   end
 

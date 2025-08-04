@@ -76,58 +76,15 @@ The RelatedFiles hook helps you keep related files in sync by suggesting updates
 
 The hook uses glob patterns (`*` matches any characters except `/`, `**` matches any characters including `/`) and will suggest Claude to review related files after you make edits.
 
-### Creating Custom Hooks
+### Hook Documentation
 
-Create a hook using the `Claude.Hook` DSL:
-
-```elixir
-defmodule MyProject.MyHook do
-  use Claude.Hook,
-    event: :post_tool_use,
-    matcher: [:edit, :write],
-    description: "My custom hook that runs after edits"
-
-  @impl Claude.Hook
-  def handle(input) do
-    # Your hook logic here
-    # input is a parsed struct, not raw JSON
-    :ok
-  end
-end
-```
-
-#### Options for `use Claude.Hook`:
-
-- `:event` - Hook event type (required)
-  - `:pre_tool_use`
-  - `:post_tool_use`
-  - `:user_prompt_submit`
-  - `:notification`
-  - `:stop`
-  - `:subagent_stop`
-  - `:pre_compact`
-- `:matcher` - Tool matcher pattern (optional, only for pre/post_tool_use)
-  - Can be a single atom: `:edit`, `:write`, `:bash`
-  - Can be a list: `[:edit, :write, :multi_edit]`
-  - Can be `:*` to match all tools
-  - Can be a string with pipe separators: `"Write|Edit"`
-- `:description` - Human-readable description (optional)
-
-The `handle/1` callback receives a parsed input struct specific to the event type:
-- `Claude.Hooks.Events.PreToolUse.Input`
-- `Claude.Hooks.Events.PostToolUse.Input`
-- `Claude.Hooks.Events.UserPromptSubmit.Input`
-- `Claude.Hooks.Events.Notification.Input`
-- `Claude.Hooks.Events.Stop.Input`
-- `Claude.Hooks.Events.SubagentStop.Input`
-- `Claude.Hooks.Events.PreCompact.Input`
-
-For more documentation about hooks see official documentation:
+For complete documentation about Claude Code's hook system, see:
 
   * https://docs.anthropic.com/en/docs/claude-code/hooks
   * https://docs.anthropic.com/en/docs/claude-code/hooks-guide
 
-ALWAYS consult the official documentation before implementing custom hooks.
+Claude provides several built-in hooks for common Elixir development tasks. See the
+[Hooks Documentation](documentation/hooks.md) for available hooks and configuration options.
 
 ## MCP Server Support
 
@@ -197,14 +154,10 @@ the `.claude` directory for use by Claude Code.
 ```elixir
 # .claude.exs - Claude configuration for this project
 %{
-  # Register hooks (built-in + custom)
+  # Register hooks (built-in only)
   hooks: [
     # Optional: Enable related files suggestions
-    Claude.Hooks.PostToolUse.RelatedFiles,
-
-    # Add your custom hooks
-    MyProject.Hooks.CustomFormatter,
-    MyProject.Hooks.SecurityChecker
+    Claude.Hooks.PostToolUse.RelatedFiles
   ],
 
   # MCP servers configuration

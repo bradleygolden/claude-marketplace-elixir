@@ -1,11 +1,15 @@
 defmodule Mix.Tasks.Claude.Gen.Hook do
-  @shortdoc "Generate a new Claude hook module"
+  @shortdoc "Generate a new Claude hook module (internal development)"
 
   @moduledoc """
-  Generate a new Claude hook module that implements the Hook behavior.
+  Generate a new Claude hook module for internal development of the Claude library.
 
-  This task creates a new hook module that can be registered in your `.claude.exs` file
-  to extend Claude Code's functionality.
+  > **Note**: This generator is primarily intended for extending the Claude library itself.
+  > Due to current limitations with hook module loading in isolated script contexts,
+  > custom project hooks may not work as expected. We recommend using the built-in
+  > hooks provided by Claude.
+
+  This task creates a new hook module that can be registered in your `.claude.exs` file.
 
   ## Usage
 

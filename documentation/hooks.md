@@ -18,51 +18,30 @@ When you run `mix igniter.install claude`, it automatically sets up:
 
 ## Configuration
 
-Claude's hooks are configured in `.claude.exs`. You can add optional hooks or create custom ones:
+Claude's hooks are configured in `.claude.exs`. You can enable optional built-in hooks:
 
 ```elixir
 %{
   hooks: [
     # Optional: Enable related files suggestions
-    Claude.Hooks.PostToolUse.RelatedFiles,
-    
-    # Add your custom hooks
-    MyApp.Hooks.CustomChecker
+    Claude.Hooks.PostToolUse.RelatedFiles
   ]
 }
 ```
 
-## Creating Custom Hooks
+## Available Hooks
 
-### Using the Generator
+Claude provides several built-in hooks that cover common Elixir development needs:
 
-The easiest way to create a new hook is with the generator:
+### Included by Default
+- **ElixirFormatter** - Checks if .ex/.exs files need formatting after edits
+- **CompilationChecker** - Validates compilation after file changes
+- **PreCommitCheck** - Ensures code quality before git commits
 
-```bash
-mix claude.gen.hook MyCustomChecker --event post_tool_use --matcher "Write|Edit" --description "My custom validation hook"
-```
+### Optional Hooks
+- **RelatedFiles** - Suggests updating test files when lib files change (and vice versa)
 
-See the [Generators Documentation](generators.md#hook-generator) for full details.
-
-### Manual Creation
-
-You can also extend Claude with your own hooks using the `Claude.Hook` macro:
-
-```elixir
-defmodule MyApp.Hooks.CustomChecker do
-  use Claude.Hook,
-    event: :post_tool_use,
-    matcher: [:write, :edit],
-    description: "My custom validation hook"
-
-  @impl true
-  def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
-    # Your hook logic here
-    # Return :ok, {:block, reason}, {:allow, reason}, or {:deny, reason}
-    :ok
-  end
-end
-```
+To enable optional hooks, add them to your `.claude.exs` configuration as shown above.
 
 ## Important Notes
 
