@@ -46,18 +46,19 @@ See the [Generators Documentation](generators.md#hook-generator) for full detail
 
 ### Manual Creation
 
-You can also extend Claude with your own hooks using the `Claude.Hooks.Hook.Behaviour`:
+You can also extend Claude with your own hooks using the `Claude.Hook` macro:
 
 ```elixir
 defmodule MyApp.Hooks.CustomChecker do
-  use Claude.Hooks.Hook.Behaviour,
+  use Claude.Hook,
     event: :post_tool_use,
     matcher: [:write, :edit],
     description: "My custom validation hook"
 
   @impl true
-  def run(json_input) when is_binary(json_input) do
+  def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
     # Your hook logic here
+    # Return :ok, {:block, reason}, {:allow, reason}, or {:deny, reason}
     :ok
   end
 end
@@ -66,7 +67,8 @@ end
 ## Important Notes
 
 - **Format checking only**: The formatter hook only checks if files need formatting - it doesn't automatically format. This gives you control over when formatting happens.
-- **Feedback to Claude**: Hooks communicate with Claude through exit codes and stderr, allowing Claude to automatically see and respond to issues.
+- **JSON-only output**: All hooks now output JSON exclusively for consistent communication with Claude Code.
+- **Feedback to Claude**: Hooks communicate with Claude through structured JSON responses, allowing Claude to automatically see and respond to issues.
 - **Performance**: Hooks run with a default 60-second timeout, configurable per hook.
 
 For more details on hook events, configuration, and advanced usage, see the [official documentation](https://docs.anthropic.com/en/docs/claude-code/hooks).

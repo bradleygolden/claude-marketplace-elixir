@@ -86,7 +86,7 @@ To reference claude code sub agents, please see @ai/anthropic/claude_code/build_
 1. **Hook System** (`lib/claude/hooks.ex`)
    - Central registry for all Claude Code hooks
    - Implements installation/uninstallation logic
-   - Uses the `Claude.Hooks.Hook.Behaviour` behaviour for extensibility
+   - Uses the `Claude.Hook` macro for simplified hook creation with automatic JSON handling
 
 2. **Settings Management** (`lib/claude/core/settings.ex`)
    - Handles reading/writing `.claude/settings.json`
@@ -107,15 +107,17 @@ To reference claude code sub agents, please see @ai/anthropic/claude_code/build_
 
 ### Hook Implementation
 
-All hooks implement the `Claude.Hooks.Hook.Behaviour` which requires:
-- `config/0` - Returns hook configuration (type, command, matcher)
-- `run/2` - Executes the hook logic
-- `description/0` - Human-readable description
+All hooks use the `Claude.Hook` macro which provides:
+- Automatic JSON input parsing to event-specific structs
+- Simplified `handle/1` callback that receives parsed input
+- Built-in error handling and JSON output formatting
+- Return values: `:ok`, `{:block, reason}`, `{:allow, reason}`, or `{:deny, reason}`
 
 Current hooks:
-- **ElixirFormatter** - Automatically formats .ex/.exs files after edits
+- **ElixirFormatter** - Checks if .ex/.exs files need formatting after edits
 - **CompilationChecker** - Checks for compilation errors after edits
 - **PreCommitCheck** - Validates formatting, compilation, and unused dependencies before commits
+- **RelatedFiles** (optional) - Suggests updating related files based on naming patterns
 
 ### CLI Structure
 
@@ -130,7 +132,7 @@ Hook execution is handled via direct script invocation:
 ### Key Design Decisions
 
 1. **Project-scoped configuration** - All settings are stored in `.claude/settings.json` within the project directory
-2. **Behaviour-based extensibility** - New hooks can be added by implementing the behaviour
+2. **Macro-based extensibility** - New hooks can be added using the `Claude.Hook` macro
 3. **Fail-safe execution** - Hooks log errors but don't interrupt Claude's workflow
 4. **Zero configuration** - Works out of the box with Elixir conventions
 
@@ -138,10 +140,10 @@ Hook execution is handled via direct script invocation:
 
 The test suite is organized with these key patterns:
 - **Mimic-based mocking** - All system interactions are mocked for reliable testing
-- **Test support modules** - `test/support/` contains shared testing utilities
+- **Fixture-based testing** - `Claude.Test.Fixtures` provides comprehensive test data structures
+- **Simplified hook testing** - `Claude.Test.run_hook/2` helper for testing hooks with automatic JSON handling
 - **Parallel structure** - Tests mirror the `lib/` structure for easy navigation
-- **Mix task testing** - Special setup required using `Claude.TestHelpers.setup_mix_tasks/0`
-- **Temporary directories** - Use `Claude.TestHelpers.in_tmp/1` for filesystem tests
+- **Temporary directories** - Tests use isolated temporary directories for filesystem operations
 
 ### Sub-Agent System
 
