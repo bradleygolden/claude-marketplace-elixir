@@ -1,5 +1,5 @@
 defmodule Claude.HooksTest do
-  use Claude.Test.ClaudeCodeCase
+  use Claude.ClaudeCodeCase
 
   alias Claude.Hooks
 
@@ -86,90 +86,6 @@ defmodule Claude.HooksTest do
 
       assert Hooks.hook_identifier(Claude.Hooks.PreToolUse.PreCommitCheck) ==
                "pre_tool_use.pre_commit_check"
-    end
-  end
-
-  describe "Hook.Behaviour" do
-    @tag :skip
-    test "all hooks implement the required callbacks" do
-      # This test relied on all_hooks() which has been removed
-    end
-
-    test "hooks ignore user config in command generation" do
-      defmodule TestConfigurableHook do
-        use Claude.Hooks.Hook.Behaviour,
-          event: :post_tool_use,
-          matcher: :write,
-          description: "Test hook with user configuration"
-      end
-
-      # No config
-      config1 = TestConfigurableHook.config()
-      assert config1.command =~ "Hook command configured by installer"
-
-      # With config
-      user_config = %{
-        "patterns" => [
-          %{"source" => "*.ex", "target" => "*.exs"}
-        ]
-      }
-
-      config2 = TestConfigurableHook.config(user_config)
-      assert config2.command =~ "Hook command configured by installer"
-
-      # Commands should be the same since config is ignored
-      assert config1.command == config2.command
-    end
-
-    test "hooks with run/2 can accept user config" do
-      defmodule TestHookWithConfig do
-        use Claude.Hooks.Hook.Behaviour,
-          event: :post_tool_use,
-          matcher: :write,
-          description: "Test hook that accepts config"
-
-        @impl Claude.Hooks.Hook.Behaviour
-        def run(_json_input, user_config) do
-          patterns = Map.get(user_config, :patterns, [])
-          # Store the config for testing
-          send(self(), {:hook_executed, patterns})
-          :ok
-        end
-      end
-
-      test_config = %{
-        patterns: [
-          {"lib/**/*.ex", "test/**/*_test.exs"}
-        ],
-        custom_option: "test_value"
-      }
-
-      json_input =
-        Jason.encode!(%{
-          "hook_event_name" => "PostToolUse",
-          "tool_name" => "Write",
-          "tool_input" => %{
-            "file_path" => "lib/example.ex"
-          }
-        })
-
-      # Run hook with config
-      TestHookWithConfig.run(json_input, test_config)
-
-      # Should receive the patterns from config
-      assert_receive {:hook_executed, patterns}
-      assert patterns == [{"lib/**/*.ex", "test/**/*_test.exs"}]
-    end
-  end
-
-  describe "exit code behavior" do
-    @tag :skip
-    test "pre-tool hooks should be able to block with exit code 2" do
-      blocking_response = fn ->
-        System.halt(2)
-      end
-
-      assert_raise SystemExit, blocking_response
     end
   end
 end

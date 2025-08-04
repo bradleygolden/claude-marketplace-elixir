@@ -5,7 +5,8 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
   import ExUnit.CaptureIO
 
   setup do
-    Claude.TestHelpers.setup_mix_tasks()
+    Mix.Task.clear()
+    :ok
   end
 
   describe "claude.gen.hook" do
@@ -43,9 +44,8 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       assert content =~ ~r/Test formatting hook/
       assert content =~ ~r/event: :post_tool_use/
       assert content =~ ~r/matcher: \[:write, :edit\]/
-      assert content =~ ~r/@impl Claude\.Hooks\.Hook\.Behaviour/
-      assert content =~ ~r/def run\(json_input\) when is_binary\(json_input\) do/
-      assert content =~ ~r/Claude\.Hooks\.Events\.PostToolUse\.Input\.from_json/
+      assert content =~ ~r/@impl Claude\.Hook/
+      assert content =~ ~r/def handle\(input\) do/
     end
 
     test "generates a pre_tool_use hook module" do
@@ -79,8 +79,8 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       assert content =~ ~r/defmodule Claude\.Hooks\.PreToolUse\.BashValidator do/
       assert content =~ ~r/event: :pre_tool_use/
       assert content =~ ~r/matcher: :bash/
-      assert content =~ ~r/Claude\.Hooks\.Events\.PreToolUse\.Input\.from_json/
-      assert content =~ ~r/Claude\.Hooks\.Events\.PreToolUse\.Output\.allow\(\)/
+      assert content =~ ~r/@impl Claude\.Hook/
+      assert content =~ ~r/def handle\(input\) do/
     end
 
     test "generates a notification hook module" do
@@ -114,7 +114,8 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       assert content =~ ~r/defmodule Claude\.Hooks\.Notification\.CustomNotifier do/
       assert content =~ ~r/event: :notification/
       refute content =~ ~r/matcher:/
-      assert content =~ ~r/Claude\.Hooks\.Events\.Notification\.Input\.from_json/
+      assert content =~ ~r/@impl Claude\.Hook/
+      assert content =~ ~r/def handle\(input\) do/
     end
 
     test "generates a user_prompt_submit hook module" do
@@ -146,7 +147,8 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       content = Rewrite.Source.get(source, :content)
 
       assert content =~ ~r/defmodule Claude\.Hooks\.UserPromptSubmit\.PromptEnhancer do/
-      assert content =~ ~r/Claude\.Hooks\.Events\.UserPromptSubmit\.Input\.from_json/
+      assert content =~ ~r/@impl Claude\.Hook/
+      assert content =~ ~r/def handle\(input\) do/
     end
 
     test "generates a stop hook module" do
@@ -176,7 +178,8 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       content = Rewrite.Source.get(source, :content)
 
       assert content =~ ~r/defmodule Claude\.Hooks\.Stop\.SessionCleanup do/
-      assert content =~ ~r/Claude\.Hooks\.Events\.Stop\.Input\.from_json/
+      assert content =~ ~r/@impl Claude\.Hook/
+      assert content =~ ~r/def handle\(input\) do/
     end
 
     test "generates a subagent_stop hook module" do
@@ -229,7 +232,8 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       source = Rewrite.source!(igniter.rewrite, "lib/claude/hooks/pre_compact/compact_logger.ex")
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ ~r/Claude\.Hooks\.Events\.PreCompact\.Input\.from_json/
+      assert content =~ ~r/@impl Claude\.Hook/
+      assert content =~ ~r/def handle\(input\) do/
     end
 
     test "uses default matcher '*' when not specified for tool events" do
@@ -483,45 +487,6 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
 
       assert content =~ ~r/Claude\.Hooks\.PostToolUse\.FirstHook/
       assert content =~ ~r/hooks:\s*\[.*\]/s
-    end
-
-    test "generates hook with telemetry calls" do
-      igniter =
-        test_project()
-        |> Igniter.compose_task("claude.gen.hook", [
-          "TelemetryHook",
-          "--event",
-          "post_tool_use",
-          "--description",
-          "Hook with telemetry",
-          "--no-add-to-config"
-        ])
-
-      source =
-        Rewrite.source!(igniter.rewrite, "lib/claude/hooks/post_tool_use/telemetry_hook.ex")
-
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~ ~r/emit_telemetry\(:executed, %\{tool: input\.tool_name\}\)/
-    end
-
-    test "notification hook generates with telemetry" do
-      igniter =
-        test_project()
-        |> Igniter.compose_task("claude.gen.hook", [
-          "NotifyHook",
-          "--event",
-          "notification",
-          "--description",
-          "Notification with telemetry",
-          "--no-add-to-config"
-        ])
-
-      source = Rewrite.source!(igniter.rewrite, "lib/claude/hooks/notification/notify_hook.ex")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~
-               ~r/emit_telemetry\(:notification_received, %\{\}, %\{message: input\.message\}\)/
     end
 
     test "success notice includes all relevant information" do

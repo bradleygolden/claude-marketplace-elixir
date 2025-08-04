@@ -1,31 +1,8 @@
 defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
-  use Claude.Test.ClaudeCodeCase
-  import Claude.Test.HookTestHelpers
-  import Claude.Test.JsonHookTestHelpers
+  use Claude.ClaudeCodeCase, async: true, setup_project?: true
 
   alias Claude.Hooks.PreToolUse.PreCommitCheck
-
-  setup do
-    {test_dir, cleanup} =
-      setup_hook_test(
-        files: %{
-          ".formatter.exs" => "[\n  inputs: [\"**/*.{ex,exs}\"]\n]\n"
-        }
-      )
-
-    setup_json_hook_test()
-    on_exit(cleanup)
-    {:ok, test_dir: test_dir}
-  end
-
-  describe "config/0" do
-    test "returns proper hook configuration" do
-      config = PreCommitCheck.config()
-
-      assert config.type == "command"
-      assert config.command =~ "Hook command configured by installer"
-    end
-  end
+  alias Claude.Test.Fixtures
 
   describe "description/0" do
     test "returns a description" do
@@ -44,7 +21,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
   describe "run/1 - git commit detection" do
     test "detects and validates git commit commands", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/good.ex", """
+      create_file(test_dir, "lib/good.ex", """
       defmodule Good do
         def hello do
           :world
@@ -52,23 +29,19 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
+      assert File.exists?(Path.join(test_dir, ".formatter.exs"))
+      assert File.exists?(Path.join(test_dir, "mix.exs"))
+
       System.cmd("mix", ["format"], cd: test_dir)
 
-      input_json =
-        build_tool_input(
-          tool_name: "Bash",
-          file_path: "dummy",
-          extra: %{
-            "session_id" => "test123",
-            "hook_event_name" => "PreToolUse",
-            "tool_input" => %{"command" => "git commit -m 'test commit'"}
-          }
-        )
-
       json =
-        run_and_capture_json(fn ->
-          PreCommitCheck.run(input_json)
-        end)
+        run_hook(
+          PreCommitCheck,
+          Fixtures.pre_tool_use_input(
+            tool_name: "Bash",
+            tool_input: Fixtures.tool_input(:bash, command: "git commit -m 'test commit'")
+          )
+        )
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
       assert json["hookSpecificOutput"]["permissionDecisionReason"] =~ "Pre-commit checks passed"
@@ -83,10 +56,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           }
         })
 
-      json =
-        run_and_capture_json(fn ->
-          PreCommitCheck.run(input_json)
-        end)
+      json = run_hook(PreCommitCheck, input_json)
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
       refute Map.has_key?(json["hookSpecificOutput"], "permissionDecisionReason")
@@ -94,14 +64,12 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
     test "handles invalid JSON gracefully" do
       json =
-        run_and_capture_json(fn ->
+        capture_json_stdout(fn ->
           PreCommitCheck.run("invalid json")
         end)
 
-      assert json["hookSpecificOutput"]["permissionDecision"] == "deny"
-
-      assert json["hookSpecificOutput"]["permissionDecisionReason"] =~
-               "Failed to parse hook input JSON"
+      assert json["decision"] == "block"
+      assert json["reason"] =~ "Hook crashed"
     end
 
     test "handles missing fields gracefully" do
@@ -110,28 +78,19 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
           "other_field" => "value"
         })
 
-      json =
-        run_and_capture_json(fn ->
-          PreCommitCheck.run(input_json)
-        end)
+      json = run_hook(PreCommitCheck, input_json)
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
     end
 
     test "ignores non-Bash tools" do
-      input_json =
-        build_tool_input(
+      input =
+        Fixtures.pre_tool_use_input(
           tool_name: "Write",
-          file_path: "test.ex",
-          extra: %{
-            "tool_input" => %{"content" => "some content"}
-          }
+          tool_input: Fixtures.tool_input(:write, file_path: "test.ex", content: "some content")
         )
 
-      json =
-        run_and_capture_json(fn ->
-          PreCommitCheck.run(input_json)
-        end)
+      json = run_hook(PreCommitCheck, input)
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
     end
@@ -139,7 +98,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
   describe "commit validation functionality" do
     test "blocks commit when formatting issues exist", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/unformatted.ex", """
+      create_file(test_dir, "lib/unformatted.ex", """
       defmodule Unformatted  do
         def hello  do
           :world
@@ -147,20 +106,13 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
       end
       """)
 
-      input_json =
-        build_tool_input(
+      input =
+        Fixtures.pre_tool_use_input(
           tool_name: "Bash",
-          file_path: "dummy",
-          extra: %{
-            "hook_event_name" => "PreToolUse",
-            "tool_input" => %{"command" => "git commit -m 'test'"}
-          }
+          tool_input: Fixtures.tool_input(:bash, command: "git commit -m 'test'")
         )
 
-      json =
-        run_and_capture_json(fn ->
-          PreCommitCheck.run(input_json)
-        end)
+      json = run_hook(PreCommitCheck, input)
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "deny"
 
@@ -169,7 +121,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "blocks commit when compilation errors exist", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/broken.ex", """
+      create_file(test_dir, "lib/broken.ex", """
       defmodule Broken do
         def hello(name) do
           "Hello, \#{undefined_var}!"
@@ -179,22 +131,13 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
 
       System.cmd("mix", ["format"], cd: test_dir)
 
-      input_json =
-        build_tool_input(
+      input =
+        Fixtures.pre_tool_use_input(
           tool_name: "Bash",
-          file_path: "dummy",
-          extra: %{
-            "hook_event_name" => "PreToolUse",
-            "tool_input" => %{"command" => "git commit -m 'test'"}
-          }
+          tool_input: Fixtures.tool_input(:bash, command: "git commit -m 'test'")
         )
 
-      json =
-        run_and_capture_json(fn ->
-          capture_io(:stderr, fn ->
-            PreCommitCheck.run(input_json)
-          end)
-        end)
+      json = run_hook(PreCommitCheck, input, stderr: true)
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "deny"
 
@@ -203,54 +146,40 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheckTest do
     end
 
     test "blocks commit when unused dependencies exist", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/good.ex", """
+      create_file(test_dir, "lib/good.ex", """
       defmodule Good do
         def hello, do: :world
       end
       """)
 
-      input_json =
-        build_tool_input(
+      input =
+        Fixtures.pre_tool_use_input(
           tool_name: "Bash",
-          file_path: "dummy",
-          extra: %{
-            "hook_event_name" => "PreToolUse",
-            "tool_input" => %{"command" => "git commit -m 'test'"}
-          }
+          tool_input: Fixtures.tool_input(:bash, command: "git commit -m 'test'")
         )
 
-      json =
-        run_and_capture_json(fn ->
-          capture_io(:stderr, fn ->
-            PreCommitCheck.run(input_json)
-          end)
-        end)
+      json = run_hook(PreCommitCheck, input, stderr: true)
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "allow" ||
                json["hookSpecificOutput"]["permissionDecision"] == "deny"
     end
 
     test "allows commit when all validations pass", %{test_dir: test_dir} do
-      create_elixir_file(test_dir, "lib/good.ex", """
+      create_file(test_dir, "lib/good.ex", """
       defmodule Good do
         def hello, do: :world
       end
       """)
 
-      input_json =
-        build_tool_input(
+      System.cmd("mix", ["format"], cd: test_dir)
+
+      input =
+        Fixtures.pre_tool_use_input(
           tool_name: "Bash",
-          file_path: "dummy",
-          extra: %{
-            "hook_event_name" => "PreToolUse",
-            "tool_input" => %{"command" => "git commit -m 'test'"}
-          }
+          tool_input: Fixtures.tool_input(:bash, command: "git commit -m 'test'")
         )
 
-      json =
-        run_and_capture_json(fn ->
-          PreCommitCheck.run(input_json)
-        end)
+      json = run_hook(PreCommitCheck, input)
 
       assert json["hookSpecificOutput"]["permissionDecision"] == "allow"
       assert json["hookSpecificOutput"]["permissionDecisionReason"] =~ "Pre-commit checks passed"

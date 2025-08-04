@@ -71,7 +71,6 @@ defmodule Claude.Hooks.Events.StopTest do
 
       assert decoded["session_id"] == "test-123"
       assert decoded["stop_hook_active"] == false
-      # Note: Stop events don't have cwd field
       refute Map.has_key?(decoded, "cwd")
     end
   end

@@ -28,108 +28,83 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
               # When a specific file changes, suggest specific targets
               {"lib/myapp/user.ex", "test/myapp/user_test.exs"},
               
-              # When controller files change, suggest updating multiple related files
-              {"lib/myapp_web/controllers/*_controller.ex",
-               ["lib/myapp_web/views/*_view.ex", "lib/myapp_web/templates/*/*.html.heex"]},
+              # When controller changes, suggest view and template
+              {"lib/myapp_web/controllers/*_controller.ex", [
+                "lib/myapp_web/views/*_view.ex",
+                "lib/myapp_web/templates/*/*.html.heex"
+              ]},
               
-              # Glob patterns support standard wildcards
-              {"lib/myapp/schemas/*.ex",
-               ["test/myapp/schemas/*_test.exs", "test/factories/*_factory.ex"]}
+              # Bidirectional - when test changes, suggest lib file
+              {"test/**/*_test.exs", "lib/**/*.ex"}
             ]
           }}
         ]
       }
 
-  ### Available Options
+  ## How It Works
 
-  - `:patterns` - A list of `{source_glob, target_globs}` tuples where:
-    - `source_glob` is a glob pattern to match modified files
-    - `target_globs` is either a single glob pattern or a list of glob patterns
-    - Both source and target patterns are relative to the project root
+  This hook:
+  1. Monitors file edit operations (Write, Edit, MultiEdit)
+  2. Checks if the modified file matches any configured patterns
+  3. Suggests related files that might need updates
+  4. Outputs a reminder to Claude to consider updating those files
 
-  ## Pattern Format
+  ## Pattern Syntax
 
-  Patterns use standard glob syntax:
-  - `*` matches any sequence of characters within a single path segment
-  - `**` matches any sequence of path segments (including none)
-  - `?` matches any single character
-  - `[abc]` matches any character in the set
-  - `{foo,bar}` matches either "foo" or "bar"
+  Patterns support:
+  - Glob patterns: `lib/**/*.ex` matches any .ex file under lib/
+  - Direct paths: `lib/myapp/user.ex` matches exactly that file
+  - Multiple targets: Use an array for the target to suggest multiple files
 
-  When a file is modified:
-  1. The file path is checked against each source glob pattern
-  2. If it matches, all files matching the target glob patterns are suggested
+  ## Default Patterns
 
-  ## Default Behavior
+  By default, the hook suggests:
+  - Test files when lib files are modified (lib/ -> test/)
+  - Lib files when test files are modified (test/ -> lib/)
 
-  If no configuration is provided, the hook uses built-in patterns that map:
-  - `lib/**/*.ex` files to their corresponding `test/**/*_test.exs` files
-  - `test/**/*_test.exs` files back to their `lib/**/*.ex` files
-
-  ## Customization via Subclassing
+  ## Custom Hook Implementation
 
   For more complex customization, you can create your own hook module:
 
       defmodule MyProject.Hooks.RelatedFiles do
-        use Claude.Hooks.Hook.Behaviour,
+        use Claude.Hook,
           event: :post_tool_use,
           matcher: [:write, :edit, :multi_edit],
           description: "Custom related files for MyProject"
-
-        # Copy the implementation from Claude.Hooks.PostToolUse.RelatedFiles
-        # and override default_patterns/0
+        
+        @impl true
+        def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
+          # Your custom logic here
+          :ok
+        end
       end
   """
 
-  use Claude.Hooks.Hook.Behaviour,
+  use Claude.Hook,
     event: :post_tool_use,
     matcher: [:write, :edit, :multi_edit],
     description: "Suggests updating related files based on naming patterns"
 
   alias Claude.Hooks.{Helpers, JsonOutput}
 
-  @impl Claude.Hooks.Hook.Behaviour
-  def run(:eof), do: :ok
+  @impl true
+  def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
+    if input.tool_name in ["Write", "Edit", "MultiEdit"] do
+      case extract_file_path(input.tool_input) do
+        {:ok, file_path} ->
+          related_files = find_related_files(file_path)
 
-  def run(json_input) when is_binary(json_input) do
-    case Claude.Hooks.Events.PostToolUse.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.PostToolUse.Input{} = input} ->
-        process_file_change(input)
+          if related_files != [] do
+            suggest_updates(file_path, related_files)
+          else
+            :ok
+          end
 
-      {:error, _} ->
-        JsonOutput.success(suppress_output: true)
-        |> JsonOutput.write_and_exit()
-    end
-  end
-
-  @impl Claude.Hooks.Hook.Behaviour
-  def run(json_input, _user_config) when is_binary(json_input) do
-    run(json_input)
-  end
-
-  defp process_file_change(input) do
-    with :ok <- validate_tool(input.tool_name),
-         {:ok, file_path} <- extract_file_path(input.tool_input) do
-      related_files = find_related_files(file_path)
-
-      if related_files != [] do
-        suggest_updates(file_path, related_files)
-      else
-        JsonOutput.success(suppress_output: true)
-        |> JsonOutput.write_and_exit()
+        _ ->
+          :ok
       end
     else
-      _ ->
-        JsonOutput.success(suppress_output: true)
-        |> JsonOutput.write_and_exit()
-    end
-  end
-
-  defp validate_tool(tool_name) do
-    if tool_name in Helpers.edit_tools() do
       :ok
-    else
-      {:skip, :not_edit_tool}
     end
   end
 
@@ -138,12 +113,17 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
   end
 
   defp find_related_files(file_path) do
+    project_dir = Helpers.get_project_dir(file_path)
+
+    relative_path = Path.relative_to(file_path, project_dir)
+
     default_patterns()
     |> Enum.flat_map(fn {source_glob, target_transform} ->
-      if glob_match?(file_path, source_glob) do
+      if glob_match?(relative_path, source_glob) do
         target_transform
         |> List.wrap()
-        |> Enum.flat_map(&transform_path(file_path, source_glob, &1))
+        |> Enum.flat_map(&transform_path(relative_path, source_glob, &1))
+        |> Enum.map(&Path.join(project_dir, &1))
         |> Enum.filter(&File.exists?/1)
       else
         []
@@ -186,75 +166,54 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
         [transformed]
 
       true ->
-        Path.wildcard(target_pattern)
+        []
     end
   end
 
   defp glob_match?(path, pattern) do
-    relative_path = Path.relative_to_cwd(path)
-
     regex_pattern =
       pattern
       |> String.replace(".", "\\.")
-      |> String.replace("?", ".")
-      |> handle_double_star()
+      # ** can match zero or more subdirectories
+      |> String.replace("/**", "(?:/.+)?")
       |> String.replace("*", "[^/]*")
       |> then(&"^#{&1}$")
+      |> Regex.compile!()
 
-    case Regex.compile(regex_pattern) do
-      {:ok, regex} ->
-        Regex.match?(regex, path) or Regex.match?(regex, relative_path)
-
-      {:error, _} ->
-        false
-    end
-  end
-
-  defp handle_double_star(pattern) do
-    pattern
-    |> String.replace("/**/", "(?:/.*/|/)")
-    |> String.replace("/**", "(?:/.*)?")
-    |> String.replace("**/", "(?:.*/)?")
-  end
-
-  defp suggest_updates(modified_file, related_files) do
-    message = build_feedback_message(modified_file, related_files)
-
-    JsonOutput.block_post_tool(message)
-    |> JsonOutput.write_and_exit()
-  end
-
-  defp build_feedback_message(modified_file, related_files) do
-    files_list =
-      related_files
-      |> Enum.map(&"  - #{&1}")
-      |> Enum.join("\n")
-
-    """
-    ❗ Related files need updating:
-
-    You modified: #{modified_file}
-
-    Please also review and decide whether to update these related files:
-    #{files_list}
-
-    Ensure these files reflect any changes to:
-    - Function signatures
-    - Module names
-    - New functions or modules added
-    - Functions or modules removed
-    - Behavioral changes
-    - Type specs or documentation
-    """
+    Regex.match?(regex_pattern, path)
   end
 
   defp default_patterns do
     [
-      # Basic lib -> test mapping
+      # When lib files change, suggest their tests
       {"lib/**/*.ex", "test/**/*_test.exs"},
-
-      # Test -> lib mapping (reverse)
+      # When test files change, suggest their lib files
       {"test/**/*_test.exs", "lib/**/*.ex"}
     ]
+  end
+
+  defp suggest_updates(modified_file, related_files) do
+    message = format_suggestion(modified_file, related_files)
+    {:block, message}
+  end
+
+  defp format_suggestion(modified_file, related_files) do
+    # Get the project directory to make paths relative for display
+    project_dir = Helpers.get_project_dir(modified_file)
+
+    # Make paths relative for cleaner display
+    relative_modified = Path.relative_to(modified_file, project_dir)
+    relative_files = Enum.map(related_files, &Path.relative_to(&1, project_dir))
+
+    files_list = Enum.map_join(relative_files, "\n", &"  - #{&1}")
+
+    """
+    Related files need updating:
+
+    You modified: #{relative_modified}
+
+    Consider updating:
+    #{files_list}
+    """
   end
 end

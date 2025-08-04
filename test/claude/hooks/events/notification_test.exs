@@ -72,7 +72,6 @@ defmodule Claude.Hooks.Events.NotificationTest do
 
   describe "Output" do
     test "Output is aliased to Common.SimpleOutput" do
-      # Notification.Output should be Common.SimpleOutput
       output = Notification.Output.success("Logged")
       assert %Claude.Hooks.Events.Common.SimpleOutput{} = output
     end

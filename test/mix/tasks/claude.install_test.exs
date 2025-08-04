@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.Claude.InstallTest do
-  use Claude.Test.ClaudeCodeCase, trap_halts: false
+  use Claude.ClaudeCodeCase, trap_halts: false
 
   import Igniter.Test,
     except: [test_project: 0, test_project: 1, phx_test_project: 0, phx_test_project: 1]

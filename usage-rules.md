@@ -20,7 +20,7 @@ mix claude.install
 
 ## Hook System
 
-Claude provides a behavior-based hook system that integrates with Claude Code. All hooks implement `Claude.Hooks.Hook.Behaviour`.
+Claude provides a DSL-based hook system that integrates with Claude Code. All hooks use the `Claude.Hook` module.
 
 ### Built-in Hooks
 
@@ -78,80 +78,56 @@ The hook uses glob patterns (`*` matches any characters except `/`, `**` matches
 
 ### Creating Custom Hooks
 
-The easiest way to create a hook is using the `use` macro:
+Create a hook using the `Claude.Hook` DSL:
 
 ```elixir
 defmodule MyProject.MyHook do
-  use Claude.Hooks.Hook.Behaviour,
+  use Claude.Hook,
     event: :post_tool_use,
     matcher: [:edit, :write],
     description: "My custom hook that runs after edits"
 
-  @impl Claude.Hooks.Hook.Behaviour
-  def run(json_input) when is_binary(json_input) do
+  @impl Claude.Hook
+  def handle(input) do
     # Your hook logic here
+    # input is a parsed struct, not raw JSON
     :ok
   end
 end
 ```
 
-#### Options for `use` macro:
+#### Options for `use Claude.Hook`:
 
-- `:event` - Hook event type (default: `:post_tool_use`)
+- `:event` - Hook event type (required)
   - `:pre_tool_use`
   - `:post_tool_use`
   - `:user_prompt_submit`
   - `:notification`
   - `:stop`
   - `:subagent_stop`
-- `:matcher` - Tool matcher pattern (default: `:*`)
+  - `:pre_compact`
+- `:matcher` - Tool matcher pattern (optional, only for pre/post_tool_use)
   - Can be a single atom: `:edit`, `:write`, `:bash`
   - Can be a list: `[:edit, :write, :multi_edit]`
   - Can be `:*` to match all tools
-- `:description` - Human-readable description
+  - Can be a string with pipe separators: `"Write|Edit"`
+- `:description` - Human-readable description (optional)
 
-For more documentation about hooks see official documentation below:
+The `handle/1` callback receives a parsed input struct specific to the event type:
+- `Claude.Hooks.Events.PreToolUse.Input`
+- `Claude.Hooks.Events.PostToolUse.Input`
+- `Claude.Hooks.Events.UserPromptSubmit.Input`
+- `Claude.Hooks.Events.Notification.Input`
+- `Claude.Hooks.Events.Stop.Input`
+- `Claude.Hooks.Events.SubagentStop.Input`
+- `Claude.Hooks.Events.PreCompact.Input`
+
+For more documentation about hooks see official documentation:
 
   * https://docs.anthropic.com/en/docs/claude-code/hooks
   * https://docs.anthropic.com/en/docs/claude-code/hooks-guide
 
 ALWAYS consult the official documentation before implementing custom hooks.
-
-#### Manual Implementation
-
-If you need more control, you can implement the behaviour manually:
-
-```elixir
-defmodule MyProject.MyHook do
-  @behaviour Claude.Hooks.Hook.Behaviour
-
-  @impl true
-  def config do
-    %Claude.Hooks.Hook{
-      type: "command",
-      command: "# Hook command configured by ScriptInstaller"
-    }
-  end
-
-  @impl true
-  def run(json_input) when is_binary(json_input) do
-    # Your hook logic here
-    :ok
-  end
-
-  @impl true
-  def description do
-    "My custom hook description"
-  end
-
-  defp identifier do
-    __MODULE__
-    |> Module.split()
-    |> Enum.map(&Macro.underscore/1)
-    |> Enum.join(".")
-  end
-end
-```
 
 ## MCP Server Support
 

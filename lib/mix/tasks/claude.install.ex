@@ -292,7 +292,8 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp normalize_hook_module(hook_module) when is_atom(hook_module) do
-    if Code.ensure_loaded?(hook_module) and function_exported?(hook_module, :config, 0) do
+    if Code.ensure_loaded?(hook_module) and
+         (function_exported?(hook_module, :run, 1) or function_exported?(hook_module, :config, 0)) do
       script_name = hook_module_to_script_name(hook_module)
       script_path = ".claude/hooks/#{script_name}"
 
@@ -313,7 +314,12 @@ defmodule Mix.Tasks.Claude.Install do
       matchers =
         if function_exported?(hook_module, :__hook_matcher__, 0) do
           matcher = hook_module.__hook_matcher__()
-          String.split(matcher, "|")
+
+          if matcher do
+            String.split(matcher, "|")
+          else
+            []
+          end
         else
           []
         end
@@ -639,20 +645,13 @@ defmodule Mix.Tasks.Claude.Install do
     """
     #!/usr/bin/env elixir
     # Hook script for #{description}
-    # This script is called with JSON input via stdin from Claude Code
 
-    # Install dependencies
     Mix.install(#{deps})
 
-    # Read JSON from stdin
     input = IO.read(:stdio, :eof)
 
-    # Run the hook module
-    # The hook now handles JSON output internally using JsonOutput.write_and_exit/1
-    # which will output JSON and exit with code 0
     #{module_name}.run(input)
 
-    # If we reach here, the hook didn't exit properly, so we exit with success
     System.halt(0)
     """
   end

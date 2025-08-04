@@ -71,14 +71,12 @@ defmodule Claude.Hooks.Events.SubagentStopTest do
 
       assert decoded["session_id"] == "test-123"
       assert decoded["stop_hook_active"] == true
-      # Note: SubagentStop events don't have cwd field
       refute Map.has_key?(decoded, "cwd")
     end
   end
 
   describe "Output" do
     test "Output has same interface as Stop.Output" do
-      # SubagentStop.Output has the same interface as Stop.Output
       output = SubagentStop.Output.allow()
       assert %Claude.Hooks.Events.SubagentStop.Output{} = output
     end

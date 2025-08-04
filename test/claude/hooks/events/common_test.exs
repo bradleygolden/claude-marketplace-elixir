@@ -171,8 +171,6 @@ defmodule Claude.Hooks.Events.CommonTest do
     test "write_and_exit/1 writes JSON to stdout (mocked)" do
       output = Common.SimpleOutput.success("Test")
 
-      # Since write_and_exit calls System.halt, we can't test it directly
-      # but we can verify the JSON structure it would output
       json = Jason.encode!(output)
       assert json =~ ~s("exitCode":0)
       assert json =~ ~s("stdout":"Test")

@@ -98,60 +98,74 @@ defmodule Claude.Hooks.Helpers do
   end
 
   @doc """
-  Runs a function in the project directory, automatically changing back afterward.
+  Gets the project directory from environment or file path.
 
   The project directory is determined from the CLAUDE_PROJECT_DIR environment
-  variable, or falls back to the directory of the given file.
+  variable, or falls back to the directory of the given file, or the current
+  working directory.
   """
-  def in_project_dir(file_path \\ nil, fun) do
-    project_dir =
-      System.get_env("CLAUDE_PROJECT_DIR") ||
-        (file_path && Path.dirname(file_path)) ||
-        File.cwd!()
+  def get_project_dir(file_path \\ nil) do
+    System.get_env("CLAUDE_PROJECT_DIR") ||
+      (file_path && Path.dirname(file_path)) ||
+      File.cwd!()
+  end
 
-    original_dir = File.cwd!()
+  @doc """
+  Runs a system command in the appropriate project directory.
 
-    try do
-      File.cd!(project_dir)
-      fun.()
-    after
-      File.cd!(original_dir)
-    end
+  This is a wrapper around System.cmd that automatically determines and sets
+  the working directory for the command based on the file being operated on.
+
+  ## Options
+    - :file_path - The file path to derive the project directory from
+    - :cd - Override the directory to run the command in
+    - All other options are passed through to System.cmd
+
+  ## Examples
+
+      # Run in directory of file being edited
+      system_cmd("mix", ["format", "lib/foo.ex"], file_path: "lib/foo.ex")
+      
+      # Run in explicit directory
+      system_cmd("mix", ["test"], cd: "/path/to/project")
+      
+      # Run in current/env directory
+      system_cmd("mix", ["compile"])
+  """
+  def system_cmd(command, args, opts \\ []) do
+    {file_path, opts} = Keyword.pop(opts, :file_path)
+    {cd_override, opts} = Keyword.pop(opts, :cd)
+
+    dir = cd_override || get_project_dir(file_path)
+
+    System.cmd(command, args, [{:cd, dir} | opts])
   end
 
   @doc """
   Runs a command and returns a standardized result.
 
   Options:
-    - :cd - Directory to run the command in
+    - :file_path - File path to derive project directory from
+    - :cd - Directory to run the command in (overrides file_path)
     - :check_exit - Whether to check exit code (default: true)
     - :stderr_to_stdout - Redirect stderr to stdout (default: true)
 
   Returns :ok, {:error, output}, or {:warning, output}.
   """
   def run_command(command, args, opts \\ []) do
-    dir = Keyword.get(opts, :cd)
     check_exit = Keyword.get(opts, :check_exit, true)
     stderr_to_stdout = Keyword.get(opts, :stderr_to_stdout, true)
 
-    fun = fn ->
-      case System.cmd(command, args, stderr_to_stdout: stderr_to_stdout) do
-        {_output, 0} ->
-          :ok
+    case system_cmd(command, args, Keyword.put(opts, :stderr_to_stdout, stderr_to_stdout)) do
+      {_output, 0} ->
+        :ok
 
-        {output, _exit_code} ->
-          if check_exit do
-            {:error, output}
-          else
-            {:warning, output}
-          end
-      end
-    end
-
-    if dir do
-      in_project_dir(dir, fun)
-    else
-      fun.()
+      {output, _exit_code} ->
+        if check_exit do
+          {:error, output}
+        else
+          {:warning, output}
+        end
     end
   end
 

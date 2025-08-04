@@ -83,14 +83,12 @@ defmodule Claude.Hooks.Events.PreCompactTest do
       assert decoded["session_id"] == "test-123"
       assert decoded["trigger"] == "auto"
       assert decoded["custom_instructions"] == ""
-      # Note: PreCompact events don't have cwd field
       refute Map.has_key?(decoded, "cwd")
     end
   end
 
   describe "Output" do
     test "Output is aliased to Common.SimpleOutput" do
-      # PreCompact.Output should be Common.SimpleOutput
       output = PreCompact.Output.success("Compaction allowed")
       assert %Claude.Hooks.Events.Common.SimpleOutput{} = output
     end

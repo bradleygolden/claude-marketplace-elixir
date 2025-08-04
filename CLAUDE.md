@@ -35,7 +35,7 @@ mix test --trace
 mix test --trace test/**/*_test.exs
 
 # Important: Tests use Mimic for mocking - see test/test_helper.exs
-# Mock modules include: Mix.Task, System, File, IO, Claude.Hooks.Telemetry
+# Mock modules include: Mix.Task, System, File, IO
 ```
 
 ### Code Quality

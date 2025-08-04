@@ -287,7 +287,7 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
         use_opts
       end
 
-    run_implementation = generate_run_implementation(event)
+    handle_implementation = generate_handle_implementation(event)
 
     """
     defmodule #{inspect(module)} do
@@ -301,14 +301,14 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
       - https://docs.anthropic.com/en/docs/claude-code/hooks-guide
       \"\"\"
       
-      use Claude.Hooks.Hook.Behaviour,
+      use Claude.Hook,
         #{Enum.join(use_opts, ",\n    ")}
       
       alias Claude.Hooks.Helpers
       
-      @impl Claude.Hooks.Hook.Behaviour
-      def run(json_input) when is_binary(json_input) do
-        #{run_implementation}
+      @impl Claude.Hook
+      def handle(input) do
+        #{handle_implementation}
       end
     end
     """
@@ -333,91 +333,79 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
   defp format_matcher_for_display(matchers) when is_list(matchers), do: Enum.join(matchers, ", ")
   defp format_matcher_for_display(matcher) when is_binary(matcher), do: matcher
 
-  defp generate_run_implementation(:post_tool_use) do
+  defp generate_handle_implementation(:post_tool_use) do
     """
-    case Claude.Hooks.Events.PostToolUse.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.PostToolUse.Input{} = input} ->
-        emit_telemetry(:executed, %{tool: input.tool_name})
+    # Check the tool being used
+    case input.tool_input do
+      %{file_path: path} when is_binary(path) ->
+        # File operation - you can process the file path
+        IO.inspect(path, label: "File modified")
         :ok
         
-      {:error, _reason} ->
+      _ ->
+        # Other tool or no file path
         :ok
     end
     """
   end
 
-  defp generate_run_implementation(:pre_tool_use) do
+  defp generate_handle_implementation(:pre_tool_use) do
     """
-    case Claude.Hooks.Events.PreToolUse.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.PreToolUse.Input{} = input} ->
-        output = Claude.Hooks.Events.PreToolUse.Output.allow()
-        IO.puts(Jason.encode!(output))
-        :ok
+    # Check what tool is about to be used
+    case input.tool_name do
+      "Bash" ->
+        # Example: Allow all bash commands
+        {:allow, nil}
         
-      {:error, _reason} ->
+      _ ->
+        # Allow other tools
         :ok
     end
     """
   end
 
-  defp generate_run_implementation(:user_prompt_submit) do
+  defp generate_handle_implementation(:user_prompt_submit) do
     """
-    case Claude.Hooks.Events.UserPromptSubmit.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.UserPromptSubmit.Input{} = input} ->
-        :ok
-        
-      {:error, _reason} ->
-        :ok
-    end
+    # Process the user's prompt
+    IO.inspect(input.prompt, label: "User prompt")
+
+    # You can block the prompt or add context
+    # {:block, "Reason for blocking"}
+    # {:add_context, "Additional context"}
+
+    :ok
     """
   end
 
-  defp generate_run_implementation(:notification) do
+  defp generate_handle_implementation(:notification) do
     """
-    case Claude.Hooks.Events.Notification.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.Notification.Input{} = input} ->
-        emit_telemetry(:notification_received, %{}, %{message: input.message})
-        :ok
-        
-      {:error, _reason} ->
-        :ok
-    end
+    # Handle notification
+    IO.inspect(input.message, label: "Notification")
+    :ok
     """
   end
 
-  defp generate_run_implementation(:stop) do
+  defp generate_handle_implementation(:stop) do
     """
-    case Claude.Hooks.Events.Stop.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.Stop.Input{} = input} ->
-        :ok
-        
-      {:error, _reason} ->
-        :ok
-    end
+    # Claude is about to stop
+    # You can block this with {:block, "reason"}
+    :ok
     """
   end
 
-  defp generate_run_implementation(:subagent_stop) do
+  defp generate_handle_implementation(:subagent_stop) do
     """
-    case Claude.Hooks.Events.SubagentStop.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.SubagentStop.Input{} = input} ->
-        :ok
-        
-      {:error, _reason} ->
-        :ok
-    end
+    # Subagent is about to stop
+    # You can block this with {:block, "reason"}
+    :ok
     """
   end
 
-  defp generate_run_implementation(:pre_compact) do
+  defp generate_handle_implementation(:pre_compact) do
     """
-    case Claude.Hooks.Events.PreCompact.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.PreCompact.Input{} = input} ->
-        :ok
-        
-      {:error, _reason} ->
-        :ok
-    end
+    # Compaction is about to happen
+    IO.inspect(input.trigger, label: "Compact trigger")
+    :ok
     """
   end
 

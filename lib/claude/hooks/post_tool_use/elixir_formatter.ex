@@ -6,87 +6,49 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   and alerts when formatting is needed without actually modifying the files.
   """
 
-  use Claude.Hooks.Hook.Behaviour,
+  use Claude.Hook,
     event: :post_tool_use,
     matcher: [:write, :edit, :multi_edit],
     description: "Checks if Elixir files need formatting after Claude edits them"
 
-  alias Claude.Hooks.{Helpers, JsonOutput}
+  alias Claude.Hooks.Helpers
 
-  @elixir_extensions [".ex", ".exs"]
+  @impl true
+  def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
+    if input.tool_name in ["Write", "Edit", "MultiEdit"] do
+      case input.tool_input do
+        %{file_path: path} when is_binary(path) ->
+          if Path.extname(path) in [".ex", ".exs"] do
+            format_file(path)
+          else
+            :ok
+          end
 
-  @impl Claude.Hooks.Hook.Behaviour
-  def run(:eof), do: :ok
-
-  def run(json_input) when is_binary(json_input) do
-    case Claude.Hooks.Events.PostToolUse.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.PostToolUse.Input{} = input} ->
-        with :ok <- validate_tool(input.tool_name),
-             {:ok, file_path} <- extract_file_path(input.tool_input),
-             :ok <- validate_elixir_file(file_path) do
-          format_file(file_path)
-        else
-          {:skip, _reason} ->
-            JsonOutput.success(suppress_output: true)
-            |> JsonOutput.write_and_exit()
-
-          {:error, reason} ->
-            # Use JSON output to provide feedback to Claude
-            JsonOutput.block_post_tool("Claude format hook error: #{reason}")
-            |> JsonOutput.write_and_exit()
-        end
-
-      {:error, _} ->
-        JsonOutput.success(suppress_output: true)
-        |> JsonOutput.write_and_exit()
-    end
-  end
-
-  defp validate_tool(tool_name) do
-    if tool_name in Helpers.edit_tools() do
-      :ok
+        _ ->
+          :ok
+      end
     else
-      {:skip, :not_edit_tool}
-    end
-  end
-
-  defp extract_file_path(tool_input) do
-    Helpers.extract_file_path(tool_input)
-  end
-
-  defp validate_elixir_file(file_path) do
-    if Helpers.has_extension?(file_path, @elixir_extensions) do
       :ok
-    else
-      {:skip, :not_elixir_file}
     end
   end
 
   defp format_file(file_path) do
-    Helpers.in_project_dir(file_path, fn ->
-      case System.cmd("mix", ["format", "--check-formatted", file_path], stderr_to_stdout: true) do
-        {_output, 0} ->
-          # File is properly formatted
-          JsonOutput.success(suppress_output: true)
-          |> JsonOutput.write_and_exit()
+    case Helpers.system_cmd("mix", ["format", "--check-formatted", file_path],
+           file_path: file_path,
+           stderr_to_stdout: true
+         ) do
+      {_output, 0} ->
+        :ok
 
-        {output, exit_code} ->
-          if exit_code == 1 do
-            # File needs formatting - provide feedback to Claude
-            JsonOutput.block_post_tool(
-              "File needs formatting: #{file_path}. Run 'mix format #{file_path}' to fix."
-            )
-            |> JsonOutput.write_and_exit()
-          else
-            # Other error occurred
-            JsonOutput.block_post_tool("Mix format check failed: #{output}")
-            |> JsonOutput.write_and_exit()
-          end
-      end
-    end)
+      {output, exit_code} ->
+        if exit_code == 1 do
+          {:block, "File needs formatting: #{file_path}. Run 'mix format #{file_path}' to fix."}
+        else
+          {:block, "Mix format check failed: #{output}"}
+        end
+    end
   rescue
     error ->
-      JsonOutput.block_post_tool("Format check error: #{inspect(error)}")
-      |> JsonOutput.write_and_exit()
+      {:error, "Format check error: #{inspect(error)}"}
   end
 end

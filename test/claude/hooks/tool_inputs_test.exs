@@ -368,9 +368,7 @@ defmodule Claude.Hooks.ToolInputsTest do
       todo_write = ToolInputs.TodoWrite.new(attrs)
       todo = hd(todo_write.todos)
 
-      # default
       assert todo.status == :pending
-      # default
       assert todo.priority == :medium
     end
   end
@@ -431,8 +429,8 @@ defmodule Claude.Hooks.ToolInputsTest do
       for {tool_name, tool_input, expected_module} <- tools do
         assert {:ok, input} = ToolInputs.parse_tool_input(tool_name, tool_input)
 
-        assert match?(%^expected_module{}, input),
-               "Expected #{inspect(expected_module)} for #{tool_name}"
+        assert match?(%^expected_module{}, input)
+        "Expected #{inspect(expected_module)} for #{tool_name}"
       end
     end
   end

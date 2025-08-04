@@ -8,72 +8,45 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   - There are unused dependencies in mix.lock
   """
 
-  use Claude.Hooks.Hook.Behaviour,
+  use Claude.Hook,
     event: :pre_tool_use,
     matcher: :bash,
     description: "Validates formatting, compilation, and dependencies before allowing commits"
 
-  alias Claude.Hooks.{Helpers, JsonOutput}
+  alias Claude.Hooks.{Helpers, ToolInputs}
 
-  @impl Claude.Hooks.Hook.Behaviour
-  def run(:eof) do
-    :ok
-  end
+  @impl true
+  def handle(%Claude.Hooks.Events.PreToolUse.Input{} = input) do
+    if input.tool_name == "Bash" do
+      case input.tool_input do
+        %ToolInputs.Bash{command: command} when is_binary(command) ->
+          if String.contains?(command, "git commit") do
+            validate_commit()
+          else
+            :ok
+          end
 
-  def run(json_input) when is_binary(json_input) do
-    case Claude.Hooks.Events.PreToolUse.Input.from_json(json_input) do
-      {:ok, %Claude.Hooks.Events.PreToolUse.Input{} = input} ->
-        handle_hook_input(input)
-
-      {:error, _} ->
-        # Use JSON output for consistent error handling
-        JsonOutput.deny_pre_tool("Failed to parse hook input JSON")
-        |> JsonOutput.write_and_exit()
-    end
-  end
-
-  defp handle_hook_input(%Claude.Hooks.Events.PreToolUse.Input{
-         tool_name: "Bash",
-         tool_input: %Claude.Hooks.ToolInputs.Bash{command: command}
-       })
-       when is_binary(command) do
-    if String.contains?(command, "git commit") do
-      # Validate before allowing the commit
-      validate_commit()
+        _ ->
+          :ok
+      end
     else
-      # Allow non-commit commands
-      JsonOutput.allow_pre_tool()
-      |> JsonOutput.write_and_exit()
+      :ok
     end
-  end
-
-  defp handle_hook_input(_) do
-    # Allow tools that aren't Bash or don't have the expected structure
-    JsonOutput.allow_pre_tool()
-    |> JsonOutput.write_and_exit()
   end
 
   defp validate_commit do
-    Helpers.in_project_dir(nil, fn ->
-      with :ok <- check_formatting(),
-           :ok <- check_compilation(),
-           :ok <- check_unused_dependencies() do
-        # All checks passed - allow the commit
-        JsonOutput.allow_pre_tool("Pre-commit checks passed")
-        |> JsonOutput.write_and_exit()
-      else
-        {:error, reason} ->
-          # One or more checks failed - deny the commit
-          error_message = format_error_message(reason)
-
-          JsonOutput.deny_pre_tool(error_message)
-          |> JsonOutput.write_and_exit()
-      end
-    end)
+    with :ok <- check_formatting(),
+         :ok <- check_compilation(),
+         :ok <- check_unused_dependencies() do
+      {:allow, "Pre-commit checks passed"}
+    else
+      {:error, reason} ->
+        {:deny, format_error_message(reason)}
+    end
   end
 
   defp check_formatting do
-    case System.cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true) do
+    case Helpers.system_cmd("mix", ["format", "--check-formatted"], stderr_to_stdout: true) do
       {_output, 0} ->
         :ok
 
@@ -83,7 +56,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   end
 
   defp check_compilation do
-    case System.cmd("mix", ["compile", "--warnings-as-errors"], stderr_to_stdout: true) do
+    case Helpers.system_cmd("mix", ["compile", "--warnings-as-errors"], stderr_to_stdout: true) do
       {_output, 0} ->
         :ok
 
@@ -93,7 +66,7 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   end
 
   defp check_unused_dependencies do
-    case System.cmd("mix", ["deps.unlock", "--check-unused"], stderr_to_stdout: true) do
+    case Helpers.system_cmd("mix", ["deps.unlock", "--check-unused"], stderr_to_stdout: true) do
       {_output, 0} ->
         :ok
 
