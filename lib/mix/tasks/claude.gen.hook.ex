@@ -237,10 +237,8 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
 
   defp get_full_module_name(module_name, event) do
     if String.contains?(to_string(module_name), ".") do
-      # User provided a full module name like SomeApp.SomeContext.Hook
       Module.concat([module_name])
     else
-      # User provided a simple name, use the Claude namespace
       module_parts =
         if is_binary(module_name) do
           [module_name]
@@ -335,15 +333,12 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
 
   defp generate_handle_implementation(:post_tool_use) do
     """
-    # Check the tool being used
     case input.tool_input do
       %{file_path: path} when is_binary(path) ->
-        # File operation - you can process the file path
         IO.inspect(path, label: "File modified")
         :ok
         
       _ ->
-        # Other tool or no file path
         :ok
     end
     """
@@ -351,14 +346,11 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
 
   defp generate_handle_implementation(:pre_tool_use) do
     """
-    # Check what tool is about to be used
     case input.tool_name do
       "Bash" ->
-        # Example: Allow all bash commands
         {:allow, nil}
         
       _ ->
-        # Allow other tools
         :ok
     end
     """
@@ -366,20 +358,13 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
 
   defp generate_handle_implementation(:user_prompt_submit) do
     """
-    # Process the user's prompt
     IO.inspect(input.prompt, label: "User prompt")
-
-    # You can block the prompt or add context
-    # {:block, "Reason for blocking"}
-    # {:add_context, "Additional context"}
-
     :ok
     """
   end
 
   defp generate_handle_implementation(:notification) do
     """
-    # Handle notification
     IO.inspect(input.message, label: "Notification")
     :ok
     """
@@ -387,23 +372,18 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
 
   defp generate_handle_implementation(:stop) do
     """
-    # Claude is about to stop
-    # You can block this with {:block, "reason"}
     :ok
     """
   end
 
   defp generate_handle_implementation(:subagent_stop) do
     """
-    # Subagent is about to stop
-    # You can block this with {:block, "reason"}
     :ok
     """
   end
 
   defp generate_handle_implementation(:pre_compact) do
     """
-    # Compaction is about to happen
     IO.inspect(input.trigger, label: "Compact trigger")
     :ok
     """
