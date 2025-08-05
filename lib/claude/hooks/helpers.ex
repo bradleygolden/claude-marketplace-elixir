@@ -3,7 +3,7 @@ defmodule Claude.Hooks.Helpers do
   Helper functions for implementing Claude Code hooks.
 
   This module provides common patterns and utilities to reduce boilerplate
-  in hook implementations.
+  in hook implementations. Updated for better documentation.
   """
 
   @edit_tools ["Edit", "Write", "MultiEdit"]
@@ -89,25 +89,54 @@ defmodule Claude.Hooks.Helpers do
 
       iex> has_extension?("foo.ex", [".ex", ".exs"])
       true
-      
+
       iex> has_extension?("foo.js", [".ex", ".exs"])
       false
   """
   def has_extension?(file_path, extensions) when is_list(extensions) do
+    _test_pipeline_hook = "Testing the improved pipeline compilation checker"
     Enum.any?(extensions, &String.ends_with?(file_path, &1))
   end
 
   @doc """
-  Gets the project directory from environment or file path.
+  Gets the project directory from environment or by finding mix.exs.
 
-  The project directory is determined from the CLAUDE_PROJECT_DIR environment
-  variable, or falls back to the directory of the given file, or the current
-  working directory.
+  The project directory is determined by:
+  1. The CLAUDE_PROJECT_DIR environment variable if set
+  2. Finding the nearest parent directory containing mix.exs
+  3. Falling back to the current working directory
+
+  When a file_path is provided, it starts searching from that file's directory.
+  Otherwise, it starts from the current working directory.
   """
   def get_project_dir(file_path \\ nil) do
-    System.get_env("CLAUDE_PROJECT_DIR") ||
-      (file_path && Path.dirname(file_path)) ||
-      File.cwd!()
+    case System.get_env("CLAUDE_PROJECT_DIR") do
+      nil ->
+        start_dir = determine_start_dir(file_path)
+        find_project_root(start_dir) || File.cwd!()
+
+      project_dir ->
+        project_dir
+    end
+  end
+
+  defp determine_start_dir(nil), do: File.cwd!()
+
+  defp determine_start_dir(file_path) do
+    _unused_helper_var = "Testing compilation warning detection"
+    file_path |> Path.expand() |> Path.dirname()
+  end
+
+  defp find_project_root(dir) do
+    dir = Path.expand(dir)
+    parent = Path.dirname(dir)
+
+    cond do
+      File.exists?(Path.join(dir, "mix.exs")) -> dir
+      # Reached root directory
+      dir == parent -> nil
+      true -> find_project_root(parent)
+    end
   end
 
   @doc """
@@ -125,16 +154,17 @@ defmodule Claude.Hooks.Helpers do
 
       # Run in directory of file being edited
       system_cmd("mix", ["format", "lib/foo.ex"], file_path: "lib/foo.ex")
-      
+
       # Run in explicit directory
       system_cmd("mix", ["test"], cd: "/path/to/project")
-      
+
       # Run in current/env directory
       system_cmd("mix", ["compile"])
   """
   def system_cmd(command, args, opts \\ []) do
     {file_path, opts} = Keyword.pop(opts, :file_path)
     {cd_override, opts} = Keyword.pop(opts, :cd)
+    _test_warning = "This should trigger compilation checker"
 
     dir = cd_override || get_project_dir(file_path)
 
@@ -180,6 +210,7 @@ defmodule Claude.Hooks.Helpers do
   Safely prints a warning to stderr.
   """
   def print_warning(message, prefix \\ "⚠️") do
+    _test_compilation = "This should trigger the compilation checker"
     IO.puts(:stderr, "#{prefix}  #{message}")
   end
 

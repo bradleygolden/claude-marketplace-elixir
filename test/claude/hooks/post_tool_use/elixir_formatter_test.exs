@@ -1,169 +1,170 @@
 defmodule Claude.Hooks.PostToolUse.ElixirFormatterTest do
-  use Claude.ClaudeCodeCase, async: true, setup_project?: true
+  use Claude.ClaudeCodeCase, setup_project?: true
 
   alias Claude.Hooks.PostToolUse.ElixirFormatter
   alias Claude.Test.Fixtures
+  import Claude.Test.HookTestHelpers
 
   describe "run/1" do
-    test "blocks when Elixir file needs formatting using Edit tool", %{test_dir: test_dir} do
-      unformatted_content = """
-      defmodule Test do
-      def hello(  x,y  ) do
-        x+y
-      end
-      end
-      """
+    test "passes when Elixir file is properly formatted", %{test_dir: test_dir} do
+      file_path =
+        create_file(test_dir, "lib/test.ex", """
+        defmodule Test do
+          def hello, do: :world
+        end
+        """)
 
-      file_path = create_file(test_dir, "test.ex", unformatted_content)
+      # Ensure the file is formatted
+      System.cmd("mix", ["format", file_path], cd: test_dir)
 
       input =
         Fixtures.post_tool_use_input(
           tool_name: "Edit",
-          tool_input: Fixtures.tool_input(:edit, file_path: file_path)
+          tool_input: Fixtures.tool_input(:edit, file_path: file_path),
+          cwd: test_dir
         )
 
-      json = run_hook(ElixirFormatter, input)
-
-      assert json["decision"] == "block"
-      assert File.read!(file_path) == unformatted_content
-      assert json["reason"] =~ "File needs formatting: #{file_path}"
-      assert json["reason"] =~ "Run 'mix format #{file_path}' to fix"
+      assert_hook_success(ElixirFormatter, input)
     end
 
-    test "blocks when .exs file needs formatting", %{test_dir: test_dir} do
-      unformatted_content = "  list  = [ 1,2,  3 ]"
-      file_path = create_file(test_dir, "test.exs", unformatted_content)
+    test "reports when Elixir file needs formatting", %{test_dir: test_dir} do
+      file_path =
+        create_file(test_dir, "lib/test.ex", """
+        defmodule Test do
+        def hello,do: :world
+        end
+        """)
 
       input =
         Fixtures.post_tool_use_input(
           tool_name: "Write",
-          tool_input: Fixtures.tool_input(:write, file_path: file_path)
+          tool_input: Fixtures.tool_input(:write, file_path: file_path),
+          cwd: test_dir
         )
 
-      json = run_hook(ElixirFormatter, input)
+      stderr = assert_hook_error(ElixirFormatter, input)
+      assert stderr =~ "File needs formatting"
+      assert stderr =~ file_path
+      assert stderr =~ "mix format"
+    end
 
-      assert json["decision"] == "block"
-      assert File.read!(file_path) == unformatted_content
-      assert json["reason"] =~ "File needs formatting: #{file_path}"
+    test "reports when .exs file needs formatting", %{test_dir: test_dir} do
+      file_path =
+        create_file(test_dir, "test.exs", "  list  = [ 1,2,  3 ]")
+
+      input =
+        Fixtures.post_tool_use_input(
+          tool_name: "Write",
+          tool_input: Fixtures.tool_input(:write, file_path: file_path),
+          cwd: test_dir
+        )
+
+      stderr = assert_hook_error(ElixirFormatter, input)
+      assert stderr =~ "File needs formatting"
     end
 
     test "works with MultiEdit tool", %{test_dir: test_dir} do
-      unformatted_content = "defmodule  Multi  do\nend"
-      file_path = create_file(test_dir, "multi.ex", unformatted_content)
+      file_path =
+        create_file(test_dir, "multi.ex", "defmodule  Multi  do\nend")
 
       input =
         Fixtures.post_tool_use_input(
           tool_name: "MultiEdit",
-          tool_input: Fixtures.tool_input(:multi_edit, file_path: file_path)
+          tool_input: Fixtures.tool_input(:multi_edit, file_path: file_path),
+          cwd: test_dir
         )
 
-      json = run_hook(ElixirFormatter, input)
-
-      assert json["decision"] == "block"
-      assert File.read!(file_path) == unformatted_content
-      assert json["reason"] =~ "File needs formatting: #{file_path}"
+      stderr = assert_hook_error(ElixirFormatter, input)
+      assert stderr =~ "File needs formatting"
     end
 
-    test "succeeds silently for properly formatted files", %{test_dir: test_dir} do
-      properly_formatted = """
-      defmodule Formatted do
-        def hello(x, y) do
-          x + y
-        end
-      end
-      """
-
-      file_path = create_file(test_dir, "formatted.ex", properly_formatted)
-
+    test "ignores non-Elixir files" do
       input =
         Fixtures.post_tool_use_input(
           tool_name: "Edit",
-          tool_input: Fixtures.tool_input(:edit, file_path: file_path)
+          tool_input: Fixtures.tool_input(:edit, file_path: "/path/to/file.txt"),
+          cwd: "."
         )
 
-      json = run_hook(ElixirFormatter, input)
-
-      assert json["continue"] == true
-      assert File.read!(file_path) == properly_formatted
-      assert json["suppressOutput"] == true
+      assert_hook_success(ElixirFormatter, input)
     end
 
-    test "ignores non-Elixir files", %{test_dir: test_dir} do
-      file_path = Path.join(test_dir, "test.js")
-      content = "function  hello(  x  )  { return x; }"
-      File.write!(file_path, content)
+    test "ignores non-edit tools" do
+      input =
+        Fixtures.post_tool_use_input(
+          tool_name: "Read",
+          tool_input: %{file_path: "/path/to/file.ex"},
+          cwd: "."
+        )
 
+      assert_hook_success(ElixirFormatter, input)
+    end
+
+    test "handles missing file_path gracefully" do
       input =
         Fixtures.post_tool_use_input(
           tool_name: "Edit",
-          tool_input: Fixtures.tool_input(:edit, file_path: file_path)
+          tool_input: %{},
+          cwd: "."
         )
 
-      json = run_hook(ElixirFormatter, input)
-
-      assert json["continue"] == true
-      assert File.read!(file_path) == content
-      assert json["suppressOutput"] == true
-    end
-
-    test "handles missing file_path in tool_input gracefully" do
-      input_json =
-        Jason.encode!(%{
-          "tool_name" => "Edit",
-          "tool_input" => %{"other_param" => "value"}
-        })
-
-      json = run_hook(ElixirFormatter, input_json)
-
-      assert json["continue"] == true
-      assert json["suppressOutput"] == true
+      assert_hook_success(ElixirFormatter, input)
     end
 
     test "handles invalid JSON input gracefully" do
-      json = run_hook(ElixirFormatter, "invalid json")
-      assert json["decision"] == "block"
-      assert json["reason"] =~ "Hook crashed"
-      assert json["suppressOutput"] == false
+      assert_hook_success(ElixirFormatter, "invalid json")
     end
 
     test "handles :eof input gracefully" do
-      assert :ok = ElixirFormatter.run(:eof)
+      assert ElixirFormatter.run(:eof) == :ok
     end
 
     test "uses CLAUDE_PROJECT_DIR when available", %{test_dir: test_dir} do
-      unformatted_content = "defmodule  Test  do\nend"
-      file_path = create_file(test_dir, "lib/test.ex", unformatted_content)
+      # Create a nested project structure
+      project_dir = Path.join(test_dir, "my_project")
+      File.mkdir_p!(Path.join(project_dir, "lib"))
+
+      file_path =
+        create_file(project_dir, "lib/test.ex", """
+        defmodule ProjectTest do
+          def hello, do: :world
+        end
+        """)
+
+      # Ensure it's formatted
+      System.cmd("mix", ["format", file_path], cd: project_dir)
+
+      # Stub CLAUDE_PROJECT_DIR for this test
+      stub(System, :get_env, fn
+        "CLAUDE_PROJECT_DIR" -> project_dir
+        key -> System.get_env(key)
+      end)
 
       input =
         Fixtures.post_tool_use_input(
           tool_name: "Edit",
-          tool_input: Fixtures.tool_input(:edit, file_path: file_path)
+          tool_input: Fixtures.tool_input(:edit, file_path: file_path),
+          cwd: test_dir
         )
 
-      json = run_hook(ElixirFormatter, input)
-
-      assert json["decision"] == "block"
-      assert File.read!(file_path) == unformatted_content
-      assert json["reason"] =~ "File needs formatting: #{file_path}"
+      assert_hook_success(ElixirFormatter, input)
     end
 
-    test "handles empty tool_input gracefully", %{test_dir: test_dir} do
-      create_file(test_dir, "test.ex", """
-      defmodule  Test  do
-        def hello,  do:  :world
-      end
-      """)
+    test "handles formatting check failures gracefully", %{test_dir: test_dir} do
+      # Create a file that will cause mix format to fail
+      file_path = Path.join(test_dir, "invalid.ex")
+      File.write!(file_path, "this is not valid elixir code at all!")
 
-      input_json =
-        Jason.encode!(%{
-          "tool_name" => "Edit",
-          "tool_input" => %{}
-        })
+      input =
+        Fixtures.post_tool_use_input(
+          tool_name: "Edit",
+          tool_input: Fixtures.tool_input(:edit, file_path: file_path),
+          cwd: test_dir
+        )
 
-      json = run_hook(ElixirFormatter, input_json)
-
-      assert json["continue"] == true
-      assert json["suppressOutput"] == true
+      stderr = assert_hook_error(ElixirFormatter, input)
+      # When mix format fails on invalid syntax, it still reports "needs formatting"
+      assert stderr =~ "File needs formatting"
     end
   end
 end

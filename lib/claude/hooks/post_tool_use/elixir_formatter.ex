@@ -6,45 +6,114 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   and alerts when formatting is needed without actually modifying the files.
   """
 
-  use Claude.Hook,
-    event: :post_tool_use,
-    matcher: [:write, :edit, :multi_edit],
-    description: "Checks if Elixir files need formatting after Claude edits them"
+  @doc """
+  Pipeline-style formatter checker for Claude Code hooks.
+  """
+  def run(:eof), do: :ok
 
-  alias Claude.Hooks.Helpers
+  def run(input) do
+    input
+    |> parse_input()
+    |> validate_tool()
+    |> check_file_extension()
+    |> check_formatting()
+    |> format_response()
+    |> output_and_exit()
+  end
 
-  @impl true
-  def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
-    case input.tool_input do
-      %{file_path: path} when is_binary(path) ->
-        if Path.extname(path) in [".ex", ".exs"] do
-          format_file(path)
-        else
-          :ok
-        end
+  defp parse_input(input) do
+    case Claude.Hooks.Events.PostToolUse.Input.from_json(input) do
+      {:ok, event} ->
+        {:ok, event}
 
-      _ ->
-        :ok
+      {:error, _} ->
+        {:error, "Invalid JSON input"}
     end
   end
 
-  defp format_file(file_path) do
-    case Helpers.system_cmd("mix", ["format", "--check-formatted", file_path],
-           file_path: file_path,
+  defp validate_tool({:error, _} = error), do: error
+
+  defp validate_tool({:ok, %Claude.Hooks.Events.PostToolUse.Input{tool_name: tool_name} = input})
+       when tool_name in ["Write", "Edit", "MultiEdit"] do
+    {:ok, input}
+  end
+
+  defp validate_tool({:ok, _}), do: {:skip, "Not an edit tool"}
+
+  defp check_file_extension({:error, _} = error), do: error
+  defp check_file_extension({:skip, _} = skip), do: skip
+
+  defp check_file_extension(
+         {:ok, %Claude.Hooks.Events.PostToolUse.Input{tool_input: tool_input} = input}
+       ) do
+    case tool_input do
+      %{file_path: path} when is_binary(path) ->
+        if String.ends_with?(path, [".ex", ".exs"]) do
+          {:ok, input}
+        else
+          {:skip, "Not an Elixir file"}
+        end
+
+      _ ->
+        {:skip, "No file path"}
+    end
+  end
+
+  defp check_formatting({:error, _} = error), do: error
+  defp check_formatting({:skip, _} = skip), do: skip
+
+  defp check_formatting(
+         {:ok, %Claude.Hooks.Events.PostToolUse.Input{cwd: cwd, tool_input: tool_input}}
+       ) do
+    file_path = tool_input.file_path
+
+    case System.cmd("mix", ["format", "--check-formatted", file_path],
+           cd: cwd,
            stderr_to_stdout: true
          ) do
       {_output, 0} ->
-        :ok
+        :success
 
-      {output, exit_code} ->
-        if exit_code == 1 do
-          {:block, "File needs formatting: #{file_path}. Run 'mix format #{file_path}' to fix."}
-        else
-          {:block, "Mix format check failed: #{output}"}
-        end
+      {_output, 1} ->
+        # Exit code 1 means file needs formatting
+        {:needs_formatting, file_path}
+
+      {output, _exit_code} ->
+        {:format_check_failed, output}
     end
-  rescue
-    error ->
-      {:error, "Format check error: #{inspect(error)}"}
+  end
+
+  defp format_response(:success), do: :success
+  defp format_response({:skip, _}), do: :skip
+  defp format_response({:error, _}), do: :error
+  defp format_response({:needs_formatting, file_path}), do: {:needs_formatting, file_path}
+  defp format_response({:format_check_failed, output}), do: {:format_check_failed, output}
+
+  defp output_and_exit(:success) do
+    # Success - exit silently with code 0
+    System.halt(0)
+  end
+
+  defp output_and_exit(:skip) do
+    # Not applicable - exit silently with code 0
+    System.halt(0)
+  end
+
+  defp output_and_exit(:error) do
+    # Error in processing - exit silently with code 0
+    System.halt(0)
+  end
+
+  defp output_and_exit({:needs_formatting, file_path}) do
+    # File needs formatting - output to stderr and exit with code 2
+    IO.puts(:stderr, "File needs formatting: #{file_path}. Run 'mix format #{file_path}' to fix.")
+    System.halt(2)
+  end
+
+  defp output_and_exit({:format_check_failed, output}) do
+    # Format check failed - output to stderr and exit with code 2
+    IO.puts(:stderr, "Mix format check failed:")
+    IO.puts(:stderr, output)
+    System.halt(2)
   end
 end

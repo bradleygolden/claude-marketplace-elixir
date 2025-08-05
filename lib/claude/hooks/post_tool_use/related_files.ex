@@ -80,52 +80,87 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
       end
   """
 
-  use Claude.Hook,
-    event: :post_tool_use,
-    matcher: [:write, :edit, :multi_edit],
-    description: "Suggests updating related files based on naming patterns"
+  @doc """
+  Pipeline-style related files checker for Claude Code hooks.
 
-  alias Claude.Hooks.{Helpers, JsonOutput}
+  Uses exit codes to communicate with Claude Code:
+  - Exit 0: Success (no output or no related files)
+  - Exit 2: Related files found (stderr shown to Claude)
+  """
+  def run(:eof), do: :ok
 
-  @impl true
-  def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
-    case extract_file_path(input.tool_input) do
-      {:ok, file_path} ->
-        related_files = find_related_files(file_path)
+  def run(input) do
+    input
+    |> parse_input()
+    |> validate_tool()
+    |> extract_file_path()
+    |> find_related_files()
+    |> format_response()
+    |> output_and_exit()
+  end
 
-        if related_files != [] do
-          suggest_updates(file_path, related_files)
-        else
-          :ok
-        end
+  defp parse_input(input) do
+    case Claude.Hooks.Events.PostToolUse.Input.from_json(input) do
+      {:ok, event} ->
+        {:ok, event}
 
-      _ ->
-        :ok
+      {:error, _} ->
+        {:error, "Invalid JSON input"}
     end
   end
 
-  defp extract_file_path(tool_input) do
-    Helpers.extract_file_path(tool_input)
+  defp validate_tool({:error, _} = error), do: error
+
+  defp validate_tool({:ok, %Claude.Hooks.Events.PostToolUse.Input{tool_name: tool_name} = input})
+       when tool_name in ["Write", "Edit", "MultiEdit"] do
+    {:ok, input}
   end
 
-  defp find_related_files(file_path) do
-    project_dir = Helpers.get_project_dir(file_path)
+  defp validate_tool({:ok, _}), do: {:skip, "Not an edit tool"}
 
-    relative_path = Path.relative_to(file_path, project_dir)
+  defp extract_file_path({:error, _} = error), do: error
+  defp extract_file_path({:skip, _} = skip), do: skip
 
-    default_patterns()
-    |> Enum.flat_map(fn {source_glob, target_transform} ->
-      if glob_match?(relative_path, source_glob) do
-        target_transform
-        |> List.wrap()
-        |> Enum.flat_map(&transform_path(relative_path, source_glob, &1))
-        |> Enum.map(&Path.join(project_dir, &1))
-        |> Enum.filter(&File.exists?/1)
-      else
-        []
-      end
-    end)
-    |> Enum.uniq()
+  defp extract_file_path(
+         {:ok, %Claude.Hooks.Events.PostToolUse.Input{tool_input: tool_input} = input}
+       ) do
+    case tool_input do
+      %{file_path: path} when is_binary(path) ->
+        {:ok, input}
+
+      _ ->
+        {:skip, "No file path"}
+    end
+  end
+
+  defp find_related_files({:error, _} = error), do: error
+  defp find_related_files({:skip, _} = skip), do: skip
+
+  defp find_related_files(
+         {:ok, %Claude.Hooks.Events.PostToolUse.Input{cwd: cwd, tool_input: tool_input}}
+       ) do
+    file_path = tool_input.file_path
+    relative_path = Path.relative_to(file_path, cwd)
+
+    related =
+      default_patterns()
+      |> Enum.flat_map(fn {source_glob, target_transform} ->
+        if glob_match?(relative_path, source_glob) do
+          target_transform
+          |> List.wrap()
+          |> Enum.flat_map(&transform_path(relative_path, source_glob, &1))
+          |> Enum.map(&Path.join(cwd, &1))
+          |> Enum.filter(&File.exists?/1)
+        else
+          []
+        end
+      end)
+      |> Enum.uniq()
+
+    case related do
+      [] -> :no_related_files
+      files -> {:related_files_found, file_path, files, cwd}
+    end
   end
 
   defp transform_path(file_path, source_glob, target_pattern) do
@@ -188,28 +223,42 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     ]
   end
 
-  defp suggest_updates(modified_file, related_files) do
-    message = format_suggestion(modified_file, related_files)
-    {:block, message}
+  defp format_response(:no_related_files), do: :no_related_files
+  defp format_response({:skip, _}), do: :skip
+  defp format_response({:error, _}), do: :error
+  defp format_response({:related_files_found, _, _, _} = result), do: result
+
+  defp output_and_exit(:no_related_files) do
+    # No related files - exit silently with code 0
+    System.halt(0)
   end
 
-  defp format_suggestion(modified_file, related_files) do
-    # Get the project directory to make paths relative for display
-    project_dir = Helpers.get_project_dir(modified_file)
+  defp output_and_exit(:skip) do
+    # Not applicable - exit silently with code 0
+    System.halt(0)
+  end
 
+  defp output_and_exit(:error) do
+    # Error in processing - exit silently with code 0
+    System.halt(0)
+  end
+
+  defp output_and_exit({:related_files_found, modified_file, related_files, cwd}) do
+    # Related files found - output to stderr and exit with code 2
     # Make paths relative for cleaner display
-    relative_modified = Path.relative_to(modified_file, project_dir)
-    relative_files = Enum.map(related_files, &Path.relative_to(&1, project_dir))
+    relative_modified = Path.relative_to(modified_file, cwd)
+    relative_files = Enum.map(related_files, &Path.relative_to(&1, cwd))
 
     files_list = Enum.map_join(relative_files, "\n", &"  - #{&1}")
 
-    """
-    Related files need updating:
+    IO.puts(:stderr, "Related files need updating:")
+    IO.puts(:stderr, "")
+    IO.puts(:stderr, "You modified: #{relative_modified}")
+    IO.puts(:stderr, "")
+    IO.puts(:stderr, "Consider updating:")
+    IO.puts(:stderr, files_list)
+    IO.puts(:stderr, "")
 
-    You modified: #{relative_modified}
-
-    Consider updating:
-    #{files_list}
-    """
+    System.halt(2)
   end
 end
