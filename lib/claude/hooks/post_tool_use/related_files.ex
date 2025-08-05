@@ -62,22 +62,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
   - Test files when lib files are modified (lib/ -> test/)
   - Lib files when test files are modified (test/ -> lib/)
 
-  ## Custom Hook Implementation
-
-  For more complex customization, you can create your own hook module:
-
-      defmodule MyProject.Hooks.RelatedFiles do
-        use Claude.Hook,
-          event: :post_tool_use,
-          matcher: [:write, :edit, :multi_edit],
-          description: "Custom related files for MyProject"
-        
-        @impl true
-        def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
-          # Your custom logic here
-          :ok
-        end
-      end
   """
 
   @doc """

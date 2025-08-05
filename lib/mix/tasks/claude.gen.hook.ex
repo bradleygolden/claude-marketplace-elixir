@@ -277,20 +277,6 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
     matcher = opts[:matcher]
     description = opts[:description]
 
-    use_opts = [
-      "event: #{inspect(event)}",
-      "description: #{inspect(description)}"
-    ]
-
-    use_opts =
-      if event in [:pre_tool_use, :post_tool_use] && matcher do
-        use_opts ++ ["matcher: #{format_matcher_for_use(matcher)}"]
-      else
-        use_opts
-      end
-
-    handle_implementation = generate_handle_implementation(event)
-
     """
     defmodule #{inspect(module)} do
       @moduledoc \"\"\"
@@ -298,99 +284,31 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
       
       This hook runs on the #{event} event#{if matcher && event in [:pre_tool_use, :post_tool_use], do: " for tools matching: #{format_matcher_for_display(matcher)}", else: ""}.
       
-      For more information on Claude Code hooks, see:
-      - https://docs.anthropic.com/en/docs/claude-code/hooks
-      - https://docs.anthropic.com/en/docs/claude-code/hooks-guide
+      Uses exit codes to communicate with Claude Code:
+      - Exit 0: Success (no output)
+      - Exit 2: Block/error (stderr shown to Claude)
+      
+      See existing hooks in lib/claude/hooks/ for implementation examples.
       \"\"\"
-      
-      use Claude.Hook,
-        #{Enum.join(use_opts, ",\n    ")}
-      
-      
-      @impl Claude.Hook
-      def handle(input) do
-        #{handle_implementation}
+
+      @doc \"\"\"
+      Main entry point for the hook.
+      \"\"\"
+      def run(:eof), do: :ok
+
+      def run(input) do
+        # TODO: Implement your hook logic here
+        # Parse the input, validate, process, and exit with appropriate code
+        # See lib/claude/hooks/post_tool_use/elixir_formatter.ex for an example
+        System.halt(0)
       end
     end
     """
   end
 
-  defp format_matcher_for_use("*"), do: ":*"
-
-  defp format_matcher_for_use(matchers) when is_list(matchers) do
-    formatted =
-      matchers
-      |> Enum.map(&":#{&1}")
-      |> Enum.join(", ")
-
-    "[#{formatted}]"
-  end
-
-  defp format_matcher_for_use(matcher) when is_binary(matcher) do
-    ":#{matcher}"
-  end
-
   defp format_matcher_for_display("*"), do: "*"
   defp format_matcher_for_display(matchers) when is_list(matchers), do: Enum.join(matchers, ", ")
   defp format_matcher_for_display(matcher) when is_binary(matcher), do: matcher
-
-  defp generate_handle_implementation(:post_tool_use) do
-    """
-    case input.tool_input do
-      %{file_path: path} when is_binary(path) ->
-        IO.inspect(path, label: "File modified")
-        :ok
-        
-      _ ->
-        :ok
-    end
-    """
-  end
-
-  defp generate_handle_implementation(:pre_tool_use) do
-    """
-    case input.tool_name do
-      "Bash" ->
-        {:allow, nil}
-        
-      _ ->
-        :ok
-    end
-    """
-  end
-
-  defp generate_handle_implementation(:user_prompt_submit) do
-    """
-    IO.inspect(input.prompt, label: "User prompt")
-    :ok
-    """
-  end
-
-  defp generate_handle_implementation(:notification) do
-    """
-    IO.inspect(input.message, label: "Notification")
-    :ok
-    """
-  end
-
-  defp generate_handle_implementation(:stop) do
-    """
-    :ok
-    """
-  end
-
-  defp generate_handle_implementation(:subagent_stop) do
-    """
-    :ok
-    """
-  end
-
-  defp generate_handle_implementation(:pre_compact) do
-    """
-    IO.inspect(input.trigger, label: "Compact trigger")
-    :ok
-    """
-  end
 
   defp maybe_add_to_config(igniter, module_name, opts) do
     if opts[:add_to_config] do
