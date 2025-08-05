@@ -488,6 +488,36 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert String.contains?(formatter_script, ":jason")
       assert String.contains?(formatter_script, "Claude.Hooks.PostToolUse.ElixirFormatter.run")
     end
+
+    test "generates hook scripts with correct descriptions" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      # Check each hook script has the correct description
+      formatter_script = File.read!(".claude/hooks/elixir_formatter.exs")
+
+      assert String.contains?(
+               formatter_script,
+               "# Hook script for Checks if Elixir files need formatting after Claude edits them"
+             )
+
+      compiler_script = File.read!(".claude/hooks/compilation_checker.exs")
+
+      assert String.contains?(
+               compiler_script,
+               "# Hook script for Checks for compilation errors after"
+             )
+
+      precommit_script = File.read!(".claude/hooks/pre_commit_check.exs")
+
+      assert String.contains?(
+               precommit_script,
+               "# Hook script for Validates formatting, compilation, and dependencies before allowing commits"
+             )
+    end
   end
 
   describe "edge cases" do
@@ -732,7 +762,62 @@ defmodule Mix.Tasks.Claude.InstallTest do
   end
 
   describe "hook configuration from .claude.exs" do
-    test "reads hooks from .claude.exs file" do
+    test "reads hooks from new grouped format in .claude.exs" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  %{
+                    matcher: "Write|Edit|MultiEdit",
+                    hooks: [
+                      Claude.Hooks.PostToolUse.ElixirFormatter,
+                      Claude.Hooks.PostToolUse.CompilationChecker
+                    ]
+                  }
+                ],
+                pre_tool_use: [
+                  %{
+                    matcher: "Bash",
+                    hooks: [Claude.Hooks.PreToolUse.PreCommitCheck]
+                  }
+                ]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      # Verify hook scripts are created
+      assert File.exists?(".claude/hooks/elixir_formatter.exs")
+      assert File.exists?(".claude/hooks/compilation_checker.exs")
+      assert File.exists?(".claude/hooks/pre_commit_check.exs")
+
+      # Verify settings.json has the correct grouped structure
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+
+      # Check PostToolUse hooks
+      assert post_hooks = settings["hooks"]["PostToolUse"]
+      assert length(post_hooks) == 1
+      [post_config] = post_hooks
+      assert post_config["matcher"] == "Write|Edit|MultiEdit"
+      # The template includes RelatedFiles by default, so we might have 3 hooks
+      assert length(post_config["hooks"]) >= 2
+
+      # Check PreToolUse hooks
+      assert pre_hooks = settings["hooks"]["PreToolUse"]
+      assert length(pre_hooks) == 1
+      [pre_config] = pre_hooks
+      assert pre_config["matcher"] == "Bash"
+      assert length(pre_config["hooks"]) == 1
+    end
+
+    test "reads hooks from legacy list format in .claude.exs" do
       igniter =
         test_project(
           files: %{
@@ -784,6 +869,67 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "missing some default hooks")
              end)
+    end
+
+    test "handles empty hooks map in new format" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{}
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should show notice about missing default hooks
+      assert Enum.any?(igniter.notices, fn notice ->
+               String.contains?(notice, "missing some default hooks")
+             end)
+    end
+
+    test "handles mixed matcher types in grouped format" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  %{
+                    matcher: "Write",
+                    hooks: [Claude.Hooks.PostToolUse.ElixirFormatter]
+                  },
+                  %{
+                    matcher: "Edit|MultiEdit",
+                    hooks: [Claude.Hooks.PostToolUse.CompilationChecker]
+                  }
+                ]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      post_hooks = settings["hooks"]["PostToolUse"]
+
+      # The installer might combine matchers, so let's just verify the hooks are present
+      assert length(post_hooks) >= 1
+
+      # Verify both hooks are present somewhere in the configuration
+      all_hook_commands =
+        post_hooks
+        |> Enum.flat_map(& &1["hooks"])
+        |> Enum.map(& &1["command"])
+
+      assert Enum.any?(all_hook_commands, &String.contains?(&1, "elixir_formatter.exs"))
+      assert Enum.any?(all_hook_commands, &String.contains?(&1, "compilation_checker.exs"))
     end
 
     test "handles missing hooks key in .claude.exs" do

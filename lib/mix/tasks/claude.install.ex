@@ -163,6 +163,17 @@ defmodule Mix.Tasks.Claude.Install do
     write: "Write"
   }
 
+  @hook_descriptions %{
+    Claude.Hooks.PostToolUse.ElixirFormatter =>
+      "Checks if Elixir files need formatting after Claude edits them",
+    Claude.Hooks.PostToolUse.CompilationChecker =>
+      "Checks for compilation errors after editing Elixir files",
+    Claude.Hooks.PreToolUse.PreCommitCheck =>
+      "Validates formatting, compilation, and dependencies before allowing commits",
+    Claude.Hooks.PostToolUse.RelatedFiles =>
+      "Suggests updating related files based on naming patterns"
+  }
+
   @impl Igniter.Mix.Task
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
@@ -249,17 +260,36 @@ defmodule Mix.Tasks.Claude.Install do
 
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, config} when is_map(config) ->
-        existing_hooks = Map.get(config, :hooks, [])
+        hooks = Map.get(config, :hooks, [])
+
+        existing_hooks =
+          case hooks do
+            # New grouped format
+            hooks_map when is_map(hooks_map) ->
+              Enum.flat_map(hooks_map, fn {_event_type, event_configs} ->
+                Enum.flat_map(event_configs, fn event_config ->
+                  Map.get(event_config, :hooks, [])
+                end)
+              end)
+
+            # Legacy list format
+            hooks_list when is_list(hooks_list) ->
+              hooks_list
+
+            _ ->
+              []
+          end
+
         missing_hooks = default_hooks -- existing_hooks
 
         if missing_hooks != [] do
           igniter
           |> Igniter.add_notice("""
-          Your .claude.exs is missing some default hooks. Add these to enable core functionality:
+          Your .claude.exs is missing some default hooks. Please update your hooks configuration to the new grouped format and include these modules:
 
-          hooks: [
-          #{Enum.map_join(missing_hooks, ",\n  ", &"  #{inspect(&1)}")}
-          ],
+          #{Enum.map_join(missing_hooks, "\n", &"  #{inspect(&1)}")}
+
+          See the generated .claude.exs template for the proper structure.
           """)
         else
           igniter
@@ -278,10 +308,30 @@ defmodule Mix.Tasks.Claude.Install do
         {:ok, config} when is_map(config) ->
           hooks = Map.get(config, :hooks, [])
 
-          hooks
-          |> List.wrap()
-          |> Enum.map(&normalize_hook_module/1)
-          |> Enum.reject(&is_nil/1)
+          case hooks do
+            # New grouped format
+            hooks_map when is_map(hooks_map) ->
+              Enum.flat_map(hooks_map, fn {event_type, event_configs} ->
+                Enum.flat_map(event_configs, fn event_config ->
+                  matcher = Map.get(event_config, :matcher, "*")
+                  hook_modules = Map.get(event_config, :hooks, [])
+
+                  Enum.map(hook_modules, fn module ->
+                    normalize_hook_module(module, event_type, matcher)
+                  end)
+                end)
+              end)
+              |> Enum.reject(&is_nil/1)
+
+            # Legacy list format
+            hooks_list when is_list(hooks_list) ->
+              hooks_list
+              |> Enum.map(&normalize_hook_module/1)
+              |> Enum.reject(&is_nil/1)
+
+            _ ->
+              []
+          end
 
         _ ->
           []
@@ -291,18 +341,31 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
+  # New version with explicit event type and matcher
+  defp normalize_hook_module(hook_module, event_type, matcher) when is_atom(hook_module) do
+    if Code.ensure_loaded?(hook_module) and
+         (function_exported?(hook_module, :run, 1) or function_exported?(hook_module, :config, 0)) do
+      script_name = hook_module_to_script_name(hook_module)
+      script_path = ".claude/hooks/#{script_name}"
+
+      description = Map.get(@hook_descriptions, hook_module, "Custom hook")
+
+      matchers = if matcher == "*", do: [], else: String.split(matcher, "|")
+
+      {hook_module, script_path, event_type, matchers, description}
+    else
+      nil
+    end
+  end
+
+  # Legacy version for backward compatibility
   defp normalize_hook_module(hook_module) when is_atom(hook_module) do
     if Code.ensure_loaded?(hook_module) and
          (function_exported?(hook_module, :run, 1) or function_exported?(hook_module, :config, 0)) do
       script_name = hook_module_to_script_name(hook_module)
       script_path = ".claude/hooks/#{script_name}"
 
-      description =
-        if function_exported?(hook_module, :description, 0) do
-          hook_module.description()
-        else
-          "Custom hook"
-        end
+      description = Map.get(@hook_descriptions, hook_module, "Custom hook")
 
       event_type =
         if function_exported?(hook_module, :__hook_event__, 0) do
@@ -379,15 +442,29 @@ defmodule Mix.Tasks.Claude.Install do
 
     %{
       # Hooks that run during Claude Code operations
-      hooks: [
-        # Default hooks - these provide core functionality
-        Claude.Hooks.PostToolUse.ElixirFormatter,    # Automatically formats Elixir files after editing
-        Claude.Hooks.PostToolUse.CompilationChecker,  # Checks for compilation errors after editing
-        Claude.Hooks.PreToolUse.PreCommitCheck,       # Validates code before git commits
-        
-        # Optional hooks - uncomment to enable
-        # Claude.Hooks.PostToolUse.RelatedFiles,     # Suggests updating test files when implementation changes
-      ],
+      # Grouped by event type and tool matcher for better organization
+      hooks: %{
+        post_tool_use: [
+          %{
+            # Matcher for file editing tools
+            matcher: "Write|Edit|MultiEdit",
+            hooks: [
+              Claude.Hooks.PostToolUse.ElixirFormatter,    # Automatically formats Elixir files
+              Claude.Hooks.PostToolUse.CompilationChecker, # Checks for compilation errors
+              # Claude.Hooks.PostToolUse.RelatedFiles,    # Suggests related file updates (optional)
+            ]
+          }
+        ],
+        pre_tool_use: [
+          %{
+            # Matcher for shell commands
+            matcher: "Bash",
+            hooks: [
+              Claude.Hooks.PreToolUse.PreCommitCheck      # Validates before git commits
+            ]
+          }
+        ]
+      },
 
       # MCP servers (Tidewave is automatically configured for Phoenix projects)
       # mcp_servers: [:tidewave],
@@ -635,12 +712,7 @@ defmodule Mix.Tasks.Claude.Install do
 
     deps = "[#{claude_dep}, {:jason, \"~> 1.4\"}, {:igniter, \"~> 0.6\"}]"
 
-    description =
-      if function_exported?(hook_module, :description, 0) do
-        hook_module.description()
-      else
-        "Claude Code hook"
-      end
+    description = Map.get(@hook_descriptions, hook_module, "Claude Code hook")
 
     """
     #!/usr/bin/env elixir

@@ -271,10 +271,22 @@
       tools: [:read, :grep]
     }
   ],
-  hooks: [
-    Claude.Hooks.PostToolUse.ElixirFormatter,
-    Claude.Hooks.PostToolUse.CompilationChecker,
-    Claude.Hooks.PreToolUse.PreCommitCheck,
-    Claude.Hooks.PostToolUse.RelatedFiles
-  ]
+  hooks: %{
+    post_tool_use: [
+      %{
+        matcher: "Write|Edit|MultiEdit",
+        hooks: [
+          Claude.Hooks.PostToolUse.ElixirFormatter,
+          Claude.Hooks.PostToolUse.CompilationChecker,
+          Claude.Hooks.PostToolUse.RelatedFiles
+        ]
+      }
+    ],
+    pre_tool_use: [
+      %{
+        matcher: "Bash",
+        hooks: [Claude.Hooks.PreToolUse.PreCommitCheck]
+      }
+    ]
+  }
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env elixir
-# Hook script for Checks for compilation errors after Claude edits Elixir files
+# Hook script for Checks for compilation errors after editing Elixir files
 
 Mix.install([{:claude, path: "."}, {:jason, "~> 1.4"}, {:igniter, "~> 0.6"}])
 
