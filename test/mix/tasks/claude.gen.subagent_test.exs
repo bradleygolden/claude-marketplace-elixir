@@ -337,8 +337,8 @@ defmodule Mix.Tasks.Claude.Gen.SubagentTest do
         source = Rewrite.source!(igniter.rewrite, ".claude.exs")
         content = Rewrite.Source.get(source, :content)
 
-        assert content =~ ~r/%\{\n  hooks: \[/
-        assert content =~ ~r/Claude\.Hooks\.PostToolUse\.ElixirFormatter/
+        assert content =~ ~r/%\{\n  hooks: %\{/
+        assert content =~ ~r/post_tool_use: \[/
         assert content =~ ~r/subagents: \[/
         assert content =~ ~r/name: "First Agent"/
         assert content =~ ~r/tools: \[:read, :write\]/

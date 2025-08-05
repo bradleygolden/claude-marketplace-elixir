@@ -272,20 +272,45 @@
     }
   ],
   hooks: %{
+    stop: [
+      %{
+        id: :elixir_quality_checks_stop,
+        tasks: [
+          "format --check-formatted",
+          "compile --warnings-as-errors",
+          "deps.unlock --check-unused",
+          "test --stale"
+        ]
+      }
+    ],
     post_tool_use: [
       %{
-        matcher: "Write|Edit|MultiEdit",
-        hooks: [
-          Claude.Hooks.PostToolUse.ElixirFormatter,
-          Claude.Hooks.PostToolUse.CompilationChecker,
-          Claude.Hooks.PostToolUse.RelatedFiles
+        id: :elixir_quality_checks,
+        matcher: [:write, :edit, :multi_edit],
+        tasks: [
+          "format --check-formatted {{tool_input.file_path}}",
+          "compile --warnings-as-errors"
+        ]
+      },
+      %{
+        id: :related_files_check,
+        matcher: [:write, :edit, :multi_edit],
+        tasks: [
+          "claude.hooks.related_files"
         ]
       }
     ],
     pre_tool_use: [
       %{
-        matcher: "Bash",
-        hooks: [Claude.Hooks.PreToolUse.PreCommitCheck]
+        id: :pre_commit_validation,
+        # Match git commit commands (but not with --no-verify)
+        matcher: "Bash(git commit:*)",
+        tasks: [
+          "format --check-formatted",
+          "compile --warnings-as-errors",
+          "deps.unlock --check-unused",
+          "test --stale"
+        ]
       }
     ]
   }
