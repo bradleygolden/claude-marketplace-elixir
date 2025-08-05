@@ -205,7 +205,6 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
     regex_pattern =
       pattern
       |> String.replace(".", "\\.")
-      # ** can match zero or more subdirectories
       |> String.replace("/**", "(?:/.+)?")
       |> String.replace("*", "[^/]*")
       |> then(&"^#{&1}$")
@@ -216,9 +215,7 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
 
   defp default_patterns do
     [
-      # When lib files change, suggest their tests
       {"lib/**/*.ex", "test/**/*_test.exs"},
-      # When test files change, suggest their lib files
       {"test/**/*_test.exs", "lib/**/*.ex"}
     ]
   end
@@ -229,23 +226,18 @@ defmodule Claude.Hooks.PostToolUse.RelatedFiles do
   defp format_response({:related_files_found, _, _, _} = result), do: result
 
   defp output_and_exit(:no_related_files) do
-    # No related files - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:skip) do
-    # Not applicable - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:error) do
-    # Error in processing - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit({:related_files_found, modified_file, related_files, cwd}) do
-    # Related files found - output to stderr and exit with code 2
-    # Make paths relative for cleaner display
     relative_modified = Path.relative_to(modified_file, cwd)
     relative_files = Enum.map(related_files, &Path.relative_to(&1, cwd))
 

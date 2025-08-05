@@ -68,18 +68,15 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   defp run_pre_commit_checks({:skip, _} = skip), do: skip
 
   defp run_pre_commit_checks({:ok, %Claude.Hooks.Events.PreToolUse.Input{cwd: cwd}}) do
-    # Run all checks and collect results
     formatting_result = check_formatting(cwd)
     compilation_result = check_compilation(cwd)
     dependencies_result = check_unused_dependencies(cwd)
 
-    # Aggregate results
     case {formatting_result, compilation_result, dependencies_result} do
       {:ok, :ok, :ok} ->
         :all_checks_passed
 
       _ ->
-        # Collect all failures
         failures = []
         failures = if formatting_result != :ok, do: [formatting_result | failures], else: failures
 
@@ -138,22 +135,18 @@ defmodule Claude.Hooks.PreToolUse.PreCommitCheck do
   defp format_response({:pre_commit_failed, _} = result), do: result
 
   defp output_and_exit(:all_checks_passed) do
-    # All checks passed - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:skip) do
-    # Not applicable - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:error) do
-    # Error in processing - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit({:pre_commit_failed, failures}) do
-    # Pre-commit checks failed - output to stderr and exit with code 2
     IO.puts(
       :stderr,
       "Pre-commit checks failed! Please fix the following issues before committing:"

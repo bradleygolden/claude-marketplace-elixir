@@ -229,7 +229,7 @@ defmodule Claude.Hook do
     quote do
       @behaviour Claude.Hook
 
-      alias Claude.Hooks.{Helpers, JsonOutput}
+      alias Claude.Hooks.JsonOutput
 
       @hook_event unquote(event)
       @hook_matcher unquote(matcher)

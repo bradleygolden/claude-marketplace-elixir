@@ -75,7 +75,6 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
         :success
 
       {_output, 1} ->
-        # Exit code 1 means file needs formatting
         {:needs_formatting, file_path}
 
       {output, _exit_code} ->
@@ -90,28 +89,23 @@ defmodule Claude.Hooks.PostToolUse.ElixirFormatter do
   defp format_response({:format_check_failed, output}), do: {:format_check_failed, output}
 
   defp output_and_exit(:success) do
-    # Success - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:skip) do
-    # Not applicable - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:error) do
-    # Error in processing - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit({:needs_formatting, file_path}) do
-    # File needs formatting - output to stderr and exit with code 2
     IO.puts(:stderr, "File needs formatting: #{file_path}. Run 'mix format #{file_path}' to fix.")
     System.halt(2)
   end
 
   defp output_and_exit({:format_check_failed, output}) do
-    # Format check failed - output to stderr and exit with code 2
     IO.puts(:stderr, "Mix format check failed:")
     IO.puts(:stderr, output)
     System.halt(2)

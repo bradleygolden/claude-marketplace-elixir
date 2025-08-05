@@ -82,22 +82,18 @@ defmodule Claude.Hooks.PostToolUse.CompilationChecker do
   defp format_response({:compilation_failed, output}), do: {:compilation_failed, output}
 
   defp output_and_exit(:success) do
-    # Success - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:skip) do
-    # Not applicable - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit(:error) do
-    # Error in processing - exit silently with code 0
     System.halt(0)
   end
 
   defp output_and_exit({:compilation_failed, output}) do
-    # Compilation failed - output to stderr and exit with code 2
     IO.puts(:stderr, "Compilation issues detected:")
     IO.puts(:stderr, output)
     System.halt(2)

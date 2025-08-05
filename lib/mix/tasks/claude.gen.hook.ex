@@ -306,7 +306,6 @@ defmodule Mix.Tasks.Claude.Gen.Hook do
       use Claude.Hook,
         #{Enum.join(use_opts, ",\n    ")}
       
-      alias Claude.Hooks.Helpers
       
       @impl Claude.Hook
       def handle(input) do
