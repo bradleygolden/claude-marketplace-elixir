@@ -16,26 +16,17 @@ defmodule Claude.Hooks.Events do
   - `SubagentStop` - Sub-agent stopping
   - `PreCompact` - Before compaction
 
-  ## Common Functions
-
-  Use `Claude.Hooks.Events.Common.parse_hook_input/1` to parse incoming
-  JSON into the appropriate event struct.
-
-  Use `Claude.Hooks.Events.Common.SimpleOutput` for basic exit code
-  based responses.
-
   ## Example
 
       alias Claude.Hooks.Events
-      alias Claude.Hooks.Events.Common
       
-      # Parse incoming hook
-      case Common.parse_hook_input(json) do
+      # Parse specific event type
+      case Events.PreToolUse.Input.from_json(json) do
         {:ok, %Events.PreToolUse.Input{tool_name: "Bash"}} ->
           # Handle bash command
           
-        {:ok, event} ->
-          # Handle other events
+        {:error, reason} ->
+          # Handle parse error
       end
   """
 end

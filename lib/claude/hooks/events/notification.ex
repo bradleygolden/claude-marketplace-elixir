@@ -44,10 +44,4 @@ defmodule Claude.Hooks.Events.Notification do
       end
     end
   end
-
-  defmodule Output do
-    defdelegate success(stdout \\ nil), to: Claude.Hooks.Events.Common.SimpleOutput
-    defdelegate error(stderr, exit_code \\ 1), to: Claude.Hooks.Events.Common.SimpleOutput
-    defdelegate block(stderr), to: Claude.Hooks.Events.Common.SimpleOutput
-  end
 end

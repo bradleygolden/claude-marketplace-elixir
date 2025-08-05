@@ -1,7 +1,6 @@
 defmodule Claude.Hooks.EventsTest do
   use ExUnit.Case, async: true
   alias Claude.Hooks.Events
-  alias Claude.Hooks.Events.Common
 
   describe "PreToolUse" do
     test "creates struct from map" do
@@ -167,106 +166,6 @@ defmodule Claude.Hooks.EventsTest do
       event = Events.PreCompact.Input.new(attrs)
       assert event.trigger == :auto
       assert event.custom_instructions == ""
-    end
-  end
-
-  describe "parse_hook_input/1" do
-    test "parses PreToolUse event" do
-      json = ~s({
-        "hook_event_name": "PreToolUse",
-        "session_id": "abc123",
-        "tool_name": "Edit"
-      })
-
-      assert {:ok, event} = Common.parse_hook_input(json)
-      assert %Events.PreToolUse.Input{} = event
-      assert event.tool_name == "Edit"
-    end
-
-    test "parses PostToolUse event" do
-      json = ~s({
-        "hook_event_name": "PostToolUse",
-        "session_id": "abc123",
-        "tool_name": "Write",
-        "tool_response": {"success": true}
-      })
-
-      assert {:ok, event} = Common.parse_hook_input(json)
-      assert %Events.PostToolUse.Input{} = event
-      assert event.tool_response["success"] == true
-    end
-
-    test "parses Notification event" do
-      json = ~s({
-        "hook_event_name": "Notification",
-        "session_id": "abc123",
-        "message": "Test notification"
-      })
-
-      assert {:ok, event} = Common.parse_hook_input(json)
-      assert %Events.Notification.Input{} = event
-      assert event.message == "Test notification"
-    end
-
-    test "parses UserPromptSubmit event" do
-      json = ~s({
-        "hook_event_name": "UserPromptSubmit",
-        "session_id": "abc123",
-        "prompt": "Test prompt"
-      })
-
-      assert {:ok, event} = Common.parse_hook_input(json)
-      assert %Events.UserPromptSubmit.Input{} = event
-      assert event.prompt == "Test prompt"
-    end
-
-    test "parses Stop event" do
-      json = ~s({
-        "hook_event_name": "Stop",
-        "session_id": "abc123",
-        "stop_hook_active": false
-      })
-
-      assert {:ok, event} = Common.parse_hook_input(json)
-      assert %Events.Stop.Input{} = event
-      assert event.stop_hook_active == false
-    end
-
-    test "parses SubagentStop event" do
-      json = ~s({
-        "hook_event_name": "SubagentStop",
-        "session_id": "abc123",
-        "stop_hook_active": true
-      })
-
-      assert {:ok, event} = Common.parse_hook_input(json)
-      assert %Events.SubagentStop.Input{} = event
-      assert event.stop_hook_active == true
-    end
-
-    test "parses PreCompact event" do
-      json = ~s({
-        "hook_event_name": "PreCompact",
-        "session_id": "abc123",
-        "trigger": "manual"
-      })
-
-      assert {:ok, event} = Common.parse_hook_input(json)
-      assert %Events.PreCompact.Input{} = event
-      assert event.trigger == :manual
-    end
-
-    test "returns error for unknown event" do
-      json = ~s({
-        "hook_event_name": "UnknownEvent",
-        "session_id": "abc123"
-      })
-
-      assert {:error, "Unknown hook event name: \"UnknownEvent\""} = Common.parse_hook_input(json)
-    end
-
-    test "returns error for invalid JSON" do
-      assert {:error, _} = Common.parse_hook_input("invalid json")
     end
   end
 

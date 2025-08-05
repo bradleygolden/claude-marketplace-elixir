@@ -86,46 +86,4 @@ defmodule Claude.Hooks.Events.PreCompactTest do
       refute Map.has_key?(decoded, "cwd")
     end
   end
-
-  describe "Output" do
-    test "Output is aliased to Common.SimpleOutput" do
-      output = PreCompact.Output.success("Compaction allowed")
-      assert %Claude.Hooks.Events.Common.SimpleOutput{} = output
-    end
-
-    test "success/0 creates success output" do
-      output = PreCompact.Output.success()
-
-      assert output.exit_code == 0
-      assert output.stdout == nil
-      assert output.stderr == nil
-    end
-
-    test "success/1 creates success output with message" do
-      output = PreCompact.Output.success("Ready to compact")
-
-      assert output.exit_code == 0
-      assert output.stdout == "Ready to compact"
-      assert output.stderr == nil
-    end
-
-    test "error/1 creates error output" do
-      output = PreCompact.Output.error("Cannot compact now")
-
-      assert output.exit_code == 1
-      assert output.stdout == nil
-      assert output.stderr == "Cannot compact now"
-    end
-
-    test "output can be encoded to JSON string" do
-      output = PreCompact.Output.success("Compaction approved")
-      json = Jason.encode!(output)
-
-      assert is_binary(json)
-      decoded = Jason.decode!(json)
-
-      assert decoded["exitCode"] == 0
-      assert decoded["stdout"] == "Compaction approved"
-    end
-  end
 end

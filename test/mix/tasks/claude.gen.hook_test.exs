@@ -42,10 +42,10 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
 
       assert content =~ ~r/defmodule Claude\.Hooks\.PostToolUse\.TestFormatter do/
       assert content =~ ~r/Test formatting hook/
-      assert content =~ ~r/event: :post_tool_use/
-      assert content =~ ~r/matcher: \[:write, :edit\]/
-      assert content =~ ~r/@impl Claude\.Hook/
-      assert content =~ ~r/def handle\(input\) do/
+      assert content =~ ~r/post_tool_use event for tools matching: write, edit/
+      assert content =~ ~r/def run\(:eof\), do: :ok/
+      assert content =~ ~r/def run\(input\) do/
+      assert content =~ ~r/System\.halt\(0\)/
     end
 
     test "generates a pre_tool_use hook module" do
@@ -77,10 +77,10 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       content = Rewrite.Source.get(source, :content)
 
       assert content =~ ~r/defmodule Claude\.Hooks\.PreToolUse\.BashValidator do/
-      assert content =~ ~r/event: :pre_tool_use/
-      assert content =~ ~r/matcher: :bash/
-      assert content =~ ~r/@impl Claude\.Hook/
-      assert content =~ ~r/def handle\(input\) do/
+      assert content =~ ~r/pre_tool_use event for tools matching: bash/
+      assert content =~ ~r/def run\(:eof\), do: :ok/
+      assert content =~ ~r/def run\(input\) do/
+      assert content =~ ~r/System\.halt\(0\)/
     end
 
     test "generates a notification hook module" do
@@ -112,10 +112,11 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       content = Rewrite.Source.get(source, :content)
 
       assert content =~ ~r/defmodule Claude\.Hooks\.Notification\.CustomNotifier do/
-      assert content =~ ~r/event: :notification/
-      refute content =~ ~r/matcher:/
-      assert content =~ ~r/@impl Claude\.Hook/
-      assert content =~ ~r/def handle\(input\) do/
+      assert content =~ ~r/notification event/
+      refute content =~ ~r/tools matching:/
+      assert content =~ ~r/def run\(:eof\), do: :ok/
+      assert content =~ ~r/def run\(input\) do/
+      assert content =~ ~r/System\.halt\(0\)/
     end
 
     test "generates a user_prompt_submit hook module" do
@@ -147,8 +148,9 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       content = Rewrite.Source.get(source, :content)
 
       assert content =~ ~r/defmodule Claude\.Hooks\.UserPromptSubmit\.PromptEnhancer do/
-      assert content =~ ~r/@impl Claude\.Hook/
-      assert content =~ ~r/def handle\(input\) do/
+      assert content =~ ~r/def run\(:eof\), do: :ok/
+      assert content =~ ~r/def run\(input\) do/
+      assert content =~ ~r/System\.halt\(0\)/
     end
 
     test "generates a stop hook module" do
@@ -178,8 +180,9 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       content = Rewrite.Source.get(source, :content)
 
       assert content =~ ~r/defmodule Claude\.Hooks\.Stop\.SessionCleanup do/
-      assert content =~ ~r/@impl Claude\.Hook/
-      assert content =~ ~r/def handle\(input\) do/
+      assert content =~ ~r/def run\(:eof\), do: :ok/
+      assert content =~ ~r/def run\(input\) do/
+      assert content =~ ~r/System\.halt\(0\)/
     end
 
     test "generates a subagent_stop hook module" do
@@ -232,8 +235,9 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       source = Rewrite.source!(igniter.rewrite, "lib/claude/hooks/pre_compact/compact_logger.ex")
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ ~r/@impl Claude\.Hook/
-      assert content =~ ~r/def handle\(input\) do/
+      assert content =~ ~r/def run\(:eof\), do: :ok/
+      assert content =~ ~r/def run\(input\) do/
+      assert content =~ ~r/System\.halt\(0\)/
     end
 
     test "uses default matcher '*' when not specified for tool events" do
@@ -256,7 +260,7 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
 
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ ~r/matcher: :\*/
+      assert content =~ ~r/tools matching: \*/
     end
 
     test "handles simple tool name matchers as atoms" do
@@ -279,7 +283,7 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       source = Rewrite.source!(igniter.rewrite, "lib/claude/hooks/post_tool_use/write_hook.ex")
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ ~r/matcher: :write/
+      assert content =~ ~r/tools matching: write/
     end
 
     test "handles complex matchers as strings" do
@@ -302,7 +306,7 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
       source = Rewrite.source!(igniter.rewrite, "lib/claude/hooks/post_tool_use/complex_hook.ex")
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ ~r/matcher: \[:write, :edit, :multi_edit\]/
+      assert content =~ ~r/tools matching: write, edit, multi_edit/
     end
 
     test "adds hook to .claude.exs when --add-to-config is true" do
@@ -609,7 +613,7 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
         content = Rewrite.Source.get(source, :content)
 
         assert content =~ ~r/Interactive test hook/
-        assert content =~ ~r/matcher: \[:write, :edit\]/
+        assert content =~ ~r/tools matching: write, edit/
       end)
     end
 
@@ -632,7 +636,7 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
         source = Rewrite.source!(igniter.rewrite, "lib/claude/hooks/notification/notify_hook.ex")
         content = Rewrite.Source.get(source, :content)
 
-        refute content =~ ~r/matcher:/
+        refute content =~ ~r/tools matching:/
       end)
     end
 
@@ -655,7 +659,7 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
 
         content = Rewrite.Source.get(source, :content)
 
-        assert content =~ ~r/matcher: :\*/
+        assert content =~ ~r/tools matching: \*/
       end)
     end
 
@@ -724,8 +728,7 @@ defmodule Mix.Tasks.Claude.Gen.HookTest do
         content = Rewrite.Source.get(source, :content)
 
         assert content =~ ~r/defmodule Claude\.Hooks\.PostToolUse\.MyFormatter do/
-        assert content =~ ~r/event: :post_tool_use/
-        assert content =~ ~r/matcher: \[:write, :edit\]/
+        assert content =~ ~r/post_tool_use event for tools matching: write, edit/
       end)
     end
   end
