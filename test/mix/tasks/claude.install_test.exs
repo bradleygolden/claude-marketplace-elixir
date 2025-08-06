@@ -269,36 +269,27 @@ defmodule Mix.Tasks.Claude.InstallTest do
       # Read and verify settings.json
       settings = File.read!(".claude/settings.json") |> Jason.decode!()
 
-      # Check PostToolUse hooks
-      assert [%{"hooks" => post_hooks, "matcher" => "Write|Edit|MultiEdit"}] =
+      # Check PostToolUse hooks - new system uses universal matcher
+      assert [%{"hooks" => post_hooks, "matcher" => "*"}] =
                settings["hooks"]["PostToolUse"]
 
-      # Should contain our hook
+      # Should contain our dispatcher hook
       assert Enum.any?(post_hooks, fn hook ->
                hook["command"] ==
-                 "cd $CLAUDE_PROJECT_DIR && mix claude.hook elixir_quality_checks"
+                 "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run post_tool_use"
              end)
 
       # Check PreToolUse hooks  
       pre_tool_use_hooks = settings["hooks"]["PreToolUse"]
       assert is_list(pre_tool_use_hooks)
 
-      # Find the hook with our ID
-      assert hook_config =
-               Enum.find(pre_tool_use_hooks, fn config ->
-                 Enum.any?(config["hooks"], fn hook ->
-                   String.contains?(hook["command"], "pre_commit_validation")
-                 end)
-               end)
-
-      # The test uses [:bash] which should be converted to "Bash"
-      # But allow for command patterns like "Bash(git commit:*)" too
-      assert String.starts_with?(hook_config["matcher"], "Bash")
-      pre_hooks = hook_config["hooks"]
+      # Should have universal matcher - filtering happens in mix task
+      [%{"matcher" => pre_matcher, "hooks" => pre_hooks}] = pre_tool_use_hooks
+      assert pre_matcher == "*"
 
       assert Enum.any?(pre_hooks, fn hook ->
                hook["command"] ==
-                 "cd $CLAUDE_PROJECT_DIR && mix claude.hook pre_commit_validation"
+                 "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run pre_tool_use"
              end)
 
       # Verify no hook scripts were created for ID-based hooks
@@ -332,7 +323,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
       settings = File.read!(".claude/settings.json") |> Jason.decode!()
       [%{"matcher" => matcher}] = settings["hooks"]["PostToolUse"]
 
-      assert matcher == "Write|Edit|MultiEdit"
+      # New system uses universal matcher - actual filtering happens in mix task
+      assert matcher == "*"
     end
 
     test "prevents hook duplication on re-install" do
@@ -706,6 +698,15 @@ defmodule Mix.Tasks.Claude.InstallTest do
                 "nested": true
               }
             }
+            """,
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  {"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit]}
+                ]
+              }
+            }
             """
           }
         )
@@ -791,8 +792,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       notices = igniter.notices
 
-      # Should have hook installation notice
-      assert Enum.any?(notices, &String.contains?(&1, "Claude hooks have been installed"))
+      # Should have hook configuration notice
+      assert Enum.any?(notices, &String.contains?(&1, "Claude hooks have been configured"))
 
       # Should have usage rules sync notice
       assert Enum.any?(notices, &String.contains?(&1, "Syncing usage rules to CLAUDE.md"))
@@ -871,11 +872,15 @@ defmodule Mix.Tasks.Claude.InstallTest do
           files: %{
             ".claude.exs" => """
             %{
-              hooks: [
-                Claude.Hooks.PostToolUse.ElixirFormatter,
-                Claude.Hooks.PostToolUse.CompilationChecker,
-                Claude.Hooks.PreToolUse.PreCommitCheck
-              ]
+              hooks: %{
+                post_tool_use: [
+                  {"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit]},
+                  {"compile --warnings-as-errors", when: [:write, :edit, :multi_edit]}
+                ],
+                pre_tool_use: [
+                  {"test --stale", when: "Bash(git commit:*)"}
+                ]
+              }
             }
             """
           }
@@ -890,14 +895,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert post_hooks = settings["hooks"]["PostToolUse"]
       assert length(post_hooks) == 1
       [post_config] = post_hooks
-      # Template includes 2 default PostToolUse hooks, but test env may have more
-      assert length(post_config["hooks"]) >= 2
+      # Single dispatcher hook
+      assert length(post_config["hooks"]) == 1
+      assert hd(post_config["hooks"])["command"] =~ "claude.hooks.run post_tool_use"
 
       # PreToolUse hooks should be separate
       assert pre_hooks = settings["hooks"]["PreToolUse"]
       assert length(pre_hooks) == 1
       [pre_config] = pre_hooks
       assert length(pre_config["hooks"]) == 1
+      assert hd(pre_config["hooks"])["command"] =~ "claude.hooks.run pre_tool_use"
     end
   end
 

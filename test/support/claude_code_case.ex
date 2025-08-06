@@ -75,7 +75,8 @@ defmodule Claude.ClaudeCodeCase do
           setup_test_project: 1,
           setup_phoenix_project: 1,
           trap_unexpected_halts: 0,
-          trap_unexpected_halts: 1
+          trap_unexpected_halts: 1,
+          put_in_config: 3
         ]
 
       setup :set_mimic_from_context
@@ -270,5 +271,30 @@ defmodule Claude.ClaudeCodeCase do
     end
 
     {:ok, project_dir: test_dir}
+  end
+
+  @doc """
+  Put a value into the claude.exs file at the specified path and key.
+  """
+  def put_in_config(path, key, value) do
+    config_path = Path.join(path, ".claude.exs")
+
+    config =
+      if File.exists?(config_path) do
+        try do
+          {config, _bindings} = Code.eval_file(config_path)
+          config
+        rescue
+          _ -> %{}
+        end
+      else
+        %{}
+      end
+
+    updated_config = put_in(config, key, value)
+    formatted_config = inspect(updated_config, pretty: true, limit: :infinity)
+    File.write!(config_path, formatted_config)
+
+    updated_config
   end
 end

@@ -4,26 +4,33 @@
       {
         "hooks": [
           {
-            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hook elixir_quality_checks",
-            "type": "command"
-          },
-          {
-            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hook related_files_check",
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run post_tool_use",
             "type": "command"
           }
         ],
-        "matcher": "Write|Edit|MultiEdit"
+        "matcher": "*"
       }
     ],
     "PreToolUse": [
       {
         "hooks": [
           {
-            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hook pre_commit_validation",
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run pre_tool_use",
             "type": "command"
           }
         ],
-        "matcher": "Bash(git commit:*)"
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
       }
     ]
   }
