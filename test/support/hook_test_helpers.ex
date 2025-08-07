@@ -1,189 +1,98 @@
 defmodule Claude.Test.HookTestHelpers do
   @moduledoc """
-  Helper functions for testing Claude hooks.
-
-  Provides utilities to reduce boilerplate in hook tests, including:
-  - Test project setup
-  - Common JSON input builders
-  - File creation helpers
-  - Environment management
+  Helper functions for testing hooks that use exit codes.
   """
 
-  @doc """
-  Sets up a temporary test project with mix.exs and lib directory.
+  import ExUnit.Assertions
+  import ExUnit.CaptureIO
+  import Mimic
 
-  Returns the test directory path.
-  """
-  def setup_test_project(opts \\ []) do
-    test_id = Keyword.get(opts, :test_id, :erlang.phash2(make_ref()))
-    dir_name = Keyword.get(opts, :dir_name, "claude_hook_test_#{test_id}")
-    test_dir = Path.join(System.tmp_dir!(), dir_name)
+  # Runs a hook and captures its exit behavior.
+  # Returns:
+  # - {:exit, 0, stdout, stderr} for successful exit
+  # - {:exit, 2, stdout, stderr} for error exit
+  # - {:error, reason} if something goes wrong
+  defp run_hook_with_exit(hook_module, input) do
+    json_input =
+      case input do
+        input when is_binary(input) -> input
+        input -> Jason.encode!(input)
+      end
 
-    File.rm_rf!(test_dir)
-    File.mkdir_p!(test_dir)
+    # Expect the halt and capture its value
+    expect(System, :halt, fn code ->
+      send(self(), {:halt_called, code})
+      :ok
+    end)
 
-    mix_content = Keyword.get(opts, :mix_exs, default_mix_exs())
-    File.write!(Path.join(test_dir, "mix.exs"), mix_content)
+    # Capture stderr using CaptureIO
+    output =
+      capture_io(:stderr, fn ->
+        # Also capture stdout
+        stdout =
+          capture_io(fn ->
+            hook_module.run(json_input)
+          end)
 
-    File.mkdir_p!(Path.join(test_dir, "lib"))
+        send(self(), {:stdout, stdout})
+      end)
 
-    for dir <- Keyword.get(opts, :dirs, []) do
-      File.mkdir_p!(Path.join(test_dir, dir))
+    # Get stdout from the message
+    stdout =
+      receive do
+        {:stdout, s} -> s
+      after
+        100 -> ""
+      end
+
+    # Get the exit code from the message
+    receive do
+      {:halt_called, code} -> {:exit, code, stdout, output}
+    after
+      100 -> {:error, :no_halt_called}
     end
-
-    for {path, content} <- Keyword.get(opts, :files, []) do
-      full_path = Path.join(test_dir, path)
-      File.mkdir_p!(Path.dirname(full_path))
-      File.write!(full_path, content)
-    end
-
-    if Keyword.get(opts, :compile, true) do
-      System.cmd("mix", ["compile"], cd: test_dir)
-    end
-
-    test_dir
-  end
-
-  @doc """
-  Sets up the test environment for a hook test.
-
-  This should be called in your test's setup block. It:
-  - Creates a test project
-  - Changes to the test directory
-  - Sets CLAUDE_PROJECT_DIR (needed for hooks that use absolute paths)
-  - Returns cleanup function for on_exit
-  """
-  def setup_hook_test(opts \\ []) do
-    test_dir = setup_test_project(opts)
-    original_cwd = File.cwd!()
-
-    File.cd!(test_dir)
-    System.put_env("CLAUDE_PROJECT_DIR", test_dir)
-
-    cleanup = fn ->
-      System.delete_env("CLAUDE_PROJECT_DIR")
-      File.cd!(original_cwd)
-      File.rm_rf!(test_dir)
-    end
-
-    {test_dir, cleanup}
   end
 
   @doc """
-  Builds JSON input for edit tools (Edit, Write, MultiEdit).
-
-  ## Options
-    - :tool_name - The tool name (default: "Edit")
-    - :file_path - The file path (required)
-    - :content - For Write tool
-    - :old_string - For Edit tool
-    - :new_string - For Edit tool
-    - :edits - For MultiEdit tool
-    - :extra - Additional fields to include
+  Asserts that a hook exits successfully (code 0) with no output.
   """
-  def build_tool_input(opts) do
-    tool_name = Keyword.get(opts, :tool_name, "Edit")
-    file_path = Keyword.fetch!(opts, :file_path)
+  def assert_hook_success(hook_module, input) do
+    case run_hook_with_exit(hook_module, input) do
+      {:exit, 0, "", ""} ->
+        :ok
 
-    tool_input =
-      case tool_name do
-        "Write" ->
-          %{
-            "file_path" => file_path,
-            "content" => Keyword.get(opts, :content, "")
-          }
+      {:exit, 0, stdout, stderr} ->
+        flunk(
+          "Expected silent success but got stdout: #{inspect(stdout)}, stderr: #{inspect(stderr)}"
+        )
 
-        "Edit" ->
-          %{
-            "file_path" => file_path,
-            "old_string" => Keyword.get(opts, :old_string, ""),
-            "new_string" => Keyword.get(opts, :new_string, "")
-          }
+      {:exit, code, _, stderr} ->
+        flunk("Expected exit code 0 but got #{code} with stderr: #{stderr}")
 
-        "MultiEdit" ->
-          %{
-            "file_path" => file_path,
-            "edits" => Keyword.get(opts, :edits, [])
-          }
-
-        _ ->
-          %{"file_path" => file_path}
-      end
-
-    base_input = %{
-      "tool_name" => tool_name,
-      "tool_input" => tool_input
-    }
-
-    Map.merge(base_input, Keyword.get(opts, :extra, %{}))
-    |> Jason.encode!()
+      {:error, reason} ->
+        flunk("Hook failed: #{inspect(reason)}")
+    end
   end
 
   @doc """
-  Creates a test Elixir module file with the given content.
-
-  If content is not provided, creates a simple valid module.
+  Asserts that a hook exits with error (code 2) and returns the stderr message.
   """
-  def create_elixir_file(test_dir, relative_path, content \\ nil) do
-    content = content || default_module_content(relative_path)
-    full_path = Path.join(test_dir, relative_path)
-    File.mkdir_p!(Path.dirname(full_path))
-    File.write!(full_path, content)
-    full_path
-  end
+  def assert_hook_error(hook_module, input) do
+    case run_hook_with_exit(hook_module, input) do
+      {:exit, 2, "", stderr} when stderr != "" ->
+        stderr
 
-  @doc """
-  Captures stderr output from a function.
+      {:exit, 2, stdout, ""} ->
+        flunk("Expected stderr output but got stdout: #{inspect(stdout)}")
 
-  This is a convenience wrapper around ExUnit.CaptureIO.capture_io/2.
-  """
-  def capture_stderr(fun) do
-    ExUnit.CaptureIO.capture_io(:stderr, fun)
-  end
+      {:exit, 0, _, _} ->
+        flunk("Expected exit code 2 but hook succeeded")
 
-  defp default_mix_exs do
-    """
-    defmodule TestProject.MixProject do
-      use Mix.Project
+      {:exit, code, _, stderr} ->
+        flunk("Expected exit code 2 but got #{code} with stderr: #{stderr}")
 
-      def project do
-        [
-          app: :test_project,
-          version: "0.1.0",
-          elixir: "~> 1.14",
-          deps: deps()
-        ]
-      end
-
-      def application do
-        [extra_applications: [:logger]]
-      end
-
-      defp deps do
-        []
-      end
+      {:error, reason} ->
+        flunk("Hook failed: #{inspect(reason)}")
     end
-    """
-  end
-
-  defp default_module_content(path) do
-    module_name = path_to_module_name(path)
-
-    """
-    defmodule #{module_name} do
-      @moduledoc false
-      
-      def hello(name) do
-        "Hello, \#{name}!"
-      end
-    end
-    """
-  end
-
-  defp path_to_module_name(path) do
-    path
-    |> Path.basename(".ex")
-    |> Path.basename(".exs")
-    |> Macro.camelize()
   end
 end

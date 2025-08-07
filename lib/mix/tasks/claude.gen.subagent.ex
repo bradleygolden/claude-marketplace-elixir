@@ -417,11 +417,18 @@ defmodule Mix.Tasks.Claude.Gen.Subagent do
 
   defp generate_claude_exs_with_subagent(config) do
     "%{\n" <>
-      "  hooks: [\n" <>
-      "    Claude.Hooks.PostToolUse.ElixirFormatter,\n" <>
-      "    Claude.Hooks.PostToolUse.CompilationChecker,\n" <>
-      "    Claude.Hooks.PreToolUse.PreCommitCheck\n" <>
-      "  ],\n" <>
+      "  hooks: %{\n" <>
+      "    post_tool_use: [\n" <>
+      "      %{\n" <>
+      "        id: :elixir_quality_checks,\n" <>
+      "        matcher: [:write, :edit, :multi_edit],\n" <>
+      "        tasks: [\n" <>
+      "          \"format --check-formatted {{tool_input.file_path}}\",\n" <>
+      "          \"compile --warnings-as-errors\"\n" <>
+      "        ]\n" <>
+      "      }\n" <>
+      "    ]\n" <>
+      "  },\n" <>
       "  subagents: [\n" <>
       format_subagent_config(config, "    ") <>
       "\n" <>

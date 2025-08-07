@@ -4,30 +4,44 @@
       {
         "hooks": [
           {
-            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/elixir_formatter.exs",
-            "type": "command"
-          },
-          {
-            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/compilation_checker.exs",
-            "type": "command"
-          },
-          {
-            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/related_files.exs",
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run post_tool_use",
             "type": "command"
           }
         ],
-        "matcher": "Write|Edit|MultiEdit"
+        "matcher": "*"
       }
     ],
     "PreToolUse": [
       {
         "hooks": [
           {
-            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/pre_commit_check.exs",
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run pre_tool_use",
             "type": "command"
           }
         ],
-        "matcher": "Bash"
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run subagent_stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
       }
     ]
   }

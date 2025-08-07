@@ -178,7 +178,6 @@ mix compile --warnings-as-errors
 
 **Custom Slash Commands**
 - `/create-subagent` - Generate a new sub-agent with guided prompts (wraps mix task)
-- `/create-hook` - Scaffold a new custom hook with boilerplate (wraps mix task)
 - Auto-generate commands in `.claude/commands/` during installation
 
 **Scoped CLAUDE.md's**

@@ -1,10 +1,14 @@
 # Generators
 
-Claude provides Mix task generators to help you quickly create hooks and sub-agents following best practices.
+Claude provides Mix task generators for development and extending the library.
 
-## Hook Generator
+## Hook Generator (Internal Development)
 
-Generate a new hook module that implements `Claude.Hooks.Hook.Behaviour`.
+> **Note**: The hook generator is primarily intended for internal development of the Claude library.
+> Due to current limitations with hook module loading in isolated script contexts, custom project
+> hooks may not work as expected. We recommend using the built-in hooks provided by Claude.
+
+Generate a new hook module using the `Claude.Hook` macro for extending the Claude library itself.
 
 ### Interactive Mode
 
@@ -80,14 +84,16 @@ defmodule Claude.Hooks.PostToolUse.MyFormatter do
   - https://docs.anthropic.com/en/docs/claude-code/hooks-guide
   """
   
-  use Claude.Hooks.Hook.Behaviour,
+  use Claude.Hook,
     event: :post_tool_use,
     matcher: [:write, :edit],  # Note: matcher uses snake_case atoms
     description: "Format files after editing"
   
-  @impl Claude.Hooks.Hook.Behaviour
-  def run(json_input) when is_binary(json_input) do
+  @impl true
+  def handle(%Claude.Hooks.Events.PostToolUse.Input{} = input) do
     # Hook implementation
+    # Return :ok, {:block, reason}, {:allow, reason}, or {:deny, reason}
+    :ok
   end
 end
 ```
@@ -211,13 +217,32 @@ Generated hooks include TODO comments for implementing tests:
 
 ```elixir
 # In your generated hook
-def run(input) do
+def handle(input) do
   # TODO: Implement your hook logic here
-  # ...
+  # Return :ok, {:block, reason}, {:allow, reason}, or {:deny, reason}
+  :ok
 end
 ```
 
-Test your hooks thoroughly before using in production:
+Test your hooks thoroughly before using in production. Claude provides test helpers to simplify hook testing:
+
+```elixir
+# Example test using Claude.Test helpers
+defmodule MyFormatterTest do
+  use ExUnit.Case
+  
+  test "handles file formatting" do
+    input = %{
+      "hook_event_name" => "PostToolUse",
+      "tool_name" => "Edit",
+      "tool_input" => %{"file_path" => "/test.ex"}
+    }
+    
+    json = Claude.Test.run_hook(MyFormatter, input)
+    assert json["suppressOutput"] == true
+  end
+end
+```
 
 ```bash
 # Run hook tests

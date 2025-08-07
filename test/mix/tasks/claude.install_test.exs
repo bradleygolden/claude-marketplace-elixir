@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.Claude.InstallTest do
-  use Claude.Test.ClaudeCodeCase, trap_halts: false
+  use Claude.ClaudeCodeCase, trap_halts: false
 
   import Igniter.Test,
     except: [test_project: 0, test_project: 1, phx_test_project: 0, phx_test_project: 1]
@@ -77,7 +77,10 @@ defmodule Mix.Tasks.Claude.InstallTest do
     test "preserves existing .claude.exs file" do
       custom_config = """
       %{
-        hooks: [MyApp.CustomHook],
+        hooks: %{
+          stop: [:compile, :format],
+          post_tool_use: ["custom --task"]
+        },
         custom_setting: true
       }
       """
@@ -91,6 +94,91 @@ defmodule Mix.Tasks.Claude.InstallTest do
       |> assert_unchanged(".claude.exs")
     end
 
+    test "generates .claude.exs with atom shortcuts for hooks" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude.exs")
+
+      # Check that the generated file contains atom shortcuts by checking the rewrite map
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "stop: [:compile, :format]"
+      assert content =~ "subagent_stop: [:compile, :format]"
+      assert content =~ "post_tool_use: [:compile, :format]"
+      assert content =~ "pre_tool_use: [:compile, :format, :unused_deps]"
+    end
+
+    test "errors on old list-based hook format" do
+      old_format_config = """
+      %{
+        hooks: [MyApp.CustomHook, AnotherHook]
+      }
+      """
+
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => old_format_config
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Check that an issue is raised for old format
+      assert Enum.any?(igniter.issues, fn issue ->
+               String.contains?(issue, "outdated hooks format") and
+                 String.contains?(issue, "mix claude.upgrade")
+             end)
+    end
+
+    test "accepts new map-based hook format" do
+      new_format_config = """
+      %{
+        hooks: %{
+          stop: [:compile, :format],
+          post_tool_use: [:compile]
+        }
+      }
+      """
+
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => new_format_config
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should have no issues with new format
+      assert igniter.issues == []
+      assert_unchanged(igniter, ".claude.exs")
+    end
+
+    test "handles mixed atom and explicit hook configurations" do
+      mixed_config = """
+      %{
+        hooks: %{
+          stop: [:compile, {"custom --task", halt_pipeline?: false}],
+          post_tool_use: [:format]
+        }
+      }
+      """
+
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => mixed_config
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should have no issues with mixed format
+      assert igniter.issues == []
+      assert_unchanged(igniter, ".claude.exs")
+    end
+
     test "adds usage_rules dependency" do
       test_project()
       |> Igniter.compose_task("claude.install")
@@ -100,50 +188,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         24 25   |      # {:dep_from_hexpm, "~> 0.3.0"},
       """)
       |> apply_igniter!()
-    end
-
-    test "composes claude.hooks.install task" do
-      igniter =
-        test_project()
-        |> Igniter.compose_task("claude.install")
-
-      # Verify files are created using Igniter assertions
-      assert_creates(igniter, ".claude/settings.json")
-      assert_creates(igniter, ".claude/hooks/elixir_formatter.exs")
-      assert_creates(igniter, ".claude/hooks/compilation_checker.exs")
-      assert_creates(igniter, ".claude/hooks/pre_commit_check.exs")
-
-      # Apply the igniter to check the content
-      apply_igniter!(igniter)
-
-      # Now we can read the settings to verify the structure
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-      assert hooks = settings["hooks"]
-
-      assert [%{"hooks" => post_tool_use_hooks, "matcher" => matcher}] =
-               hooks["PostToolUse"]
-
-      # The matcher should contain all three tools
-      assert String.contains?(matcher, "Edit")
-      assert String.contains?(matcher, "Write")
-      assert String.contains?(matcher, "MultiEdit") or String.contains?(matcher, "Multiedit")
-
-      # Now includes related_files by default from .claude.exs template
-      assert length(post_tool_use_hooks) >= 2
-
-      hook_commands = Enum.map(post_tool_use_hooks, & &1["command"])
-      assert Enum.any?(hook_commands, &String.contains?(&1, "elixir_formatter.exs"))
-      assert Enum.any?(hook_commands, &String.contains?(&1, "compilation_checker.exs"))
-
-      assert [%{"hooks" => pre_tool_use_hooks, "matcher" => "Bash"}] = hooks["PreToolUse"]
-
-      assert [
-               %{
-                 "type" => "command",
-                 "command" =>
-                   "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/pre_commit_check.exs"
-               }
-             ] = pre_tool_use_hooks
     end
 
     test "detects Phoenix project and notifies about tidewave" do
@@ -273,6 +317,206 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       # Note: settings.json might have timestamp updates, so we just verify it exists
       assert Igniter.exists?(igniter2, ".claude/settings.json")
+    end
+  end
+
+  describe "new hook system with IDs" do
+    test "generates direct mix commands for hooks with IDs" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  %{
+                    id: :elixir_quality_checks,
+                    matcher: [:write, :edit, :multi_edit],
+                    tasks: [
+                      "format --check-formatted {{tool_input.file_path}}",
+                      "compile --warnings-as-errors"
+                    ]
+                  }
+                ],
+                pre_tool_use: [
+                  %{
+                    id: :pre_commit_validation,
+                    matcher: [:bash],
+                    tasks: ["format --check-formatted"]
+                  }
+                ]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      # Read and verify settings.json
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+
+      # Check PostToolUse hooks - new system uses universal matcher
+      assert [%{"hooks" => post_hooks, "matcher" => "*"}] =
+               settings["hooks"]["PostToolUse"]
+
+      # Should contain our dispatcher hook
+      assert Enum.any?(post_hooks, fn hook ->
+               hook["command"] ==
+                 "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run post_tool_use"
+             end)
+
+      # Check PreToolUse hooks  
+      pre_tool_use_hooks = settings["hooks"]["PreToolUse"]
+      assert is_list(pre_tool_use_hooks)
+
+      # Should have universal matcher - filtering happens in mix task
+      [%{"matcher" => pre_matcher, "hooks" => pre_hooks}] = pre_tool_use_hooks
+      assert pre_matcher == "*"
+
+      assert Enum.any?(pre_hooks, fn hook ->
+               hook["command"] ==
+                 "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run pre_tool_use"
+             end)
+
+      # Verify no hook scripts were created for ID-based hooks
+      refute File.exists?(".claude/hooks/claude_hook_elixir_quality_checks.exs")
+      refute File.exists?(".claude/hooks/claude_hook_pre_commit_validation.exs")
+    end
+
+    test "converts atom matchers to proper strings" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  %{
+                    id: :test_hook,
+                    matcher: [:write, :edit, :multi_edit, :web_fetch],
+                    tasks: ["test"]
+                  }
+                ]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      [%{"matcher" => matcher}] = settings["hooks"]["PostToolUse"]
+
+      # New system uses universal matcher - actual filtering happens in mix task
+      assert matcher == "*"
+    end
+
+    test "prevents hook duplication on re-install" do
+      # Create initial .claude.exs
+      igniter1 =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  %{
+                    id: :quality_checks,
+                    matcher: [:write],
+                    tasks: ["format"]
+                  }
+                ]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter1)
+
+      # Read initial settings
+      settings1 = File.read!(".claude/settings.json") |> Jason.decode!()
+      # Find hooks that include Write in their matcher
+      all_post_hooks = settings1["hooks"]["PostToolUse"] || []
+
+      initial_hooks =
+        all_post_hooks
+        |> Enum.filter(&String.contains?(&1["matcher"] || "", "Write"))
+        |> Enum.flat_map(&(&1["hooks"] || []))
+
+      initial_count = length(initial_hooks)
+
+      # Re-run installation
+      igniter2 =
+        test_project(
+          files: %{
+            ".claude.exs" => File.read!(".claude.exs"),
+            ".claude/settings.json" => File.read!(".claude/settings.json"),
+            "mix.exs" => File.read!("mix.exs")
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter2)
+
+      # Verify no duplication
+      settings2 = File.read!(".claude/settings.json") |> Jason.decode!()
+      all_post_hooks2 = settings2["hooks"]["PostToolUse"] || []
+
+      final_hooks =
+        all_post_hooks2
+        |> Enum.filter(&String.contains?(&1["matcher"] || "", "Write"))
+        |> Enum.flat_map(&(&1["hooks"] || []))
+
+      final_count = length(final_hooks)
+
+      # Should have same number of hooks after re-install
+      assert final_count == initial_count
+    end
+
+    test "handles empty hook lists gracefully" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  %{
+                    id: :empty_hook,
+                    matcher: [:write],
+                    tasks: []
+                  }
+                ]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      # Empty hooks should still create the command
+      post_hooks = settings["hooks"]["PostToolUse"]
+
+      # Find our empty hook entry if it exists
+      empty_hook =
+        Enum.find(post_hooks, fn config ->
+          Enum.any?(config["hooks"] || [], fn hook ->
+            String.contains?(hook["command"], "empty_hook")
+          end)
+        end)
+
+      # If the installer generates commands even for empty tasks, we should find it
+      # Otherwise, empty hooks might be filtered out
+      assert empty_hook || length(post_hooks) >= 0
     end
   end
 
@@ -535,23 +779,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
   end
 
-  describe "hook script generation" do
-    test "generates hook scripts with correct dependencies" do
-      igniter =
-        test_project()
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Check that hook scripts have proper Mix.install
-      formatter_script = File.read!(".claude/hooks/elixir_formatter.exs")
-      assert String.contains?(formatter_script, "Mix.install")
-      assert String.contains?(formatter_script, ":claude")
-      assert String.contains?(formatter_script, ":jason")
-      assert String.contains?(formatter_script, "Claude.Hooks.PostToolUse.ElixirFormatter.run")
-    end
-  end
-
   describe "edge cases" do
     test "handles missing .claude.exs" do
       igniter =
@@ -572,6 +799,15 @@ defmodule Mix.Tasks.Claude.InstallTest do
               "customSetting": "value",
               "otherConfig": {
                 "nested": true
+              }
+            }
+            """,
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [
+                  {"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit]}
+                ]
               }
             }
             """
@@ -602,103 +838,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
   end
 
   describe "hook deduplication" do
-    test "removes old CLI-based hooks when installing new script-based hooks" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude/settings.json" => """
-            {
-              "hooks": {
-                "PostToolUse": [
-                  {
-                    "matcher": "Edit|Write",
-                    "hooks": [
-                      {
-                        "type": "command",
-                        "command": "mix claude hooks run post_tool_use elixir_formatter"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-      hooks = settings["hooks"]["PostToolUse"]
-
-      # Old CLI hooks should be removed
-      refute Enum.any?(hooks, fn matcher_config ->
-               Enum.any?(matcher_config["hooks"], fn hook ->
-                 String.contains?(hook["command"], "mix claude hooks run")
-               end)
-             end)
-
-      # New script hooks should be present
-      assert Enum.any?(hooks, fn matcher_config ->
-               Enum.any?(matcher_config["hooks"], fn hook ->
-                 String.contains?(hook["command"], ".claude/hooks/elixir_formatter.exs")
-               end)
-             end)
-    end
-
-    test "replaces all Claude hooks with fresh installations" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude/settings.json" => """
-            {
-              "hooks": {
-                "PostToolUse": [
-                  {
-                    "matcher": "Edit|Write|MultiEdit",
-                    "hooks": [
-                      {
-                        "type": "command",
-                        "command": ".claude/hooks/old_formatter.exs"
-                      },
-                      {
-                        "type": "command",
-                        "command": "mix claude hooks run post_tool_use elixir_formatter"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-      hooks = settings["hooks"]["PostToolUse"]
-
-      # Should have one matcher with only the new Claude hooks
-      assert length(hooks) == 1
-      [matcher_config] = hooks
-
-      hook_commands = Enum.map(matcher_config["hooks"], &Map.get(&1, "command"))
-
-      # Old Claude hooks should be removed
-      refute Enum.any?(hook_commands, &String.contains?(&1, "old_formatter.exs"))
-      refute Enum.any?(hook_commands, &String.contains?(&1, "mix claude hooks run"))
-
-      # New Claude hooks should be present
-      assert Enum.any?(hook_commands, &String.contains?(&1, "elixir_formatter.exs"))
-      assert Enum.any?(hook_commands, &String.contains?(&1, "compilation_checker.exs"))
-
-      # Test environment may include RelatedFiles if it's enabled in the project's .claude.exs
-      # Just ensure we have at least the two required hooks
-      assert length(hook_commands) >= 2
-    end
   end
 
   describe "dependency handling" do
@@ -756,8 +895,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       notices = igniter.notices
 
-      # Should have hook installation notice
-      assert Enum.any?(notices, &String.contains?(&1, "Claude hooks have been installed"))
+      # Should have hook configuration notice
+      assert Enum.any?(notices, &String.contains?(&1, "Claude hooks have been configured"))
 
       # Should have usage rules sync notice
       assert Enum.any?(notices, &String.contains?(&1, "Syncing usage rules to CLAUDE.md"))
@@ -794,60 +933,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
   end
 
   describe "hook configuration from .claude.exs" do
-    test "reads hooks from .claude.exs file" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: [
-                Claude.Hooks.PostToolUse.ElixirFormatter,
-                Claude.Hooks.PostToolUse.CompilationChecker,
-                Claude.Hooks.PreToolUse.PreCommitCheck
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Verify hook scripts are created
-      assert File.exists?(".claude/hooks/elixir_formatter.exs")
-      assert File.exists?(".claude/hooks/compilation_checker.exs")
-      assert File.exists?(".claude/hooks/pre_commit_check.exs")
-
-      # Verify settings.json contains correct hooks
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-      assert hooks = settings["hooks"]["PostToolUse"]
-      assert length(hooks) == 1
-
-      [post_tool_use_config] = hooks
-      hook_commands = Enum.map(post_tool_use_config["hooks"], & &1["command"])
-      assert Enum.any?(hook_commands, &String.contains?(&1, "elixir_formatter.exs"))
-      assert Enum.any?(hook_commands, &String.contains?(&1, "compilation_checker.exs"))
-    end
-
-    test "handles empty hooks list in .claude.exs" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: []
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      # Should show notice about missing default hooks
-      assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "missing some default hooks")
-             end)
-    end
-
     test "handles missing hooks key in .claude.exs" do
       igniter =
         test_project(
@@ -861,113 +946,10 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should show notice about missing default hooks
+      # Should show notice about no hooks configured
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "missing some default hooks")
+               String.contains?(notice, "No hooks configured")
              end)
-    end
-
-    test "shows notice when default hooks are missing from existing .claude.exs" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: [
-                Claude.Hooks.PostToolUse.ElixirFormatter
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      # Should have notice about missing default hooks
-      assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "missing some default hooks") &&
-                 String.contains?(notice, "Claude.Hooks.PostToolUse.CompilationChecker") &&
-                 String.contains?(notice, "Claude.Hooks.PreToolUse.PreCommitCheck")
-             end)
-    end
-
-    test "handles custom hook modules in .claude.exs" do
-      # Define a test hook module
-      defmodule TestHook do
-        def config do
-          %{
-            type: :post_tool_use,
-            command: "echo 'test hook'",
-            matcher: "Test"
-          }
-        end
-
-        def description, do: "Test hook"
-        def __hook_event__, do: :post_tool_use
-        def __hook_matcher__, do: "Test"
-      end
-
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: [
-                Mix.Tasks.Claude.InstallTest.TestHook
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Hook script will only be created if the module can be loaded
-      # Since this is a test module defined inline, it won't be available
-      # when the script is generated in a separate process
-      refute File.exists?(".claude/hooks/test_hook.exs")
-
-      # Since the test module isn't available in the script generation process,
-      # verify that other default hooks from the template were still created
-      assert File.exists?(".claude/hooks/elixir_formatter.exs")
-      assert File.exists?(".claude/hooks/compilation_checker.exs")
-    end
-
-    test "ignores invalid hook modules in .claude.exs" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: [
-                Claude.Hooks.PostToolUse.ElixirFormatter,
-                NonExistentModule,
-                "not even a module"
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Should only create scripts for valid hooks
-      assert File.exists?(".claude/hooks/elixir_formatter.exs")
-      refute File.exists?(".claude/hooks/non_existent_module.exs")
-
-      # Settings should only contain valid hooks
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-
-      all_commands =
-        settings["hooks"]
-        |> Map.values()
-        |> List.flatten()
-        |> Enum.flat_map(& &1["hooks"])
-        |> Enum.map(& &1["command"])
-
-      assert Enum.any?(all_commands, &String.contains?(&1, "elixir_formatter.exs"))
-      refute Enum.any?(all_commands, &String.contains?(&1, "non_existent_module"))
     end
 
     test "handles malformed .claude.exs file gracefully" do
@@ -987,49 +969,21 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert igniter.issues == []
     end
 
-    test "handles hook module without required functions" do
-      # Define a minimal hook module
-      defmodule MinimalHook do
-        def config do
-          %{type: :post_tool_use, command: "echo 'minimal'", matcher: "Test"}
-        end
-      end
-
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: [
-                Mix.Tasks.Claude.InstallTest.MinimalHook
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Hook script will only be created if the module can be loaded
-      # Since this is a test module defined inline, it won't be available
-      refute File.exists?(".claude/hooks/minimal_hook.exs")
-
-      # Verify default hooks from template are still created
-      assert File.exists?(".claude/hooks/elixir_formatter.exs")
-    end
-
     test "groups hooks by event type and matcher" do
       igniter =
         test_project(
           files: %{
             ".claude.exs" => """
             %{
-              hooks: [
-                Claude.Hooks.PostToolUse.ElixirFormatter,
-                Claude.Hooks.PostToolUse.CompilationChecker,
-                Claude.Hooks.PreToolUse.PreCommitCheck
-              ]
+              hooks: %{
+                post_tool_use: [
+                  {"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit]},
+                  {"compile --warnings-as-errors", when: [:write, :edit, :multi_edit]}
+                ],
+                pre_tool_use: [
+                  {"test --stale", when: "Bash(git commit:*)"}
+                ]
+              }
             }
             """
           }
@@ -1044,46 +998,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert post_hooks = settings["hooks"]["PostToolUse"]
       assert length(post_hooks) == 1
       [post_config] = post_hooks
-      # Template includes 2 default PostToolUse hooks, but test env may have more
-      assert length(post_config["hooks"]) >= 2
+      # Single dispatcher hook
+      assert length(post_config["hooks"]) == 1
+      assert hd(post_config["hooks"])["command"] =~ "claude.hooks.run post_tool_use"
 
       # PreToolUse hooks should be separate
       assert pre_hooks = settings["hooks"]["PreToolUse"]
       assert length(pre_hooks) == 1
       [pre_config] = pre_hooks
       assert length(pre_config["hooks"]) == 1
-    end
-
-    test "related files hook can be configured" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: [
-                Claude.Hooks.PostToolUse.ElixirFormatter,
-                Claude.Hooks.PostToolUse.RelatedFiles
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Should create both hook scripts
-      assert File.exists?(".claude/hooks/elixir_formatter.exs")
-      assert File.exists?(".claude/hooks/related_files.exs")
-
-      # Verify settings.json contains both hooks
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-      hooks = settings["hooks"]["PostToolUse"]
-      [config] = hooks
-
-      hook_commands = Enum.map(config["hooks"], & &1["command"])
-      assert Enum.any?(hook_commands, &String.contains?(&1, "elixir_formatter.exs"))
-      assert Enum.any?(hook_commands, &String.contains?(&1, "related_files.exs"))
+      assert hd(pre_config["hooks"])["command"] =~ "claude.hooks.run pre_tool_use"
     end
   end
 

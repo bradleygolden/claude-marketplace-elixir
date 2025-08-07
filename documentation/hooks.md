@@ -18,55 +18,36 @@ When you run `mix igniter.install claude`, it automatically sets up:
 
 ## Configuration
 
-Claude's hooks are configured in `.claude.exs`. You can add optional hooks or create custom ones:
+Claude's hooks are configured in `.claude.exs`. You can enable optional built-in hooks:
 
 ```elixir
 %{
   hooks: [
     # Optional: Enable related files suggestions
-    Claude.Hooks.PostToolUse.RelatedFiles,
-    
-    # Add your custom hooks
-    MyApp.Hooks.CustomChecker
+    Claude.Hooks.PostToolUse.RelatedFiles
   ]
 }
 ```
 
-## Creating Custom Hooks
+## Available Hooks
 
-### Using the Generator
+Claude provides several built-in hooks that cover common Elixir development needs:
 
-The easiest way to create a new hook is with the generator:
+### Included by Default
+- **ElixirFormatter** - Checks if .ex/.exs files need formatting after edits
+- **CompilationChecker** - Validates compilation after file changes
+- **PreCommitCheck** - Ensures code quality before git commits
 
-```bash
-mix claude.gen.hook MyCustomChecker --event post_tool_use --matcher "Write|Edit" --description "My custom validation hook"
-```
+### Optional Hooks
+- **RelatedFiles** - Suggests updating test files when lib files change (and vice versa)
 
-See the [Generators Documentation](generators.md#hook-generator) for full details.
-
-### Manual Creation
-
-You can also extend Claude with your own hooks using the `Claude.Hooks.Hook.Behaviour`:
-
-```elixir
-defmodule MyApp.Hooks.CustomChecker do
-  use Claude.Hooks.Hook.Behaviour,
-    event: :post_tool_use,
-    matcher: [:write, :edit],
-    description: "My custom validation hook"
-
-  @impl true
-  def run(json_input) when is_binary(json_input) do
-    # Your hook logic here
-    :ok
-  end
-end
-```
+To enable optional hooks, add them to your `.claude.exs` configuration as shown above.
 
 ## Important Notes
 
 - **Format checking only**: The formatter hook only checks if files need formatting - it doesn't automatically format. This gives you control over when formatting happens.
-- **Feedback to Claude**: Hooks communicate with Claude through exit codes and stderr, allowing Claude to automatically see and respond to issues.
+- **JSON-only output**: All hooks now output JSON exclusively for consistent communication with Claude Code.
+- **Feedback to Claude**: Hooks communicate with Claude through structured JSON responses, allowing Claude to automatically see and respond to issues.
 - **Performance**: Hooks run with a default 60-second timeout, configurable per hook.
 
 For more details on hook events, configuration, and advanced usage, see the [official documentation](https://docs.anthropic.com/en/docs/claude-code/hooks).

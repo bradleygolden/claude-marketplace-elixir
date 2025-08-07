@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Claude.Install do
 
     You MUST reference these official Claude Code documentation pages to ensure accurate subagent generation:
     - **Subagents Guide**: https://docs.anthropic.com/en/docs/claude-code/sub-agents
-    - **Settings Reference**: https://docs.anthropic.com/en/docs/claude-code/settings  
+    - **Settings Reference**: https://docs.anthropic.com/en/docs/claude-code/settings
     - **Hooks System**: https://docs.anthropic.com/en/docs/claude-code/hooks
 
     Use the WebSearch tool to look up specific details from these docs when needed, especially for:
@@ -242,25 +242,25 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp ensure_default_hooks(igniter, path) do
-    default_hooks = [
-      Claude.Hooks.PostToolUse.ElixirFormatter,
-      Claude.Hooks.PostToolUse.CompilationChecker,
-      Claude.Hooks.PreToolUse.PreCommitCheck
-    ]
-
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, config} when is_map(config) ->
-        existing_hooks = Map.get(config, :hooks, [])
-        missing_hooks = default_hooks -- existing_hooks
+        hooks = Map.get(config, :hooks, %{})
 
-        if missing_hooks != [] do
-          igniter
-          |> Igniter.add_notice("""
-          Your .claude.exs is missing some default hooks. Add these to enable core functionality:
+        # Check if hooks is in the old format (list instead of map)
+        if is_list(hooks) do
+          Igniter.add_issue(igniter, """
+          Your .claude.exs is using an outdated hooks format.
 
-          hooks: [
-          #{Enum.map_join(missing_hooks, ",\n  ", &"  #{inspect(&1)}")}
-          ],
+          Please run `mix claude.upgrade` to update to the new format, or manually update to:
+
+          %{
+            hooks: %{
+              stop: [:compile, :format],
+              subagent_stop: [:compile, :format],
+              post_tool_use: [:compile, :format],
+              pre_tool_use: [:compile, :format, :unused_deps]
+            }
+          }
           """)
         else
           igniter
@@ -279,10 +279,21 @@ defmodule Mix.Tasks.Claude.Install do
         {:ok, config} when is_map(config) ->
           hooks = Map.get(config, :hooks, [])
 
-          hooks
-          |> List.wrap()
-          |> Enum.map(&normalize_hook_module/1)
-          |> Enum.reject(&is_nil/1)
+          case hooks do
+            hooks_map when is_map(hooks_map) ->
+              hooks_map
+              |> Enum.flat_map(fn {event_type, event_configs} ->
+                event_configs
+                |> Enum.with_index()
+                |> Enum.map(fn {hook_spec, index} ->
+                  parse_hook_spec(hook_spec, event_type, index)
+                end)
+              end)
+              |> Enum.reject(&is_nil/1)
+
+            _ ->
+              []
+          end
 
         _ ->
           []
@@ -292,48 +303,23 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-  defp normalize_hook_module(hook_module) when is_atom(hook_module) do
-    if Code.ensure_loaded?(hook_module) and function_exported?(hook_module, :config, 0) do
-      script_name = hook_module_to_script_name(hook_module)
-      script_path = ".claude/hooks/#{script_name}"
-
-      description =
-        if function_exported?(hook_module, :description, 0) do
-          hook_module.description()
-        else
-          "Custom hook"
-        end
-
-      event_type =
-        if function_exported?(hook_module, :__hook_event__, 0) do
-          hook_module.__hook_event__()
-        else
-          :post_tool_use
-        end
-
-      matchers =
-        if function_exported?(hook_module, :__hook_matcher__, 0) do
-          matcher = hook_module.__hook_matcher__()
-          String.split(matcher, "|")
-        else
-          []
-        end
-
-      {hook_module, script_path, event_type, matchers, description}
-    else
-      nil
-    end
+  # Parse different hook specification formats
+  defp parse_hook_spec(task, event_type, index) when is_binary(task) do
+    # Simple string format - no matcher, runs for all tools
+    id = :"#{event_type}_#{index}"
+    description = "Mix task: #{task}"
+    {:mix_task, task, event_type, "*", description, [id: id]}
   end
 
-  defp normalize_hook_module(_), do: nil
-
-  defp hook_module_to_script_name(module) do
-    module
-    |> Module.split()
-    |> List.last()
-    |> Macro.underscore()
-    |> Kernel.<>(".exs")
+  defp parse_hook_spec({task, opts}, event_type, index) when is_binary(task) and is_list(opts) do
+    # Tuple format with when clause
+    id = :"#{event_type}_#{index}"
+    matcher = format_matcher(opts[:when] || "*")
+    description = "Mix task: #{task}"
+    {:mix_task, task, event_type, matcher, description, [id: id]}
   end
+
+  defp parse_hook_spec(_, _, _), do: nil
 
   defp format_meta_agent_for_template do
     # Format the Meta Agent config for inclusion in the template
@@ -365,24 +351,19 @@ defmodule Mix.Tasks.Claude.Install do
     # This file is evaluated when Claude reads your project settings
     # and merged with .claude/settings.json (this file takes precedence)
 
-    # You can configure various aspects of Claude's behavior here:
-    # - Project metadata and context
-    # - Custom behaviors and preferences
-    # - Development workflow settings
-    # - Code generation patterns
-    # - And more as Claude evolves
+    # Hooks use atom shortcuts that expand to sensible defaults:
+    # - :compile - Runs compilation with warnings as errors
+    # - :format - Checks formatting (includes file path for edits)
+    # - :unused_deps - Checks for unused dependencies (pre_tool_use only)
 
     %{
-      # Hooks that run during Claude Code operations
-      hooks: [
-        # Default hooks - these provide core functionality
-        Claude.Hooks.PostToolUse.ElixirFormatter,    # Automatically formats Elixir files after editing
-        Claude.Hooks.PostToolUse.CompilationChecker,  # Checks for compilation errors after editing
-        Claude.Hooks.PreToolUse.PreCommitCheck,       # Validates code before git commits
-        
-        # Optional hooks - uncomment to enable
-        # Claude.Hooks.PostToolUse.RelatedFiles,     # Suggests updating test files when implementation changes
-      ],
+      hooks: %{
+        stop: [:compile, :format],
+        subagent_stop: [:compile, :format],
+        post_tool_use: [:compile, :format],
+        # These only run on git commit commands
+        pre_tool_use: [:compile, :format, :unused_deps]
+      },
 
       # MCP servers (Tidewave is automatically configured for Phoenix projects)
       # mcp_servers: [:tidewave],
@@ -413,7 +394,6 @@ defmodule Mix.Tasks.Claude.Install do
 
     igniter
     |> Igniter.assign(claude_exs_hooks: claude_exs_hooks)
-    |> install_hooks_claude_code_hooks_dir()
     |> install_hooks_to_claude_code_settings(relative_settings_path)
     |> add_hooks_notice(relative_settings_path, claude_exs_hooks)
   end
@@ -428,8 +408,7 @@ defmodule Mix.Tasks.Claude.Install do
 
     igniter
     |> Igniter.add_notice("""
-    Claude hooks have been installed to #{relative_settings_path}
-    Hook scripts generated in .claude/hooks/
+    Claude hooks have been configured in #{relative_settings_path}
 
     Enabled hooks:
     #{hooks_message}
@@ -460,55 +439,46 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp build_hooks_settings(settings_map, igniter) when is_map(settings_map) do
     cleaned_settings = remove_all_hooks(settings_map)
-    cleaned_hooks = Map.get(cleaned_settings, "hooks", %{})
 
+    # Check if we have any hooks configured in .claude.exs
     all_hooks = igniter.assigns[:claude_exs_hooks] || []
 
-    hooks_by_event_and_matcher =
-      all_hooks
-      |> Enum.group_by(fn {_module, _script, event, matchers, _desc} ->
-        event_type = to_event_type_string(event)
-        matcher = format_matcher(matchers)
-        {event_type, matcher}
-      end)
+    if all_hooks == [] do
+      # No hooks configured, return cleaned settings
+      cleaned_settings
+    else
+      # Get unique event types
+      event_types =
+        all_hooks
+        |> Enum.map(fn {_type, _task, event, _matchers, _desc, _opts} ->
+          to_event_type_string(event)
+        end)
+        |> Enum.uniq()
 
-    new_hooks =
-      Enum.reduce(hooks_by_event_and_matcher, cleaned_hooks, fn {{event_type, matcher}, hooks},
-                                                                acc ->
-        existing_matchers = Map.get(acc, event_type, [])
+      # For each event type, create a single hook entry that delegates to our dispatcher
+      new_hooks =
+        event_types
+        |> Enum.map(fn event_type ->
+          # Single entry per event type that will read .claude.exs and execute appropriate hooks
+          {event_type,
+           [
+             %{
+               # Universal matcher - the actual filtering happens in the mix task
+               "matcher" => "*",
+               "hooks" => [
+                 %{
+                   "type" => "command",
+                   "command" =>
+                     "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run #{Macro.underscore(event_type)}"
+                 }
+               ]
+             }
+           ]}
+        end)
+        |> Map.new()
 
-        matcher_index =
-          Enum.find_index(existing_matchers, fn m ->
-            Map.get(m, "matcher") == matcher
-          end)
-
-        hook_configs =
-          Enum.map(hooks, fn {_module, script_path, _event, _matchers, _desc} ->
-            %{
-              "type" => "command",
-              "command" => "cd $CLAUDE_PROJECT_DIR && elixir #{script_path}"
-            }
-          end)
-
-        if matcher_index do
-          updated_matchers =
-            List.update_at(existing_matchers, matcher_index, fn matcher_obj ->
-              existing_hooks = Map.get(matcher_obj, "hooks", [])
-              Map.put(matcher_obj, "hooks", existing_hooks ++ hook_configs)
-            end)
-
-          Map.put(acc, event_type, updated_matchers)
-        else
-          new_matcher_obj = %{
-            "matcher" => matcher,
-            "hooks" => hook_configs
-          }
-
-          Map.put(acc, event_type, existing_matchers ++ [new_matcher_obj])
-        end
-      end)
-
-    Map.put(settings_map, "hooks", new_hooks)
+      Map.put(settings_map, "hooks", new_hooks)
+    end
   end
 
   defp remove_all_hooks(settings) when is_map(settings) do
@@ -593,118 +563,44 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp format_matcher(matchers) when is_list(matchers) do
     matchers
-    |> Enum.map(&to_string/1)
+    |> Enum.map(&matcher_atom_to_string/1)
     |> Enum.join("|")
   end
 
   defp format_matcher(matcher), do: to_string(matcher)
 
+  defp matcher_atom_to_string(atom) when is_atom(atom) do
+    case atom do
+      :write -> "Write"
+      :edit -> "Edit"
+      :multi_edit -> "MultiEdit"
+      :bash -> "Bash"
+      :glob -> "Glob"
+      :grep -> "Grep"
+      :read -> "Read"
+      :ls -> "LS"
+      :task -> "Task"
+      :todo_write -> "TodoWrite"
+      :web_fetch -> "WebFetch"
+      :web_search -> "WebSearch"
+      :notebook_edit -> "NotebookEdit"
+      :notebook_read -> "NotebookRead"
+      :exit_plan_mode -> "ExitPlanMode"
+      _ -> atom |> Atom.to_string() |> Macro.camelize()
+    end
+  end
+
+  defp matcher_atom_to_string(string) when is_binary(string), do: string
+
   defp format_hooks_list(custom_hooks) do
     custom_hooks
-    |> Enum.map(fn {_module, _script, _event, _matchers, desc} ->
+    |> Enum.map(fn {_module, _script, _event, _matchers, desc, _opts} ->
       "  • #{desc}"
     end)
     |> Enum.join("\n")
     |> case do
       "" -> "  No hooks installed"
       hooks -> hooks
-    end
-  end
-
-  defp install_hooks_claude_code_hooks_dir(igniter) do
-    claude_dep = get_claude_dependency()
-
-    all_hooks = igniter.assigns[:claude_exs_hooks] || []
-
-    Enum.reduce(all_hooks, igniter, fn {module, script_path, _event, _matchers, _desc}, acc ->
-      content = generate_hook_script(module, claude_dep)
-
-      Igniter.create_or_update_file(acc, script_path, content, fn source ->
-        Rewrite.Source.update(source, :content, content)
-      end)
-    end)
-  end
-
-  defp generate_hook_script(hook_module, claude_dep) do
-    module_name = Module.split(hook_module) |> Enum.join(".")
-
-    deps = "[#{claude_dep}, {:jason, \"~> 1.4\"}, {:igniter, \"~> 0.6\"}]"
-
-    description =
-      if function_exported?(hook_module, :description, 0) do
-        hook_module.description()
-      else
-        "Claude Code hook"
-      end
-
-    """
-    #!/usr/bin/env elixir
-    # Hook script for #{description}
-    # This script is called with JSON input via stdin from Claude Code
-
-    # Install dependencies
-    Mix.install(#{deps})
-
-    # Read JSON from stdin
-    input = IO.read(:stdio, :eof)
-
-    # Run the hook module
-    # The hook now handles JSON output internally using JsonOutput.write_and_exit/1
-    # which will output JSON and exit with code 0
-    #{module_name}.run(input)
-
-    # If we reach here, the hook didn't exit properly, so we exit with success
-    System.halt(0)
-    """
-  end
-
-  defp get_claude_dependency do
-    if Mix.Project.get() == Claude.MixProject do
-      "{:claude, path: \".\"}"
-    else
-      case get_claude_version_from_deps() do
-        {:ok, version} -> "{:claude, \"#{version}\"}"
-        :error -> "{:claude, \"~> 0.1\"}"
-      end
-    end
-  end
-
-  defp get_claude_version_from_deps do
-    case get_installed_claude_version() do
-      {:ok, version} ->
-        {:ok, "~> #{version}"}
-
-      :error ->
-        deps = Mix.Project.config()[:deps] || []
-
-        case List.keyfind(deps, :claude, 0) do
-          {:claude, version} when is_binary(version) ->
-            {:ok, version}
-
-          {:claude, version, _opts} when is_binary(version) ->
-            {:ok, version}
-
-          _ ->
-            :error
-        end
-    end
-  end
-
-  defp get_installed_claude_version do
-    case Mix.Project.deps_paths() do
-      %{claude: claude_path} when is_binary(claude_path) ->
-        mix_file = Path.join(claude_path, "mix.exs")
-
-        with true <- File.exists?(mix_file),
-             {:ok, content} <- File.read(mix_file),
-             [_, version] <- Regex.run(~r/@version\s+"([^"]+)"/, content) do
-          {:ok, version}
-        else
-          _ -> :error
-        end
-
-      _ ->
-        :error
     end
   end
 

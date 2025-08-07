@@ -1,4 +1,4 @@
-defmodule Claude.Test.ClaudeCodeCase do
+defmodule Claude.ClaudeCodeCase do
   @moduledoc """
   Base ExUnit case template for Claude tests.
 
@@ -50,28 +50,33 @@ defmodule Claude.Test.ClaudeCodeCase do
   """
 
   use ExUnit.CaseTemplate
+  import Mimic
 
   using opts do
     async = Keyword.get(opts, :async, false)
     trap_halts = Keyword.get(opts, :trap_halts, true)
+    setup_project = Keyword.get(opts, :setup_project?, false)
+    setup_phx_project = Keyword.get(opts, :setup_phx_project?, false)
 
     quote do
       use ExUnit.Case, async: unquote(async)
       use Mimic
 
       import ExUnit.CaptureIO
-      import Claude.Test.SystemHaltHelpers
-      import Claude.TestHelpers
+      import Claude.Test
 
-      import Claude.Test.ClaudeCodeCase,
+      import Claude.ClaudeCodeCase,
         only: [
-          isolate_project: 1,
-          cmd: 1,
-          cmd: 2,
           test_project: 0,
           test_project: 1,
           phx_test_project: 0,
-          phx_test_project: 1
+          phx_test_project: 1,
+          setup_test_directory: 1,
+          setup_test_project: 1,
+          setup_phoenix_project: 1,
+          trap_unexpected_halts: 0,
+          trap_unexpected_halts: 1,
+          put_in_config: 3
         ]
 
       setup :set_mimic_from_context
@@ -79,135 +84,60 @@ defmodule Claude.Test.ClaudeCodeCase do
       if unquote(trap_halts) do
         setup :trap_unexpected_halts
       end
+
+      setup :setup_test_directory
+
+      if unquote(setup_project) do
+        setup :setup_test_project
+      end
+
+      if unquote(setup_phx_project) do
+        setup :setup_phoenix_project
+      end
     end
   end
 
   setup _tags do
-    test_isolation_dir =
-      Path.join(System.tmp_dir!(), "claude_test_#{System.unique_integer([:positive])}")
-
-    File.mkdir_p!(test_isolation_dir)
-
-    on_exit(fn ->
-      File.rm_rf!(test_isolation_dir)
-    end)
-
-    {:ok, test_dir: test_isolation_dir}
-  end
-
-  @doc """
-  Setup helper that provides an isolated test directory.
-
-  Use this in tests that need project isolation:
-
-      setup :isolate_project
-
-  Or in combination with other setup:
-
-      setup [:isolate_project, :other_setup]
-  """
-  def isolate_project(%{test_dir: _test_dir}) do
-    # Project isolation is now handled by test_dir setup
     :ok
   end
 
   @doc """
-  Execute a command using Elixir ports with optional stdin input.
+  Setup callback that traps unexpected System.halt calls.
 
-  ## Examples
+  Use this as a setup callback to catch unexpected System.halt calls:
 
-      # Simple command
-      {output, 0} = cmd("echo 'hello'")
-      assert output == "hello\\n"
-      
-      # Command with stdin
-      {output, 0} = cmd("cat", stdin: "Hello from stdin")
-      assert output == "Hello from stdin"
-      
-      # Command that fails
-      {output, exit_code} = cmd("exit 1")
-      assert exit_code == 1
+      setup :trap_unexpected_halts
 
-  ## Options
+  Or in an existing setup block:
 
-  - `:stdin` - String to send to the command's stdin
-  - `:cd` - Directory to run the command in
-  - `:env` - Environment variables as a list of {"key", "value"} tuples
+      setup do
+        trap_unexpected_halts()
+        # other setup...
+        :ok
+      end
 
-  ## Returns
+  Then in specific tests, you can override with expect/stub for expected halts:
 
-  Returns a tuple of `{output, exit_code}` where:
-  - `output` is the combined stdout and stderr as a string
-  - `exit_code` is the integer exit code of the command
+      test "handles expected halt" do
+        expect(System, :halt, fn 0 -> :ok end)
+        MyModule.function_that_halts()
+      end
   """
-  def cmd(command, opts \\ []) do
-    stdin = Keyword.get(opts, :stdin)
-    cd = Keyword.get(opts, :cd)
-    env = Keyword.get(opts, :env, [])
+  def trap_unexpected_halts(_context \\ %{}) do
+    try do
+      stub(System, :halt, fn
+        0 ->
+          :ok
 
-    # Build port options
-    port_opts = [:binary, :exit_status, :stderr_to_stdout, :hide]
-
-    # Add cd option if provided
-    port_opts = if cd, do: [{:cd, cd} | port_opts], else: port_opts
-
-    # Convert environment variables to the format expected by Port.open
-    port_opts =
-      if env != [] do
-        env_charlists =
-          Enum.map(env, fn {k, v} ->
-            {String.to_charlist(k), String.to_charlist(v)}
-          end)
-
-        [{:env, env_charlists} | port_opts]
-      else
-        port_opts
-      end
-
-    # For stdin handling, we need to modify the command to use echo/printf
-    final_command =
-      if stdin do
-        # Use printf to preserve exact formatting and handle special characters
-        escaped_stdin =
-          stdin
-          |> String.replace("\\", "\\\\")
-          |> String.replace("\"", "\\\"")
-          |> String.replace("$", "\\$")
-          |> String.replace("`", "\\`")
-          |> String.replace("\n", "\\n")
-
-        "printf \"#{escaped_stdin}\" | #{command}"
-      else
-        command
-      end
-
-    # Use sh -c to run the command for consistent shell behavior
-    port = Port.open({:spawn, "sh -c '#{escape_shell_arg(final_command)}'"}, port_opts)
-
-    # Collect output
-    collect_port_output(port, "")
-  end
-
-  defp escape_shell_arg(arg) do
-    # Escape single quotes for shell safety
-    String.replace(arg, "'", "'\"'\"'")
-  end
-
-  defp collect_port_output(port, acc) do
-    receive do
-      {^port, {:data, data}} ->
-        # Continue collecting data
-        collect_port_output(port, acc <> data)
-
-      {^port, {:exit_status, status}} ->
-        # Command finished with exit status
-        {acc, status}
-    after
-      5000 ->
-        # Timeout after 5 seconds
-        Port.close(port)
-        {acc <> "\n[Command timed out after 5s]", 124}
+        exit_code ->
+          raise "Unexpected System.halt(#{exit_code}) called! " <>
+                  "If this is expected, add `expect(System, :halt, fn #{exit_code} -> :ok end)` to your test."
+      end)
+    rescue
+      ArgumentError -> :ok
     end
+
+    :ok
   end
 
   @doc """
@@ -220,7 +150,7 @@ defmodule Claude.Test.ClaudeCodeCase do
     default_files = %{
       ".formatter.exs" => """
       [
-        inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+        inputs: ["**/*.{ex,exs}", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
       ]
       """
     }
@@ -241,7 +171,7 @@ defmodule Claude.Test.ClaudeCodeCase do
     default_files = %{
       ".formatter.exs" => """
       [
-        inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+        inputs: ["**/*.{ex,exs}", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
       ]
       """
     }
@@ -250,5 +180,121 @@ defmodule Claude.Test.ClaudeCodeCase do
     opts = Keyword.put(opts, :files, files)
 
     Igniter.Test.phx_test_project(opts)
+  end
+
+  def setup_test_directory(_context) do
+    test_dir = Path.join(System.tmp_dir!(), "claude_test_#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(test_dir)
+
+    on_exit(fn ->
+      File.rm_rf!(test_dir)
+    end)
+
+    {:ok, test_dir: test_dir}
+  end
+
+  @doc """
+  Setup function that creates and applies a test project in the test directory.
+
+  This is called automatically when using:
+      use Claude.Test.ClaudeCodeCase, setup_project?: true
+  """
+  def setup_test_project(context) do
+    test_dir = context.test_dir
+
+    # Stub System.get_env to return test_dir for CLAUDE_PROJECT_DIR
+    stub(System, :get_env, fn
+      "CLAUDE_PROJECT_DIR" -> test_dir
+      key -> System.get_env(key)
+    end)
+
+    # Create and apply the Igniter project (keeps files in memory)
+    project_files = context[:project_files] || %{}
+
+    igniter =
+      test_project(files: project_files)
+      |> Igniter.Test.apply_igniter!()
+
+    # Write the test files to disk
+    write_test_files(igniter, test_dir)
+
+    # Compile if requested (default: false for tests)
+    if context[:compile_project] do
+      System.cmd("mix", ["compile"], cd: test_dir)
+    end
+
+    {:ok, project_dir: test_dir}
+  end
+
+  defp write_test_files(igniter, base_dir) do
+    # Get the test files from the igniter
+    test_files = igniter.assigns[:test_files] || %{}
+
+    # Write each file to disk
+    Enum.each(test_files, fn {path, content} ->
+      full_path = Path.join(base_dir, path)
+      dir = Path.dirname(full_path)
+      File.mkdir_p!(dir)
+      File.write!(full_path, content)
+    end)
+  end
+
+  @doc """
+  Setup function that creates and applies a Phoenix test project in the test directory.
+
+  This is called automatically when using:
+      use Claude.Test.ClaudeCodeCase, setup_phx_project?: true
+  """
+  def setup_phoenix_project(context) do
+    test_dir = context.test_dir
+
+    # Stub System.get_env to return test_dir for CLAUDE_PROJECT_DIR
+    stub(System, :get_env, fn
+      "CLAUDE_PROJECT_DIR" -> test_dir
+      key -> System.get_env(key)
+    end)
+
+    # Create and apply the Igniter Phoenix project (keeps files in memory)
+    project_files = context[:project_files] || %{}
+
+    igniter =
+      phx_test_project(files: project_files)
+      |> Igniter.Test.apply_igniter!()
+
+    # Write the test files to disk
+    write_test_files(igniter, test_dir)
+
+    # Compile if requested (default: false for tests)
+    if context[:compile_project] do
+      System.cmd("mix", ["compile"], cd: test_dir)
+    end
+
+    {:ok, project_dir: test_dir}
+  end
+
+  @doc """
+  Put a value into the claude.exs file at the specified path and key.
+  """
+  def put_in_config(path, key, value) do
+    config_path = Path.join(path, ".claude.exs")
+
+    config =
+      if File.exists?(config_path) do
+        try do
+          {config, _bindings} = Code.eval_file(config_path)
+          config
+        rescue
+          _ -> %{}
+        end
+      else
+        %{}
+      end
+
+    updated_config = put_in(config, key, value)
+    formatted_config = inspect(updated_config, pretty: true, limit: :infinity)
+    File.write!(config_path, formatted_config)
+
+    updated_config
   end
 end

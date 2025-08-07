@@ -1,8 +1,8 @@
-ExUnit.start(capture_log: true)
+ExUnit.start()
 
-# Copy modules that will be mocked in tests
 Mimic.copy(Mix.Task)
 Mimic.copy(System)
 Mimic.copy(File)
 Mimic.copy(IO)
-Mimic.copy(Claude.Hooks.Telemetry)
+Mimic.copy(Jason)
+Mimic.copy(Claude.Config)

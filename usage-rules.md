@@ -20,7 +20,7 @@ mix claude.install
 
 ## Hook System
 
-Claude provides a behavior-based hook system that integrates with Claude Code. All hooks implement `Claude.Hooks.Hook.Behaviour`.
+Claude provides a DSL-based hook system that integrates with Claude Code. All hooks use the `Claude.Hook` module.
 
 ### Built-in Hooks
 
@@ -76,82 +76,15 @@ The RelatedFiles hook helps you keep related files in sync by suggesting updates
 
 The hook uses glob patterns (`*` matches any characters except `/`, `**` matches any characters including `/`) and will suggest Claude to review related files after you make edits.
 
-### Creating Custom Hooks
+### Hook Documentation
 
-The easiest way to create a hook is using the `use` macro:
-
-```elixir
-defmodule MyProject.MyHook do
-  use Claude.Hooks.Hook.Behaviour,
-    event: :post_tool_use,
-    matcher: [:edit, :write],
-    description: "My custom hook that runs after edits"
-
-  @impl Claude.Hooks.Hook.Behaviour
-  def run(json_input) when is_binary(json_input) do
-    # Your hook logic here
-    :ok
-  end
-end
-```
-
-#### Options for `use` macro:
-
-- `:event` - Hook event type (default: `:post_tool_use`)
-  - `:pre_tool_use`
-  - `:post_tool_use`
-  - `:user_prompt_submit`
-  - `:notification`
-  - `:stop`
-  - `:subagent_stop`
-- `:matcher` - Tool matcher pattern (default: `:*`)
-  - Can be a single atom: `:edit`, `:write`, `:bash`
-  - Can be a list: `[:edit, :write, :multi_edit]`
-  - Can be `:*` to match all tools
-- `:description` - Human-readable description
-
-For more documentation about hooks see official documentation below:
+For complete documentation about Claude Code's hook system, see:
 
   * https://docs.anthropic.com/en/docs/claude-code/hooks
   * https://docs.anthropic.com/en/docs/claude-code/hooks-guide
 
-ALWAYS consult the official documentation before implementing custom hooks.
-
-#### Manual Implementation
-
-If you need more control, you can implement the behaviour manually:
-
-```elixir
-defmodule MyProject.MyHook do
-  @behaviour Claude.Hooks.Hook.Behaviour
-
-  @impl true
-  def config do
-    %Claude.Hooks.Hook{
-      type: "command",
-      command: "# Hook command configured by ScriptInstaller"
-    }
-  end
-
-  @impl true
-  def run(json_input) when is_binary(json_input) do
-    # Your hook logic here
-    :ok
-  end
-
-  @impl true
-  def description do
-    "My custom hook description"
-  end
-
-  defp identifier do
-    __MODULE__
-    |> Module.split()
-    |> Enum.map(&Macro.underscore/1)
-    |> Enum.join(".")
-  end
-end
-```
+Claude provides several built-in hooks for common Elixir development tasks. See the
+[Hooks Documentation](documentation/hooks.md) for available hooks and configuration options.
 
 ## MCP Server Support
 
@@ -223,14 +156,10 @@ the `.claude` directory for use by Claude Code.
 ```elixir
 # .claude.exs - Claude configuration for this project
 %{
-  # Register hooks (built-in + custom)
+  # Register hooks (built-in only)
   hooks: [
     # Optional: Enable related files suggestions
-    Claude.Hooks.PostToolUse.RelatedFiles,
-
-    # Add your custom hooks
-    MyProject.Hooks.CustomFormatter,
-    MyProject.Hooks.SecurityChecker
+    Claude.Hooks.PostToolUse.RelatedFiles
   ],
 
   # MCP servers configuration

@@ -8,7 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- New `mix claude.gen.hook` and `mix claude.gen.subagent` for code generation. See [documentation/generators.md](documentation/generators.md) for details.
+- New `mix claude.gen.subagent` for subagent generation. See [documentation/generators.md](documentation/generators.md) for details.
+  - This also includes `mix claude.gen.hook` but it's currently for generating hooks for the `claude` library ATM.
+- New `Claude.Hook` macro for simplified hook creation with automatic JSON handling
+- Better testing capabilities via `Claude.Test` module with JSON output helpers
+
+### Changed
+- Hooks now use JSON-only output format
+- **BREAKING**: Hooks now use `handle/1` callback instead of `run/1`
+
+### Removed
+- Removed telemetry modules (unused)
+- Removed multiple test helper modules in favor of unified `Claude.Test`
+
+## [0.2.4] - 2025-08-01
 
 ### Fixed
 
