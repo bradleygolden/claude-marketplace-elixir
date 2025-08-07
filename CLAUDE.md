@@ -126,9 +126,9 @@ Instead of verbose configuration, you can use atom shortcuts that expand to sens
 
 Available atom shortcuts:
 - `:compile` - Runs compilation with appropriate settings for each event
-  - For `stop`/`subagent_stop`: `compile --warnings-as-errors` with `stop_on_failure?: true`
-  - For `post_tool_use`: Same, but only for `:write`, `:edit`, `:multi_edit` tools
-  - For `pre_tool_use`: Same, but only for `git commit` commands
+  - For `stop`/`subagent_stop`: `compile --warnings-as-errors` with `halt_pipeline?: true`
+  - For `post_tool_use`: Same, but only for `:write`, `:edit`, `:multi_edit` tools with `halt_pipeline?: true`
+  - For `pre_tool_use`: Same, but only for `git commit` commands with `halt_pipeline?: true`
 - `:format` - Runs format checking
   - For `post_tool_use`: Includes file path interpolation `{{tool_input.file_path}}`
   - For `pre_tool_use`: Runs for `git commit` commands
@@ -141,8 +141,8 @@ You can still use explicit configurations alongside or instead of atoms:
 %{
   hooks: %{
     stop: [
-      :compile,  # Uses default
-      {"custom --task", stop_on_failure?: false}  # Custom configuration
+      :compile,
+      {"custom --task", halt_pipeline?: false, blocking?: false}
     ]
   }
 }

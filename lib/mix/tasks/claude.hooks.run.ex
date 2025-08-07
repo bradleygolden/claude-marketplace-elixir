@@ -36,19 +36,43 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
     default_task_runner = fn
       "cmd", args ->
         shell_command = Enum.join(args, " ")
-
-        case System.shell(shell_command, stderr_to_stdout: true) do
-          {_output, 0} -> :ok
-          {_output, code} -> exit({:shutdown, code})
-        end
+        run_with_port(shell_command)
 
       command, args ->
-        Mix.Task.run(command, args)
+        mix_command = "mix #{command} #{Enum.join(args, " ")}"
+        run_with_port(mix_command)
     end
 
     task_runner = Keyword.get(opts, :task_runner, default_task_runner)
 
     do_run(args, io_reader, config_reader, task_runner)
+  end
+
+  defp run_with_port(command) do
+    port =
+      Port.open({:spawn, command}, [
+        :binary,
+        :exit_status,
+        :stderr_to_stdout,
+        :use_stdio,
+        :hide
+      ])
+
+    handle_port_output(port)
+  end
+
+  defp handle_port_output(port, accumulated_output \\ "") do
+    receive do
+      {^port, {:data, data}} ->
+        IO.write(:stderr, data)
+        handle_port_output(port, accumulated_output <> data)
+
+      {^port, {:exit_status, 0}} ->
+        :ok
+
+      {^port, {:exit_status, status}} ->
+        exit({:shutdown, status})
+    end
   end
 
   defp do_run([event_type], io_reader, config_reader, task_runner) do
@@ -248,6 +272,10 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
 
           2
 
+        e in Mix.Error ->
+          IO.puts(:stderr, e.message)
+          2
+
         e ->
           IO.puts(:stderr, Exception.format(:error, e, __STACKTRACE__))
           2
@@ -262,11 +290,21 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
         restore_env(original_env)
       end
 
-    event_name = Map.get(event_data, "hook_event_name", "")
+    apply_exit_code_rules(exit_code, opts, event_data)
+  end
 
-    case {event_name, exit_code} do
-      {name, 1} when name in ["pre_tool_use", "user_prompt_submit"] -> 2
-      {_, code} -> code
+  defp apply_exit_code_rules(exit_code, opts, _event_data) do
+    blocking? = Keyword.get(opts, :blocking?, true)
+
+    cond do
+      exit_code == 0 ->
+        0
+
+      blocking? ->
+        2
+
+      true ->
+        exit_code
     end
   end
 
@@ -306,7 +344,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   defp hook_should_halt?(hook) do
     case hook do
       {_task, opts} when is_list(opts) ->
-        Keyword.get(opts, :stop_on_failure?, false)
+        Keyword.get(opts, :halt_pipeline?, false)
 
       _ ->
         false

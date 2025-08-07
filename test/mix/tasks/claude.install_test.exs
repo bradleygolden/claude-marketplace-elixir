@@ -160,7 +160,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       mixed_config = """
       %{
         hooks: %{
-          stop: [:compile, {"custom --task", stop_on_failure?: false}],
+          stop: [:compile, {"custom --task", halt_pipeline?: false}],
           post_tool_use: [:format]
         }
       }

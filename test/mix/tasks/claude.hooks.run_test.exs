@@ -131,7 +131,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
           stop: [
             :compile,
             "custom task",
-            {"another --task", stop_on_failure?: false}
+            {"another --task", halt_pipeline?: false}
           ]
         }
       }
@@ -466,7 +466,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
         hooks: %{
           pre_tool_use: [
             {"cmd echo 'Error: --no-verify is not allowed' >&2; exit 2",
-             when: "Bash", command: ~r/^git commit.*--no-verify/, stop_on_failure?: true},
+             when: "Bash", command: ~r/^git commit.*--no-verify/, halt_pipeline?: true},
             {"compile --warnings-as-errors",
              when: "Bash", command: ~r/^git commit(?!.*--no-verify)/}
           ]
@@ -500,9 +500,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       )
 
       assert_received {:mix_task_run, "cmd", _}
-      # The first hook fails with stop_on_failure=true, so the compile hook should NOT run
       refute_received {:mix_task_run, "compile", _}
-      # Should exit with code 2 to block the git commit
       assert_received {:system_halt, 2}
     end
 
@@ -796,7 +794,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       assert_received {:system_halt, 2}
     end
 
-    test "preserves exit code 1 for non-blocking events", _context do
+    test "escalates exit code 1 to 2 by default for all events", _context do
       config = %{
         hooks: %{
           post_tool_use: ["compile --warnings-as-errors"]
@@ -813,7 +811,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       task_runner = fn task, args ->
         send(test_pid, {:mix_task_run, task, args})
-        # Simulate a task that exits with code 1
+
         if task == "compile" && "--warnings-as-errors" in args do
           exit({:shutdown, 1})
         end
@@ -826,11 +824,10 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       )
 
       assert_received {:mix_task_run, "compile", ["--warnings-as-errors"]}
-      # Should preserve exit code 1 for PostToolUse (non-blocking error)
-      assert_received {:system_halt, 1}
+      assert_received {:system_halt, 2}
     end
 
-    test "preserves exit code 1 for Stop events", _context do
+    test "escalates exit code 1 to 2 by default for Stop events", _context do
       config = %{
         hooks: %{
           stop: ["check"]
@@ -859,8 +856,75 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       )
 
       assert_received {:mix_task_run, "check", []}
-      # Should preserve exit code 1 for Stop (non-blocking, let Claude stop)
+      assert_received {:system_halt, 2}
+    end
+
+    test "respects blocking? false to preserve exit codes", _context do
+      config = %{
+        hooks: %{
+          stop: [
+            {"check", blocking?: false}
+          ]
+        }
+      }
+
+      event_data = %{
+        "hook_event_name" => "stop",
+        "stop_hook_active" => false
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+
+        if task == "check" do
+          exit({:shutdown, 1})
+        end
+      end
+
+      Run.run(["stop"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "check", []}
       assert_received {:system_halt, 1}
+    end
+
+    test "converts all non-zero exit codes to 2 when blocking? is true", _context do
+      config = %{
+        hooks: %{
+          stop: [
+            {"check", blocking?: true}
+          ]
+        }
+      }
+
+      event_data = %{
+        "hook_event_name" => "stop",
+        "stop_hook_active" => false
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+
+        if task == "check" do
+          exit({:shutdown, 3})
+        end
+      end
+
+      Run.run(["stop"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "check", []}
+      assert_received {:system_halt, 2}
     end
 
     test "aggregates multiple hook failures", _context do
@@ -1200,7 +1264,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       assert_received {:system_halt, 2}
     end
 
-    test "hook pipeline continues after non-stop_on_failure errors", _context do
+    test "hook pipeline continues after non-halt_pipeline errors", _context do
       config = %{
         hooks: %{
           pre_tool_use: [
@@ -1363,12 +1427,12 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
     end
   end
 
-  describe "stop_on_failure? flag" do
-    test "stops execution when hook with stop_on_failure? fails", _context do
+  describe "halt_pipeline? flag" do
+    test "stops execution when hook with halt_pipeline? fails", _context do
       config = %{
         hooks: %{
           pre_tool_use: [
-            {"test.validator", [stop_on_failure?: true]},
+            {"test.validator", [halt_pipeline?: true]},
             "test.should_not_run"
           ]
         }
@@ -1393,17 +1457,16 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       )
 
       assert_received {:mix_task_run, "test.validator"}
-      # Note: test.should_not_run should NOT be called due to stop_on_failure?
       refute_received {:mix_task_run, "test.should_not_run"}
       assert_received {:system_halt, 2}
     end
 
-    test "continues when hooks with stop_on_failure? succeed", _context do
+    test "continues when hooks with halt_pipeline? succeed", _context do
       config = %{
         hooks: %{
           post_tool_use: [
-            {"test.check1", [stop_on_failure?: true]},
-            {"test.check2", [stop_on_failure?: true]},
+            {"test.check1", [halt_pipeline?: true]},
+            {"test.check2", [halt_pipeline?: true]},
             "test.final"
           ]
         }
@@ -1431,7 +1494,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       assert_received {:mix_task_run, "test.final"}
     end
 
-    test "continues after failure when stop_on_failure? is false", _context do
+    test "continues after failure when halt_pipeline? is false", _context do
       config = %{
         hooks: %{
           pre_tool_use: [
@@ -1466,13 +1529,13 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       assert_received {:system_halt, 2}
     end
 
-    test "handles mixed stop_on_failure? flags", _context do
+    test "handles mixed halt_pipeline? flags", _context do
       config = %{
         hooks: %{
           stop: [
             {"test.check1", []},
             {"test.check2", []},
-            {"test.critical", [stop_on_failure?: true]},
+            {"test.critical", [halt_pipeline?: true]},
             "test.should_not_run"
           ]
         }
@@ -1503,7 +1566,6 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       assert_received {:mix_task_run, "test.check1"}
       assert_received {:mix_task_run, "test.check2"}
       assert_received {:mix_task_run, "test.critical"}
-      # test.should_not_run is not called due to stop_on_failure?
       refute_received {:mix_task_run, "test.should_not_run"}
       assert_received {:system_halt, 2}
     end

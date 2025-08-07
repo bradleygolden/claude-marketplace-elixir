@@ -5,32 +5,34 @@ defmodule Claude.Hooks.DefaultsTest do
   describe "expand_hook/2" do
     test "expands :compile atom for stop event" do
       assert Defaults.expand_hook(:compile, :stop) ==
-               {"compile --warnings-as-errors", stop_on_failure?: true}
+               {"compile --warnings-as-errors", halt_pipeline?: true}
     end
 
     test "expands :compile atom for subagent_stop event" do
       assert Defaults.expand_hook(:compile, :subagent_stop) ==
-               {"compile --warnings-as-errors", stop_on_failure?: true}
+               {"compile --warnings-as-errors", halt_pipeline?: true}
     end
 
     test "expands :compile atom for post_tool_use event" do
       assert Defaults.expand_hook(:compile, :post_tool_use) ==
                {"compile --warnings-as-errors",
-                when: [:write, :edit, :multi_edit], stop_on_failure?: true}
+                when: [:write, :edit, :multi_edit], halt_pipeline?: true}
     end
 
     test "expands :compile atom for pre_tool_use event" do
       assert Defaults.expand_hook(:compile, :pre_tool_use) ==
                {"compile --warnings-as-errors",
-                when: "Bash", command: ~r/^git commit/, stop_on_failure?: true}
+                when: "Bash", command: ~r/^git commit/, halt_pipeline?: true}
     end
 
     test "expands :format atom for stop event" do
-      assert Defaults.expand_hook(:format, :stop) == "format --check-formatted"
+      assert Defaults.expand_hook(:format, :stop) ==
+               "format --check-formatted"
     end
 
     test "expands :format atom for subagent_stop event" do
-      assert Defaults.expand_hook(:format, :subagent_stop) == "format --check-formatted"
+      assert Defaults.expand_hook(:format, :subagent_stop) ==
+               "format --check-formatted"
     end
 
     test "expands :format atom for post_tool_use event" do
@@ -71,7 +73,7 @@ defmodule Claude.Hooks.DefaultsTest do
       expanded = Defaults.expand_hooks(hooks, :stop)
 
       assert expanded == [
-               {"compile --warnings-as-errors", stop_on_failure?: true},
+               {"compile --warnings-as-errors", halt_pipeline?: true},
                "format --check-formatted"
              ]
     end
@@ -82,7 +84,7 @@ defmodule Claude.Hooks.DefaultsTest do
       expanded = Defaults.expand_hooks(hooks, :stop)
 
       assert expanded == [
-               {"compile --warnings-as-errors", stop_on_failure?: true},
+               {"compile --warnings-as-errors", halt_pipeline?: true},
                "custom task",
                {:format, when: [:write]}
              ]

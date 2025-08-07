@@ -14,18 +14,17 @@ defmodule Claude.Hooks.Defaults do
   def expand_hook(hook, event_type) when is_atom(hook) do
     case {hook, event_type} do
       {:compile, :stop} ->
-        {"compile --warnings-as-errors", stop_on_failure?: true}
+        {"compile --warnings-as-errors", halt_pipeline?: true}
 
       {:compile, :subagent_stop} ->
-        {"compile --warnings-as-errors", stop_on_failure?: true}
+        {"compile --warnings-as-errors", halt_pipeline?: true}
 
       {:compile, :post_tool_use} ->
-        {"compile --warnings-as-errors",
-         when: [:write, :edit, :multi_edit], stop_on_failure?: true}
+        {"compile --warnings-as-errors", when: [:write, :edit, :multi_edit], halt_pipeline?: true}
 
       {:compile, :pre_tool_use} ->
         {"compile --warnings-as-errors",
-         when: "Bash", command: ~r/^git commit/, stop_on_failure?: true}
+         when: "Bash", command: ~r/^git commit/, halt_pipeline?: true}
 
       {:format, :stop} ->
         "format --check-formatted"
