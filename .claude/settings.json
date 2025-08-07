@@ -32,6 +32,17 @@
         ],
         "matcher": "*"
       }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run subagent_stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
     ]
   }
 }

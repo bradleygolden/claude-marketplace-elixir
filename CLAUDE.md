@@ -107,6 +107,54 @@ To reference claude code sub agents, please see @ai/anthropic/claude_code/build_
 
 ### Hook Implementation
 
+The hook system is configured in `.claude.exs` and supports:
+
+#### Atom Shortcuts for Common Hooks
+Instead of verbose configuration, you can use atom shortcuts that expand to sensible defaults:
+
+```elixir
+# Simple configuration using atoms
+%{
+  hooks: %{
+    stop: [:compile, :format],
+    subagent_stop: [:compile, :format],
+    post_tool_use: [:compile, :format],
+    pre_tool_use: [:compile, :format, :unused_deps]
+  }
+}
+```
+
+Available atom shortcuts:
+- `:compile` - Runs compilation with appropriate settings for each event
+  - For `stop`/`subagent_stop`: `compile --warnings-as-errors` with `stop_on_failure?: true`
+  - For `post_tool_use`: Same, but only for `:write`, `:edit`, `:multi_edit` tools
+  - For `pre_tool_use`: Same, but only for `git commit` commands
+- `:format` - Runs format checking
+  - For `post_tool_use`: Includes file path interpolation `{{tool_input.file_path}}`
+  - For `pre_tool_use`: Runs for `git commit` commands
+- `:unused_deps` - Checks for unused dependencies (only for `pre_tool_use` on `git commit`)
+
+#### Manual Configuration
+You can still use explicit configurations alongside or instead of atoms:
+
+```elixir
+%{
+  hooks: %{
+    stop: [
+      :compile,  # Uses default
+      {"custom --task", stop_on_failure?: false}  # Custom configuration
+    ]
+  }
+}
+```
+
+#### Command Prefix for Shell Commands
+Use the `cmd` prefix to run shell commands instead of Mix tasks:
+
+```elixir
+{"cmd echo 'Running shell command'", when: "Bash"}
+```
+
 All hooks use the `Claude.Hook` macro which provides:
 - Automatic JSON input parsing to event-specific structs
 - Simplified `handle/1` callback that receives parsed input

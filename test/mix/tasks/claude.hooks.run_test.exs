@@ -36,6 +36,130 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
     :ok
   end
 
+  describe "atom expansion for default hooks" do
+    test "expands :compile atom in stop event" do
+      config = %{
+        hooks: %{
+          stop: [:compile]
+        }
+      }
+
+      event_data = %{
+        "tool_name" => "Stop",
+        "hook_event_name" => "stop"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["stop"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "compile", ["--warnings-as-errors"]}
+    end
+
+    test "expands :format atom with file path interpolation in post_tool_use" do
+      config = %{
+        hooks: %{
+          post_tool_use: [:format]
+        }
+      }
+
+      event_data = %{
+        "tool_name" => "Write",
+        "tool_input" => %{"file_path" => "lib/test.ex"},
+        "hook_event_name" => "post_tool_use"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["post_tool_use"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "format", ["--check-formatted", "lib/test.ex"]}
+    end
+
+    test "expands multiple atoms in pre_tool_use for git commit" do
+      config = %{
+        hooks: %{
+          pre_tool_use: [:compile, :format, :unused_deps]
+        }
+      }
+
+      event_data = %{
+        "tool_name" => "Bash",
+        "tool_input" => %{"command" => "git commit -m 'test'"},
+        "hook_event_name" => "pre_tool_use"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["pre_tool_use"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "compile", ["--warnings-as-errors"]}
+      assert_received {:mix_task_run, "format", ["--check-formatted"]}
+      assert_received {:mix_task_run, "deps.unlock", ["--check-unused"]}
+    end
+
+    test "handles mixed atoms and explicit configurations" do
+      config = %{
+        hooks: %{
+          stop: [
+            :compile,
+            "custom task",
+            {"another --task", stop_on_failure?: false}
+          ]
+        }
+      }
+
+      event_data = %{
+        "tool_name" => "Stop",
+        "hook_event_name" => "stop"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["stop"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "compile", ["--warnings-as-errors"]}
+      assert_received {:mix_task_run, "custom", ["task"]}
+      assert_received {:mix_task_run, "another", ["--task"]}
+    end
+  end
+
   describe "cmd prefix for shell commands" do
     test "executes shell commands with 'cmd' prefix" do
       config = %{

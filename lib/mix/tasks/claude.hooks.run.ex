@@ -33,7 +33,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
     io_reader = Keyword.get(opts, :io_reader, &IO.read/2)
     config_reader = Keyword.get(opts, :config_reader, &Claude.Config.read/0)
 
-    # Default task_runner handles both cmd and Mix tasks
     default_task_runner = fn
       "cmd", args ->
         shell_command = Enum.join(args, " ")
@@ -77,7 +76,8 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   defp execute_hooks(event_type, event_data, config, task_runner) do
     event_atom = String.to_atom(event_type)
     hooks = get_hooks_for_event(config, event_atom)
-    matching_hooks = filter_hooks_by_matcher(hooks, event_data)
+    expanded_hooks = Claude.Hooks.Defaults.expand_hooks(hooks, event_atom)
+    matching_hooks = filter_hooks_by_matcher(expanded_hooks, event_data)
 
     {results, _halted?} = execute_hooks_with_halt(matching_hooks, event_data, task_runner)
 
@@ -103,7 +103,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
 
       IO.puts(:stderr, "\nReview the output above for details on each issue.")
 
-      # Use the highest exit code from failed hooks
       max_exit_code =
         failed_hooks
         |> Enum.map(fn {_hook, exit_code} -> exit_code end)
@@ -129,10 +128,8 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
             matcher = opts[:when]
             command_pattern = opts[:command]
 
-            # Check tool matcher first
             tool_matches = matches_tool?(matcher, tool_name, event_data)
 
-            # If tool matches and there's a command pattern, check that too
             if tool_matches && command_pattern do
               matches_command?(command_pattern, event_data)
             else
@@ -194,7 +191,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   end
 
   defp matches_command?(pattern, event_data) when is_binary(pattern) do
-    # Support string patterns for simple prefix matching
     command = get_in(event_data, ["tool_input", "command"]) || ""
     String.starts_with?(command, pattern)
   end
@@ -220,7 +216,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
 
     interpolated_task = interpolate_templates(task, event_data)
 
-    # Check if it's a shell command (starts with "cmd ")
     {command, args} =
       if String.starts_with?(interpolated_task, "cmd ") do
         ["cmd" | rest_parts] = String.split(interpolated_task, " ")
@@ -241,7 +236,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
         0
       rescue
         Mix.NoTaskError ->
-          # Provide helpful error message for non-existent Mix tasks
           IO.puts(:stderr, """
           The Mix task "#{command}" could not be found.
 
@@ -259,24 +253,19 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
           2
       catch
         :exit, {:shutdown, code} when is_integer(code) ->
-          # Handle graceful shutdowns with exit codes
           code
 
         :exit, reason ->
-          # Handle other exit reasons
           IO.puts(:stderr, "Hook exited: #{inspect(reason)}")
           2
       after
         restore_env(original_env)
       end
 
-    # Convert exit code 1 to 2 for blocking events
     event_name = Map.get(event_data, "hook_event_name", "")
 
     case {event_name, exit_code} do
-      # Convert exit code 1 to 2 for PreToolUse and UserPromptSubmit to block
       {name, 1} when name in ["pre_tool_use", "user_prompt_submit"] -> 2
-      # Preserve all other exit codes
       {_, code} -> code
     end
   end

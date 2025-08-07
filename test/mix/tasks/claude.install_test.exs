@@ -77,7 +77,10 @@ defmodule Mix.Tasks.Claude.InstallTest do
     test "preserves existing .claude.exs file" do
       custom_config = """
       %{
-        hooks: [MyApp.CustomHook],
+        hooks: %{
+          stop: [:compile, :format],
+          post_tool_use: ["custom --task"]
+        },
         custom_setting: true
       }
       """
@@ -89,6 +92,91 @@ defmodule Mix.Tasks.Claude.InstallTest do
       )
       |> Igniter.compose_task("claude.install")
       |> assert_unchanged(".claude.exs")
+    end
+
+    test "generates .claude.exs with atom shortcuts for hooks" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude.exs")
+
+      # Check that the generated file contains atom shortcuts by checking the rewrite map
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "stop: [:compile, :format]"
+      assert content =~ "subagent_stop: [:compile, :format]"
+      assert content =~ "post_tool_use: [:compile, :format]"
+      assert content =~ "pre_tool_use: [:compile, :format, :unused_deps]"
+    end
+
+    test "errors on old list-based hook format" do
+      old_format_config = """
+      %{
+        hooks: [MyApp.CustomHook, AnotherHook]
+      }
+      """
+
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => old_format_config
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Check that an issue is raised for old format
+      assert Enum.any?(igniter.issues, fn issue ->
+               String.contains?(issue, "outdated hooks format") and
+                 String.contains?(issue, "mix claude.upgrade")
+             end)
+    end
+
+    test "accepts new map-based hook format" do
+      new_format_config = """
+      %{
+        hooks: %{
+          stop: [:compile, :format],
+          post_tool_use: [:compile]
+        }
+      }
+      """
+
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => new_format_config
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should have no issues with new format
+      assert igniter.issues == []
+      assert_unchanged(igniter, ".claude.exs")
+    end
+
+    test "handles mixed atom and explicit hook configurations" do
+      mixed_config = """
+      %{
+        hooks: %{
+          stop: [:compile, {"custom --task", stop_on_failure?: false}],
+          post_tool_use: [:format]
+        }
+      }
+      """
+
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => mixed_config
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should have no issues with mixed format
+      assert igniter.issues == []
+      assert_unchanged(igniter, ".claude.exs")
     end
 
     test "adds usage_rules dependency" do

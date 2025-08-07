@@ -241,39 +241,25 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp ensure_default_hooks(igniter, path) do
-    default_hooks = []
-
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, config} when is_map(config) ->
-        hooks = Map.get(config, :hooks, [])
+        hooks = Map.get(config, :hooks, %{})
 
-        existing_hooks =
-          case hooks do
-            # New tuple format
-            hooks_map when is_map(hooks_map) ->
-              Enum.flat_map(hooks_map, fn {_event_type, event_configs} ->
-                Enum.map(event_configs, fn
-                  {task, _opts} -> task
-                  task when is_binary(task) -> task
-                  _ -> nil
-                end)
-              end)
-              |> Enum.reject(&is_nil/1)
+        # Check if hooks is in the old format (list instead of map)
+        if is_list(hooks) do
+          Igniter.add_issue(igniter, """
+          Your .claude.exs is using an outdated hooks format.
 
-            _ ->
-              []
-          end
+          Please run `mix claude.upgrade` to update to the new format, or manually update to:
 
-        missing_hooks = default_hooks -- existing_hooks
-
-        if missing_hooks != [] do
-          igniter
-          |> Igniter.add_notice("""
-          Your .claude.exs is missing some default hooks. Please update your hooks configuration to the new grouped format and include these modules:
-
-          #{Enum.map_join(missing_hooks, "\n", &"  #{inspect(&1)}")}
-
-          See the generated .claude.exs template for the proper structure.
+          %{
+            hooks: %{
+              stop: [:compile, :format],
+              subagent_stop: [:compile, :format],
+              post_tool_use: [:compile, :format],
+              pre_tool_use: [:compile, :format, :unused_deps]
+            }
+          }
           """)
         else
           igniter
@@ -364,42 +350,18 @@ defmodule Mix.Tasks.Claude.Install do
     # This file is evaluated when Claude reads your project settings
     # and merged with .claude/settings.json (this file takes precedence)
 
-    # You can configure various aspects of Claude's behavior here:
-    # - Project metadata and context
-    # - Custom behaviors and preferences
-    # - Development workflow settings
-    # - Code generation patterns
-    # - And more as Claude evolves
+    # Hooks use atom shortcuts that expand to sensible defaults:
+    # - :compile - Runs compilation with warnings as errors
+    # - :format - Checks formatting (includes file path for edits)
+    # - :unused_deps - Checks for unused dependencies (pre_tool_use only)
 
     %{
-      # Hooks that run during Claude Code operations
-      # Grouped by event type and tool matcher for better organization
       hooks: %{
-        post_tool_use: [
-          %{
-            # Unique identifier for this hook group (required for mix task approach)
-            id: :elixir_quality_checks,
-            # Tool matchers as atoms - will match Write, Edit, MultiEdit tools
-            matcher: [:write, :edit, :multi_edit],
-            tasks: [
-              # Mix tasks with template interpolation
-              "format --check-formatted {{tool_input.file_path}}",
-              "compile --warnings-as-errors",
-              "deps.unlock --check-unused"
-            ]
-          }
-        ],
-        pre_tool_use: [
-          %{
-            id: :pre_commit_validation,
-            # Matcher for shell commands
-            matcher: [:bash],
-            tasks: [
-              "format --check-formatted",
-              "compile --warnings-as-errors"
-            ]
-          }
-        ]
+        stop: [:compile, :format],
+        subagent_stop: [:compile, :format],
+        post_tool_use: [:compile, :format],
+        # These only run on git commit commands
+        pre_tool_use: [:compile, :format, :unused_deps]
       },
 
       # MCP servers (Tidewave is automatically configured for Phoenix projects)
