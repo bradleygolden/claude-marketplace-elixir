@@ -249,8 +249,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
         {command, args}
       end
 
-    Process.put(:claude_hook_event, Jason.encode!(event_data))
-
     env_vars = opts[:env] || %{}
     original_env = save_and_set_env(env_vars)
 

@@ -40,16 +40,7 @@ defmodule Mix.Tasks.Claude.Hooks.RelatedFiles do
 
   @impl Mix.Task
   def run(_args) do
-    # First check if event is in process dictionary (when called from claude.hook)
-    event_json =
-      case Process.get(:claude_hook_event) do
-        nil ->
-          # Fall back to reading from stdin (for direct invocation)
-          IO.read(:stdio, :eof)
-
-        json ->
-          json
-      end
+    event_json = IO.read(:stdio, :eof)
 
     case Jason.decode(event_json) do
       {:ok, event} ->
