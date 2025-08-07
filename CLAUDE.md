@@ -188,7 +188,6 @@ Hook execution is handled via direct script invocation:
 
 The test suite is organized with these key patterns:
 - **Mimic-based mocking** - All system interactions are mocked for reliable testing
-- **Fixture-based testing** - `Claude.Test.Fixtures` provides comprehensive test data structures
 - **Simplified hook testing** - `Claude.Test.run_hook/2` helper for testing hooks with automatic JSON handling
 - **Parallel structure** - Tests mirror the `lib/` structure for easy navigation
 - **Temporary directories** - Tests use isolated temporary directories for filesystem operations

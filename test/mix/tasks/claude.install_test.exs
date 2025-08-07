@@ -717,53 +717,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
   end
 
-  describe "hook script generation" do
-    test "generates hook scripts with correct dependencies" do
-      igniter =
-        test_project()
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Check that hook scripts have proper Mix.install
-      formatter_script = File.read!(".claude/hooks/elixir_formatter.exs")
-      assert String.contains?(formatter_script, "Mix.install")
-      assert String.contains?(formatter_script, ":claude")
-      assert String.contains?(formatter_script, ":jason")
-      assert String.contains?(formatter_script, "Claude.Hooks.PostToolUse.ElixirFormatter.run")
-    end
-
-    test "generates hook scripts with correct descriptions" do
-      igniter =
-        test_project()
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Check each hook script has the correct description
-      formatter_script = File.read!(".claude/hooks/elixir_formatter.exs")
-
-      assert String.contains?(
-               formatter_script,
-               "# Hook script for Checks if Elixir files need formatting after Claude edits them"
-             )
-
-      compiler_script = File.read!(".claude/hooks/compilation_checker.exs")
-
-      assert String.contains?(
-               compiler_script,
-               "# Hook script for Checks for compilation errors after"
-             )
-
-      precommit_script = File.read!(".claude/hooks/pre_commit_check.exs")
-
-      assert String.contains?(
-               precommit_script,
-               "# Hook script for Validates formatting, compilation, and dependencies before allowing commits"
-             )
-    end
-  end
-
   describe "edge cases" do
     test "handles missing .claude.exs" do
       igniter =

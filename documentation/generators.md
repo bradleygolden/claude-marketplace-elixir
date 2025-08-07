@@ -230,13 +230,13 @@ Test your hooks thoroughly before using in production. Claude provides test help
 # Example test using Claude.Test helpers
 defmodule MyFormatterTest do
   use ExUnit.Case
-  alias Claude.Test.Fixtures
   
   test "handles file formatting" do
-    input = Fixtures.post_tool_use_input(
-      tool_name: "Edit",
-      tool_input: Fixtures.tool_input(:edit, file_path: "/test.ex")
-    )
+    input = %{
+      "hook_event_name" => "PostToolUse",
+      "tool_name" => "Edit",
+      "tool_input" => %{"file_path" => "/test.ex"}
+    }
     
     json = Claude.Test.run_hook(MyFormatter, input)
     assert json["suppressOutput"] == true
