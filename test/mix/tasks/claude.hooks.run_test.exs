@@ -1427,6 +1427,300 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
     end
   end
 
+  describe "session_start hooks" do
+    test "expands :deps_get atom for session_start" do
+      config = %{
+        hooks: %{
+          session_start: [:deps_get]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "startup"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "deps.get", []}
+    end
+
+    test ":deps_get only runs on startup source" do
+      config = %{
+        hooks: %{
+          session_start: [:deps_get]
+        }
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "resume"
+      }
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      refute_received {:mix_task_run, "deps.get", _}
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "clear"
+      }
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      refute_received {:mix_task_run, "deps.get", _}
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "startup"
+      }
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "deps.get", []}
+    end
+
+    test "filters hooks by source matcher" do
+      config = %{
+        hooks: %{
+          session_start: [
+            {"startup_task", when: :startup},
+            {"resume_task", when: "resume"},
+            {"clear_task", when: [:clear]},
+            "always_runs"
+          ]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "startup"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "startup_task", []}
+      assert_received {:mix_task_run, "always_runs", []}
+      refute_received {:mix_task_run, "resume_task", _}
+      refute_received {:mix_task_run, "clear_task", _}
+    end
+
+    test "supports multiple source matchers in list" do
+      config = %{
+        hooks: %{
+          session_start: [
+            {"multi_source_task", when: [:startup, :resume]},
+            {"clear_only_task", when: "clear"}
+          ]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "resume"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "multi_source_task", []}
+      refute_received {:mix_task_run, "clear_only_task", _}
+    end
+
+    test "runs hooks without source matcher for all sources" do
+      config = %{
+        hooks: %{
+          session_start: [
+            "no_matcher_task",
+            {"specific_task", when: :startup}
+          ]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "clear"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "no_matcher_task", []}
+      refute_received {:mix_task_run, "specific_task", _}
+    end
+
+    test "handles mixed atom and string source matchers" do
+      config = %{
+        hooks: %{
+          session_start: [
+            {"atom_matcher", when: :startup},
+            {"string_matcher", when: "startup"},
+            {"mixed_list", when: [:resume, "clear"]}
+          ]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "startup"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "atom_matcher", []}
+      assert_received {:mix_task_run, "string_matcher", []}
+      refute_received {:mix_task_run, "mixed_list", _}
+    end
+
+    test "session_start doesn't use tool_name matching" do
+      config = %{
+        hooks: %{
+          session_start: [
+            {"session_task", when: :startup}
+          ]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionStart",
+        "source" => "startup"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_start"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "session_task", []}
+    end
+
+    test "validates all three source types: startup, resume, clear" do
+      config = %{
+        hooks: %{
+          session_start: [
+            {"startup_only", when: "startup"},
+            {"resume_only", when: :resume},
+            {"clear_only", when: "clear"}
+          ]
+        }
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      ["startup", "resume", "clear"]
+      |> Enum.each(fn source ->
+        event_data = %{
+          "session_id" => "test123",
+          "hook_event_name" => "SessionStart",
+          "source" => source
+        }
+
+        Run.run(["session_start"],
+          io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+          config_reader: fn -> {:ok, config} end,
+          task_runner: task_runner
+        )
+
+        expected_task = source <> "_only"
+        assert_received {:mix_task_run, ^expected_task, []}
+      end)
+    end
+  end
+
   describe "halt_pipeline? flag" do
     test "stops execution when hook with halt_pipeline? fails", _context do
       config = %{

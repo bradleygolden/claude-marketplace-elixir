@@ -41,6 +41,9 @@ defmodule Claude.Hooks.Defaults do
       {:unused_deps, :pre_tool_use} ->
         {"deps.unlock --check-unused", when: "Bash", command: ~r/^git commit/}
 
+      {:deps_get, :session_start} ->
+        {"deps.get", when: :startup}
+
       _ ->
         hook
     end
