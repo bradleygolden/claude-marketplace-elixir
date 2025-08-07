@@ -15,6 +15,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   - user_prompt_submit
   - notification
   - pre_compact
+  - session_start
 
   The task reads the event data from stdin and executes matching hooks sequentially.
   """
@@ -144,6 +145,8 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
 
   defp filter_hooks_by_matcher(hooks, event_data) do
     tool_name = Map.get(event_data, "tool_name")
+    source = Map.get(event_data, "source")
+    event_type = Map.get(event_data, "hook_event_name")
 
     Enum.filter(hooks, fn hook ->
       result =
@@ -152,7 +155,12 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
             matcher = opts[:when]
             command_pattern = opts[:command]
 
-            tool_matches = matches_tool?(matcher, tool_name, event_data)
+            tool_matches =
+              if event_type == "SessionStart" do
+                matches_source?(matcher, source, event_data)
+              else
+                matches_tool?(matcher, tool_name, event_data)
+              end
 
             if tool_matches && command_pattern do
               matches_command?(command_pattern, event_data)
@@ -167,6 +175,29 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
       result
     end)
   end
+
+  defp matches_source?(nil, _source, _event_data), do: true
+  defp matches_source?("*", _source, _event_data), do: true
+
+  defp matches_source?(matchers, source, _event_data) when is_list(matchers) do
+    Enum.any?(matchers, fn matcher ->
+      matches_single_source?(matcher, source)
+    end)
+  end
+
+  defp matches_source?(matcher, source, _event_data) do
+    matches_single_source?(matcher, source)
+  end
+
+  defp matches_single_source?(matcher, source) when is_atom(matcher) do
+    Atom.to_string(matcher) == source
+  end
+
+  defp matches_single_source?(matcher, source) when is_binary(matcher) do
+    matcher == source
+  end
+
+  defp matches_single_source?(_matcher, _source), do: false
 
   defp matches_tool?(nil, _tool_name, _event_data), do: true
   defp matches_tool?("*", _tool_name, _event_data), do: true

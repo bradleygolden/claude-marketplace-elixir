@@ -303,16 +303,18 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-  # Parse different hook specification formats
+  defp parse_hook_spec(task, event_type, index) when is_atom(task) do
+    expanded = Claude.Hooks.Defaults.expand_hook(task, event_type)
+    parse_hook_spec(expanded, event_type, index)
+  end
+
   defp parse_hook_spec(task, event_type, index) when is_binary(task) do
-    # Simple string format - no matcher, runs for all tools
     id = :"#{event_type}_#{index}"
     description = "Mix task: #{task}"
     {:mix_task, task, event_type, "*", description, [id: id]}
   end
 
   defp parse_hook_spec({task, opts}, event_type, index) when is_binary(task) and is_list(opts) do
-    # Tuple format with when clause
     id = :"#{event_type}_#{index}"
     matcher = format_matcher(opts[:when] || "*")
     description = "Mix task: #{task}"
@@ -355,6 +357,7 @@ defmodule Mix.Tasks.Claude.Install do
     # - :compile - Runs compilation with warnings as errors
     # - :format - Checks formatting (includes file path for edits)
     # - :unused_deps - Checks for unused dependencies (pre_tool_use only)
+    # - :deps_get - Installs project dependencies (optional, session_start on startup only)
 
     %{
       hooks: %{
@@ -553,6 +556,7 @@ defmodule Mix.Tasks.Claude.Install do
       :stop -> "Stop"
       :subagent_stop -> "SubagentStop"
       :pre_compact -> "PreCompact"
+      :session_start -> "SessionStart"
       _ -> Atom.to_string(event_atom)
     end
   end

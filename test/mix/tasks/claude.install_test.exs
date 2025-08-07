@@ -367,7 +367,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
                  "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run post_tool_use"
              end)
 
-      # Check PreToolUse hooks  
+      # Check PreToolUse hooks
       pre_tool_use_hooks = settings["hooks"]["PreToolUse"]
       assert is_list(pre_tool_use_hooks)
 
@@ -929,6 +929,100 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       # Should have subagent generation notice
       assert Enum.any?(notices, &String.contains?(&1, "Generated 1 subagent(s)"))
+    end
+  end
+
+  describe "session_start hook support" do
+    test "generates SessionStart hooks in settings.json when configured" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                session_start: [:deps_get],
+                stop: [:compile, :format]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      assert Map.has_key?(settings["hooks"], "SessionStart")
+
+      [%{"hooks" => session_hooks, "matcher" => "*"}] = settings["hooks"]["SessionStart"]
+
+      assert Enum.any?(session_hooks, fn hook ->
+               hook["command"] == "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run session_start"
+             end)
+    end
+
+    test "expands :deps_get atom shortcut correctly" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                session_start: [:deps_get]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      hooks = igniter.assigns[:claude_exs_hooks] || []
+
+      session_hooks =
+        Enum.filter(hooks, fn {_type, _task, event, _matcher, _desc, _opts} ->
+          event == :session_start
+        end)
+
+      assert length(session_hooks) == 1
+      [{_type, task, :session_start, _matcher, desc, _opts}] = session_hooks
+      assert task == "deps.get"
+      assert desc =~ "deps.get"
+    end
+
+    test "does not include SessionStart by default" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      refute Map.has_key?(settings["hooks"], "SessionStart")
+    end
+
+    test "handles multiple session_start hooks" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                session_start: [:deps_get, "custom_startup"]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      apply_igniter!(igniter)
+
+      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      assert Map.has_key?(settings["hooks"], "SessionStart")
+      [%{"hooks" => session_hooks}] = settings["hooks"]["SessionStart"]
+
+      assert length(session_hooks) == 1
+      assert hd(session_hooks)["command"] =~ "claude.hooks.run session_start"
     end
   end
 
