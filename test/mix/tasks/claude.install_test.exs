@@ -11,7 +11,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       |> assert_creates(".claude.exs")
     end
 
-    test "adds .claude.exs to formatter inputs" do
+    test "adds .claude.exs to formatter inputs automatically" do
       igniter =
         test_project(
           files: %{
@@ -24,11 +24,13 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Instead of patching, we now show a notice
-      assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "To format .claude.exs files") &&
-                 String.contains?(notice, "add \".claude.exs\" to your formatter inputs")
-             end)
+      assert Igniter.changed?(igniter, ".formatter.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".formatter.exs")
+      content = Rewrite.Source.get(source, :content)
+      {formatter_config, _} = Code.eval_string(content)
+
+      assert ".claude.exs" in formatter_config[:inputs]
     end
 
     test "handles missing .formatter.exs file" do
@@ -42,7 +44,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
              end)
     end
 
-    test "formatter update is idempotent" do
+    test "formatter update is idempotent when .claude.exs already present" do
       igniter =
         test_project(
           files: %{
@@ -1167,8 +1169,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
   end
 
-  describe "formatter.exs update notice" do
-    test "shows notice when .formatter.exs needs updating" do
+  describe "formatter.exs automatic updates" do
+    test "automatically adds .claude.exs to existing formatter inputs" do
       igniter =
         test_project(
           files: %{
@@ -1181,13 +1183,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should have notice about adding .claude.exs to formatter
-      assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "To format .claude.exs files")
-             end)
+      assert Igniter.changed?(igniter, ".formatter.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".formatter.exs")
+      content = Rewrite.Source.get(source, :content)
+      {formatter_config, _} = Code.eval_string(content)
+
+      assert ".claude.exs" in formatter_config[:inputs]
     end
 
-    test "no notice when .formatter.exs already includes .claude.exs" do
+    test "does not modify formatter when .claude.exs already included" do
       igniter =
         test_project(
           files: %{
@@ -1200,10 +1205,52 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should not have formatter notice
-      refute Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Add .claude.exs to your .formatter.exs")
-             end)
+      assert_unchanged(igniter, ".formatter.exs")
+    end
+
+    test "adds .claude.exs to formatter with no existing inputs key" do
+      igniter =
+        test_project(
+          files: %{
+            ".formatter.exs" => """
+            [
+              line_length: 120
+            ]
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.changed?(igniter, ".formatter.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".formatter.exs")
+      content = Rewrite.Source.get(source, :content)
+      {formatter_config, _} = Code.eval_string(content)
+
+      assert ".claude.exs" in formatter_config[:inputs]
+      assert formatter_config[:line_length] == 120
+    end
+
+    test "handles empty inputs list" do
+      igniter =
+        test_project(
+          files: %{
+            ".formatter.exs" => """
+            [
+              inputs: []
+            ]
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.changed?(igniter, ".formatter.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".formatter.exs")
+      content = Rewrite.Source.get(source, :content)
+      {formatter_config, _} = Code.eval_string(content)
+
+      assert formatter_config[:inputs] == [".claude.exs"]
     end
   end
 end
