@@ -173,8 +173,7 @@ defmodule Mix.Tasks.Claude.Install do
       group: :claude,
       example: "mix igniter.install claude",
       only: [:dev],
-      dep_opts: [runtime: false],
-      composes: []
+      dep_opts: [runtime: false]
     }
   end
 
