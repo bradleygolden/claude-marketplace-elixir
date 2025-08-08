@@ -1,5 +1,4 @@
 %{
-  mcp_servers: [:tidewave],
   hooks: %{
     stop: [:compile, :format],
     post_tool_use: [:compile, :format],
