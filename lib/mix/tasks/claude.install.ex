@@ -29,6 +29,9 @@ defmodule Mix.Tasks.Claude.Install do
 
   alias Claude.MCP.Config
 
+  @usage_rules_version "~> 0.1"
+  @tidewave_version "~> 0.2"
+
   @meta_agent_config %{
     name: "Meta Agent",
     description:
@@ -171,7 +174,7 @@ defmodule Mix.Tasks.Claude.Install do
       example: "mix igniter.install claude",
       only: [:dev],
       dep_opts: [runtime: false],
-      composes: ["igniter.install"]
+      composes: []
     }
   end
 
@@ -208,7 +211,7 @@ defmodule Mix.Tasks.Claude.Install do
   defp add_usage_rules_dependency(igniter) do
     Igniter.Project.Deps.add_dep(
       igniter,
-      {:usage_rules, "~> 0.1", only: [:dev]},
+      {:usage_rules, @usage_rules_version, only: [:dev]},
       on_exists: :skip
     )
   end
@@ -619,7 +622,8 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp add_tidewave_to_project(igniter) do
     igniter
-    |> Igniter.compose_task("igniter.install", ["tidewave"])
+    |> Igniter.Project.Deps.add_dep({:tidewave, @tidewave_version}, on_exists: :skip)
+    |> Igniter.add_task("tidewave.install")
     |> add_tidewave_to_mcp_servers()
     |> Igniter.add_notice("""
     Phoenix project detected! Automatically adding Tidewave for enhanced Phoenix development.
