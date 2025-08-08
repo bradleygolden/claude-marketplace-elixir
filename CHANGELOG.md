@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This also includes `mix claude.gen.hook` but it's currently for generating hooks for the `claude` library ATM.
 - New `Claude.Hook` macro for simplified hook creation with automatic JSON handling
 - Better testing capabilities via `Claude.Test` module with JSON output helpers
+- Automatic Tidewave installation for Phoenix projects - `mix claude.install` now automatically installs and configures Tidewave when Phoenix is detected
 
 ### Changed
 - Hooks now use JSON-only output format
