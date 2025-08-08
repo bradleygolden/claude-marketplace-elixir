@@ -216,32 +216,46 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp add_claude_exs_to_formatter(igniter) do
-    # Check if .formatter.exs exists
-    if Igniter.exists?(igniter, ".formatter.exs") do
-      # Read the current formatter file to check if .claude.exs is already included
-      igniter
-      |> Igniter.add_notice("""
-      To format .claude.exs files, add \".claude.exs\" to your formatter inputs:
+    default_formatter = """
+    # Used by "mix format"
+    [
+      inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+    ]
+    """
 
-          # .formatter.exs
-          [
-            inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
-          ]
+    igniter
+    |> Igniter.include_or_create_file(".formatter.exs", default_formatter)
+    |> Igniter.update_elixir_file(".formatter.exs", fn zipper ->
+      zipper
+      |> Sourceror.Zipper.down()
+      |> case do
+        nil ->
+          code =
+            quote do
+              [inputs: [".claude.exs"]]
+            end
 
-      Then run `mix format` to apply the formatting.
-      """)
-    else
-      # Create a new .formatter.exs with .claude.exs included
-      default_formatter = """
-      # Used by "mix format"
-      [
-        inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
-      ]
-      """
+          {:ok, Igniter.Code.Common.add_code(zipper, code)}
 
-      igniter
-      |> Igniter.create_new_file(".formatter.exs", default_formatter)
-    end
+        zipper ->
+          zipper
+          |> Sourceror.Zipper.rightmost()
+          |> Igniter.Code.Keyword.put_in_keyword(
+            [:inputs],
+            [".claude.exs"],
+            fn nested_zipper ->
+              Igniter.Code.List.prepend_new_to_list(
+                nested_zipper,
+                ".claude.exs"
+              )
+            end
+          )
+          |> case do
+            {:ok, zipper} -> zipper
+            :error -> zipper
+          end
+      end
+    end)
   end
 
   defp ensure_default_hooks(igniter, path) do
