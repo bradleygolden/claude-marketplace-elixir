@@ -29,6 +29,9 @@ defmodule Mix.Tasks.Claude.Install do
 
   alias Claude.MCP.Config
 
+  @usage_rules_version "~> 0.1"
+  @tidewave_version "~> 0.2"
+
   @meta_agent_config %{
     name: "Meta Agent",
     description:
@@ -207,7 +210,7 @@ defmodule Mix.Tasks.Claude.Install do
   defp add_usage_rules_dependency(igniter) do
     Igniter.Project.Deps.add_dep(
       igniter,
-      {:usage_rules, "~> 0.1", only: [:dev]},
+      {:usage_rules, @usage_rules_version, only: [:dev]},
       on_exists: :skip
     )
   end
@@ -618,22 +621,90 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp add_tidewave_to_project(igniter) do
     igniter
+    |> Igniter.Project.Deps.add_dep({:tidewave, @tidewave_version}, on_exists: :skip)
+    |> Igniter.add_task("tidewave.install")
+    |> add_tidewave_to_mcp_servers()
     |> Igniter.add_notice("""
-    Phoenix detected! To enable Tidewave MCP server, add the following to your .claude.exs file:
+    Phoenix project detected! Automatically adding Tidewave for enhanced Phoenix development.
 
-    %{
-      mcp_servers: [:tidewave]
-    }
-
-    Or with a custom port:
-
-    %{
-      mcp_servers: [{:tidewave, [port: 5000]}]
-    }
-
-    Tidewave provides Phoenix-specific tools for working with your application.
+    Tidewave provides Phoenix-specific MCP tools for Claude Code, including:
+    - Route inspection and generation
+    - LiveView component assistance
+    - Schema and migration tools
+    - Context generation helpers
     """)
   end
+
+  defp add_tidewave_to_mcp_servers(igniter) do
+    claude_exs_path = ".claude.exs"
+
+    if Igniter.exists?(igniter, claude_exs_path) do
+      case read_and_eval_claude_exs(igniter, claude_exs_path) do
+        {:ok, config} when is_map(config) ->
+          mcp_servers = Map.get(config, :mcp_servers, [])
+
+          if tidewave_already_configured?(mcp_servers) do
+            igniter
+          else
+            updated_servers = add_tidewave_to_list(mcp_servers)
+            updated_config = Map.put(config, :mcp_servers, updated_servers)
+
+            igniter
+            |> Igniter.update_file(claude_exs_path, fn source ->
+              Rewrite.Source.update(
+                source,
+                :content,
+                inspect(updated_config, pretty: true, limit: :infinity)
+              )
+            end)
+            |> Config.write_mcp_config(updated_servers)
+          end
+
+        _ ->
+          updated_config = %{mcp_servers: [:tidewave]}
+
+          igniter
+          |> Igniter.create_or_update_file(
+            claude_exs_path,
+            inspect(updated_config, pretty: true, limit: :infinity),
+            fn source ->
+              Rewrite.Source.update(
+                source,
+                :content,
+                inspect(updated_config, pretty: true, limit: :infinity)
+              )
+            end
+          )
+          |> Config.write_mcp_config([:tidewave])
+      end
+    else
+      config = %{mcp_servers: [:tidewave]}
+
+      igniter
+      |> Igniter.create_or_update_file(
+        claude_exs_path,
+        inspect(config, pretty: true, limit: :infinity),
+        fn _source -> :error end
+      )
+      |> Config.write_mcp_config([:tidewave])
+    end
+  end
+
+  defp tidewave_already_configured?(mcp_servers) when is_list(mcp_servers) do
+    Enum.any?(mcp_servers, fn
+      :tidewave -> true
+      {:tidewave, _} -> true
+      _ -> false
+    end)
+  end
+
+  defp tidewave_already_configured?(_), do: false
+
+  defp add_tidewave_to_list(mcp_servers) when is_list(mcp_servers) do
+    [:tidewave | mcp_servers]
+  end
+
+  defp add_tidewave_to_list(_), do: [:tidewave]
 
   defp sync_usage_rules(igniter) do
     igniter

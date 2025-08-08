@@ -195,9 +195,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
         phx_test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Check for the Phoenix/Tidewave notice
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Phoenix detected!") &&
+               String.contains?(notice, "Phoenix project detected!") &&
                  String.contains?(notice, "Tidewave")
              end)
     end
@@ -665,16 +664,79 @@ defmodule Mix.Tasks.Claude.InstallTest do
   end
 
   describe "tidewave MCP configuration" do
-    test "shows tidewave notice for Phoenix projects" do
+    test "automatically installs tidewave for Phoenix projects" do
       igniter =
         phx_test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Should show the tidewave notice
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Phoenix detected!") &&
-                 String.contains?(notice, "To enable Tidewave MCP server")
+               String.contains?(notice, "Phoenix project detected!") &&
+                 String.contains?(notice, "Automatically adding Tidewave")
              end)
+    end
+
+    test "automatically adds tidewave to .claude.exs mcp_servers for Phoenix projects" do
+      igniter =
+        phx_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.exists?(igniter, ".claude.exs")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+      {config, _} = Code.eval_string(content)
+
+      assert :tidewave in (config[:mcp_servers] || [])
+    end
+
+    test "creates .mcp.json automatically for Phoenix projects" do
+      igniter =
+        phx_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.exists?(igniter, ".mcp.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".mcp.json")
+      content = Rewrite.Source.get(source, :content)
+      {:ok, json} = Jason.decode(content)
+
+      assert json["mcpServers"]["tidewave"]["type"] == "sse"
+      assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:4000/tidewave/mcp"
+    end
+
+    test "does not install tidewave for non-Phoenix projects" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      refute Enum.any?(igniter.notices, fn notice ->
+               String.contains?(notice, "Phoenix project detected!")
+             end)
+    end
+
+    test "skips tidewave if already configured in .claude.exs" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              mcp_servers: [:tidewave]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.exists?(igniter, ".claude.exs")
+
+      assert Igniter.exists?(igniter, ".mcp.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".mcp.json")
+      content = Rewrite.Source.get(source, :content)
+      {:ok, json} = Jason.decode(content)
+
+      assert map_size(json["mcpServers"]) >= 1
+      assert json["mcpServers"]["tidewave"] != nil
     end
 
     test "shows tidewave configuration notice when specified in .claude.exs" do
