@@ -141,15 +141,6 @@ defmodule Mix.Tasks.Claude.Install do
     tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
   }
 
-  @tidewave_setup_instructions """
-  Tidewave integrates with your Phoenix application:
-  1. Add to your deps in mix.exs: {:tidewave, "~> 0.2.0"}
-  2. Run: mix deps.get
-  3. Configure in config/dev.exs (see Tidewave docs)
-  4. Start your Phoenix server: mix phx.server
-  5. MCP endpoint will be at: http://localhost:PORT/tidewave/mcp
-  """
-
   @tool_atom_to_string %{
     bash: "Bash",
     edit: "Edit",
@@ -263,7 +254,6 @@ defmodule Mix.Tasks.Claude.Install do
       {:ok, config} when is_map(config) ->
         hooks = Map.get(config, :hooks, %{})
 
-        # Check if hooks is in the old format (list instead of map)
         if is_list(hooks) do
           Igniter.add_issue(igniter, """
           Your .claude.exs is using an outdated hooks format.
@@ -341,13 +331,10 @@ defmodule Mix.Tasks.Claude.Install do
   defp parse_hook_spec(_, _, _), do: nil
 
   defp format_meta_agent_for_template do
-    # Format the Meta Agent config for inclusion in the template
     inspect(@meta_agent_config, pretty: true, limit: :infinity, printable_limit: :infinity)
   end
 
   defp format_meta_agent_for_notice do
-    # Format the Meta Agent config for display in notices
-    # Build it manually to show proper formatting
     name = inspect(@meta_agent_config.name)
     description = inspect(@meta_agent_config.description)
     tools = inspect(@meta_agent_config.tools)
@@ -419,20 +406,24 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp add_hooks_notice(igniter, relative_settings_path, hooks) do
-    hooks_message =
-      if hooks == [] do
-        "No hooks configured in .claude.exs"
-      else
-        format_hooks_list(hooks)
-      end
+    if Igniter.changed?(igniter, relative_settings_path) do
+      hooks_message =
+        if hooks == [] do
+          "No hooks configured in .claude.exs"
+        else
+          format_hooks_list(hooks)
+        end
 
-    igniter
-    |> Igniter.add_notice("""
-    Claude hooks have been configured in #{relative_settings_path}
+      igniter
+      |> Igniter.add_notice("""
+      Claude hooks have been configured in #{relative_settings_path}
 
-    Enabled hooks:
-    #{hooks_message}
-    """)
+      Enabled hooks:
+      #{hooks_message}
+      """)
+    else
+      igniter
+    end
   end
 
   defp install_hooks_to_claude_code_settings(igniter, relative_settings_path) do
@@ -460,7 +451,6 @@ defmodule Mix.Tasks.Claude.Install do
   defp build_hooks_settings(settings_map, igniter) when is_map(settings_map) do
     cleaned_settings = remove_all_hooks(settings_map)
 
-    # Check if we have any hooks configured in .claude.exs
     all_hooks = igniter.assigns[:claude_exs_hooks] || []
 
     if all_hooks == [] do
@@ -615,13 +605,49 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp format_hooks_list(custom_hooks) do
     custom_hooks
-    |> Enum.map(fn {_module, _script, _event, _matchers, desc, _opts} ->
-      "  • #{desc}"
+    |> Enum.group_by(fn {_module, _script, _event, _matchers, desc, _opts} ->
+      desc
+      |> String.replace(~r/ for .+$/, "")
+      |> String.replace(~r/ \(.*\)$/, "")
     end)
+    |> Enum.map(fn {base_desc, hooks} ->
+      events =
+        hooks
+        |> Enum.map(fn {_module, _script, event, matcher, _desc, _opts} ->
+          event_str = format_event_name(event)
+
+          case matcher do
+            "*" -> event_str
+            ".*" -> event_str
+            matcher when is_binary(matcher) -> "#{event_str} (#{matcher})"
+            _ -> event_str
+          end
+        end)
+        |> Enum.uniq()
+        |> Enum.sort()
+        |> Enum.join(", ")
+
+      "  • #{base_desc} → #{events}"
+    end)
+    |> Enum.sort()
     |> Enum.join("\n")
     |> case do
       "" -> "  No hooks installed"
       hooks -> hooks
+    end
+  end
+
+  defp format_event_name(event) do
+    case event do
+      :stop -> "Stop"
+      :subagent_stop -> "SubagentStop"
+      :post_tool_use -> "PostToolUse"
+      :pre_tool_use -> "PreToolUse"
+      :user_prompt_submit -> "UserPromptSubmit"
+      :notification -> "Notification"
+      :pre_compact -> "PreCompact"
+      :session_start -> "SessionStart"
+      other -> other |> Atom.to_string() |> Macro.camelize()
     end
   end
 
@@ -634,19 +660,28 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp add_tidewave_to_project(igniter) do
-    igniter
-    |> Igniter.Project.Deps.add_dep({:tidewave, @tidewave_version}, on_exists: :skip)
-    |> Igniter.add_task("tidewave.install")
-    |> add_tidewave_to_mcp_servers()
-    |> Igniter.add_notice("""
-    Phoenix project detected! Automatically adding Tidewave for enhanced Phoenix development.
+    igniter =
+      igniter
+      |> Igniter.Project.Deps.add_dep({:tidewave, @tidewave_version, only: [:dev]},
+        on_exists: :skip
+      )
+      |> Igniter.add_task("tidewave.install")
+      |> add_tidewave_to_mcp_servers()
 
-    Tidewave provides Phoenix-specific MCP tools for Claude Code, including:
-    - Route inspection and generation
-    - LiveView component assistance
-    - Schema and migration tools
-    - Context generation helpers
-    """)
+    if Igniter.changed?(igniter, ".claude.exs") || Igniter.changed?(igniter, "mix.exs") do
+      igniter
+      |> Igniter.add_notice("""
+      Phoenix project detected! Automatically adding Tidewave for enhanced Phoenix development.
+
+      Tidewave provides Phoenix-specific MCP tools for Claude Code, including:
+      - Route inspection and generation
+      - LiveView component assistance
+      - Schema and migration tools
+      - Context generation helpers
+      """)
+    else
+      igniter
+    end
   end
 
   defp add_tidewave_to_mcp_servers(igniter) do
@@ -721,12 +756,10 @@ defmodule Mix.Tasks.Claude.Install do
   defp add_tidewave_to_list(_), do: [:tidewave]
 
   defp sync_usage_rules(igniter) do
-    igniter
-    |> Igniter.add_notice("""
-    Syncing usage rules to CLAUDE.md...
+    # Always show notice on first install (when CLAUDE.md doesn't exist)
+    show_notice = !Igniter.exists?(igniter, "CLAUDE.md")
 
-    This will help Claude Code understand how to use your project's dependencies.
-    """)
+    igniter
     |> Igniter.add_task("usage_rules.sync", [
       "CLAUDE.md",
       "--all",
@@ -735,6 +768,18 @@ defmodule Mix.Tasks.Claude.Install do
       "--link-to-folder",
       "deps"
     ])
+    |> then(fn igniter_with_task ->
+      if show_notice do
+        igniter_with_task
+        |> Igniter.add_notice("""
+        Syncing usage rules to CLAUDE.md...
+
+        This will help Claude Code understand how to use your project's dependencies.
+        """)
+      else
+        igniter_with_task
+      end
+    end)
   end
 
   defp generate_subagents(igniter) do
@@ -780,9 +825,14 @@ defmodule Mix.Tasks.Claude.Install do
     if errors == [] do
       successful = Enum.map(results, fn {:ok, result} -> result end)
 
-      igniter
-      |> add_generated_files(successful)
-      |> Igniter.add_notice(format_subagents_success_message(successful))
+      {updated_igniter, changed_files} = add_generated_files_with_tracking(igniter, successful)
+
+      if changed_files != [] do
+        updated_igniter
+        |> Igniter.add_notice(format_subagents_success_message(changed_files))
+      else
+        updated_igniter
+      end
     else
       igniter
       |> Igniter.add_warning(format_subagents_error_message(errors))
@@ -924,10 +974,10 @@ defmodule Mix.Tasks.Claude.Install do
     #{subagent.prompt}
     """
     |> String.trim()
+    |> Kernel.<>("\n")
   end
 
   defp generate_frontmatter(subagent) do
-    # Convert name to lowercase with hyphens as per Claude Code conventions
     name =
       subagent.name
       |> String.downcase()
@@ -957,12 +1007,48 @@ defmodule Mix.Tasks.Claude.Install do
     |> Enum.join("\n")
   end
 
-  defp add_generated_files(igniter, results) do
-    Enum.reduce(results, igniter, fn {_name, relative_path, content}, acc ->
-      Igniter.create_or_update_file(acc, relative_path, content, fn source ->
-        Rewrite.Source.update(source, :content, content)
+  defp add_generated_files_with_tracking(igniter, results) do
+    {final_igniter, changed_files} =
+      Enum.reduce(results, {igniter, []}, fn {_name, relative_path, content} = result,
+                                             {acc, changed} ->
+        case Rewrite.source(acc.rewrite, relative_path) do
+          {:ok, existing_source} ->
+            existing_content = Rewrite.Source.get(existing_source, :content)
+
+            if existing_content == content do
+              {acc, changed}
+            else
+              updated =
+                Igniter.update_file(acc, relative_path, fn source ->
+                  Rewrite.Source.update(source, :content, content)
+                end)
+
+              {updated, [result | changed]}
+            end
+
+          {:error, _} ->
+            if File.exists?(relative_path) do
+              {:ok, existing_content} = File.read(relative_path)
+
+              if existing_content == content do
+                included = Igniter.include_existing_file(acc, relative_path)
+                {included, changed}
+              else
+                updated =
+                  Igniter.create_or_update_file(acc, relative_path, content, fn source ->
+                    Rewrite.Source.update(source, :content, content)
+                  end)
+
+                {updated, [result | changed]}
+              end
+            else
+              created = Igniter.create_new_file(acc, relative_path, content)
+              {created, [result | changed]}
+            end
+        end
       end)
-    end)
+
+    {final_igniter, Enum.reverse(changed_files)}
   end
 
   defp format_subagents_success_message(results) do
@@ -1032,31 +1118,16 @@ defmodule Mix.Tasks.Claude.Install do
     notices =
       servers
       |> Enum.filter(fn
-        {:tidewave, opts} -> Keyword.get(opts, :enabled?, true)
-        :tidewave -> true
+        {:tidewave, opts} -> Keyword.get(opts, :enabled?, true) && Keyword.has_key?(opts, :port)
         _ -> false
       end)
       |> Enum.map(fn
-        :tidewave ->
-          """
-          Tidewave MCP server has been configured in .mcp.json
-
-          Type: SSE (Server-Sent Events)
-          URL: http://localhost:4000/tidewave/mcp
-
-          #{@tidewave_setup_instructions}
-          """
-
         {:tidewave, opts} ->
-          port = Keyword.get(opts, :port, 4000)
+          port = Keyword.get(opts, :port)
 
           """
           Tidewave MCP server has been configured in .mcp.json
-
-          Type: SSE (Server-Sent Events)
           URL: http://localhost:#{port}/tidewave/mcp
-
-          #{@tidewave_setup_instructions}
           """
       end)
 
@@ -1067,8 +1138,16 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp read_and_eval_claude_exs(igniter, path) do
     try do
-      igniter = Igniter.include_existing_file(igniter, path)
-      source = Rewrite.source!(igniter.rewrite, path)
+      source =
+        case Rewrite.source(igniter.rewrite, path) do
+          {:ok, source} ->
+            source
+
+          {:error, _} ->
+            igniter = Igniter.include_existing_file(igniter, path)
+            Rewrite.source!(igniter.rewrite, path)
+        end
+
       content = Rewrite.Source.get(source, :content)
 
       # Security Note: Code.eval_string evaluates arbitrary Elixir code from user files.
