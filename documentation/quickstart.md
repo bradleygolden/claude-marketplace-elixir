@@ -82,22 +82,21 @@ end
 
 ## Step 3: Experience Compilation Checking
 
-Ask Claude Code to introduce an error:
+Ask Claude Code to introduce a warning:
 
 ```
-Please edit lib/user_service.ex and add a typo - change 'preferences' to 'preferenses' 
-in the build_response function
+Please edit lib/user_service.ex and rename the 'preferences' parameter to '_preferences' 
+in the build_response function (but still use 'preferences' in the function body)
 ```
 
 **Watch what happens:**
-- ❌ Compilation error detected immediately
-- 🔍 Error details shown to Claude
+- ⚠️ Compilation warning detected immediately
+- 🔍 Warning details shown to Claude
 - 🔧 Claude can fix it automatically
 
 You'll see feedback like:
 ```
-Compilation failed with warnings/errors:
-** (CompileError) lib/user_service.ex:7: undefined variable "preferenses"
+warning: variable "preferences" does not exist
 ```
 
 ## Step 4: Try Pre-Commit Protection
@@ -118,7 +117,7 @@ If there are any formatting issues, compilation errors, or unused dependencies, 
 You've just experienced Claude's core features:
 
 1. **Format Checking** - Every `.ex` and `.exs` file is checked for proper formatting
-2. **Instant Compilation Checks** - Errors caught before they reach production
+2. **Instant Compilation Checks** - Warnings and errors caught immediately
 3. **Pre-Commit Validation** - Only clean code gets committed
 4. **Intelligent Feedback** - Claude sees and can fix issues automatically
 
@@ -126,8 +125,8 @@ You've just experienced Claude's core features:
 
 ### Enable More Features
 
-- **[Configure Additional Hooks](hooks.md)** - Enable related files suggestions and more
-- **[Create Sub-Agents](subagents.md)** - Build specialized AI assistants for your project
+- **[Create Sub-Agents](subagents.md)** - Use `mix claude.gen.subagent` to build specialized AI assistants
+- **[Configure Additional Hooks](hooks.md)** - Customize hook behavior and add custom checks
 - **Phoenix MCP Server** - Add `mcp_servers: [:tidewave]` to your `.claude.exs` (creates `.mcp.json` automatically)
 
 ### Learn More

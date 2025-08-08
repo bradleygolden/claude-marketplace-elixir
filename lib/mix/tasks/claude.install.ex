@@ -323,7 +323,7 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp parse_hook_spec({task, opts}, event_type, index) when is_binary(task) and is_list(opts) do
     id = :"#{event_type}_#{index}"
-    matcher = format_matcher(opts[:when] || "*")
+    matcher = if event_type == :session_start, do: "*", else: format_matcher(opts[:when] || "*")
     description = "Mix task: #{task}"
     {:mix_task, task, event_type, matcher, description, [id: id]}
   end

@@ -163,18 +163,16 @@ mix compile --warnings-as-errors
 
 ## Roadmap
 
-### 🚀 Coming Soon
+### ✅ Recently Added
 
-**Mix Task Generators**
-- `mix claude.gen.hook <module_name>` - Generate a new hook module with options:
-  - `--event` - Hook event type (post_tool_use, pre_tool_use, etc.)
-  - `--matcher` - Tool pattern matcher for tool events
-  - `--description` - Hook description
+**Mix Task Generator**
 - `mix claude.gen.subagent` - Interactive generator for new sub-agents with:
   - Name validation and formatting
   - Tool selection with warnings
   - Multi-line prompt support
   - Automatic `.claude.exs` integration
+
+### 🚀 Coming Soon
 
 **Custom Slash Commands**
 - `/create-subagent` - Generate a new sub-agent with guided prompts (wraps mix task)

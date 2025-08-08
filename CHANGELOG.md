@@ -8,15 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- New `mix claude.gen.subagent` for subagent generation. See [documentation/generators.md](documentation/generators.md) for details.
+- New `mix claude.gen.subagent` for interactive sub-agent generation. See [documentation/generators.md](documentation/generators.md) for details.
   - This also includes `mix claude.gen.hook` but it's currently for generating hooks for the `claude` library ATM.
 - New `Claude.Hook` macro for simplified hook creation with automatic JSON handling
 - Better testing capabilities via `Claude.Test` module with JSON output helpers
 - Automatic Tidewave installation for Phoenix projects - `mix claude.install` now automatically installs and configures Tidewave when Phoenix is detected
+- SessionStart hook support for running tasks on Claude Code startup
+- New atom-based hook system with shortcuts (`:compile`, `:format`, `:unused_deps`)
 
 ### Changed
 - Hooks now use JSON-only output format
 - **BREAKING**: Hooks now use `handle/1` callback instead of `run/1`
+- Hooks now use a single dispatcher system (`mix claude.hooks.run`)
+- Hook configuration moved from class-based to atom-based shortcuts in `.claude.exs`
 - Improved `mix claude.install` output - hooks are now grouped by function, notices only appear for actual changes, and subsequent runs show minimal output
 
 ### Removed
@@ -27,14 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.4] - 2025-08-01
 
 ### Fixed
-
-- Output MCP server configuration to correct `.mcp.json` location instead of `.claude/settings.json`.
-
-## [0.2.4] - 2025-08-01
-
-### Fixed
-
-- Fixed a bug where hooks weren't configured properly which prevented them from being useful to claude claude code. Please run `mix claude.install` to sync the new settings and pull in the fix.
+- Output MCP server configuration to correct `.mcp.json` location instead of `.claude/settings.json`
+- Fixed a bug where hooks weren't configured properly which prevented them from being useful to claude claude code. Please run `mix claude.install` to sync the new settings and pull in the fix
 
 ## [0.2.3] - 2025-07-30
 

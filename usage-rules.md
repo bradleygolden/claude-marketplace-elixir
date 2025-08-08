@@ -1,10 +1,17 @@
 # Claude Usage Rules
 
-Claude (not to be confused with Claude/Claude Code) is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It automatically formats code, checks for compilation errors after Claude makes edits, and includes tooling for deeply integrating Claude Code into your project using Elixir.
+Claude is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It automatically formats code, checks for compilation errors after Claude makes edits, and provides generators and tooling for deeply integrating Claude Code into your project.
+
+## What's New in v0.3.0
+
+- **Mix Task Generator**: `mix claude.gen.subagent` for creating sub-agents
+- **SessionStart Hooks**: Run tasks on Claude Code startup
+- **Atom-based Hooks**: Simple atom shortcuts that expand to full configurations
+- **Single Dispatcher System**: Efficient hook execution via `mix claude.hooks.run`
 
 ## Installation
 
-Claude only supports igniter installation:
+Claude only supports Igniter installation:
 
 ```bash
 mix igniter.install claude
@@ -14,67 +21,79 @@ mix igniter.install claude
 
 ### Installation
 ```bash
-# Install Claude hooks for the current project
+# Install Claude hooks and sync configuration
 mix claude.install
+```
+
+### Generator
+```bash
+# Generate a new sub-agent interactively
+mix claude.gen.subagent
 ```
 
 ## Hook System
 
-Claude provides a DSL-based hook system that integrates with Claude Code. All hooks use the `Claude.Hook` module.
+Claude provides an atom-based hook system with sensible defaults. Hooks are configured in `.claude.exs` using atom shortcuts that expand to full configurations.
 
-### Built-in Hooks
+### Available Hook Atoms
 
-1. **ElixirFormatter** - Checks if Elixir files need formatting after Claude edits them (PostToolUse hook for Write, Edit, MultiEdit)
-2. **CompilationChecker** - Checks for compilation errors after Claude edits Elixir files (PostToolUse hook for Write, Edit, MultiEdit)
-3. **PreCommitCheck** - Validates formatting, compilation, and unused dependencies before allowing git commits (PreToolUse hook for Bash)
+- `:compile` - Runs `mix compile --warnings-as-errors` with `halt_pipeline?: true`
+- `:format` - Runs `mix format --check-formatted` (checks only, doesn't auto-format)
+- `:unused_deps` - Runs `mix deps.unlock --check-unused` (pre_tool_use on git commits only)
+- `:deps_get` - Runs `mix deps.get` (session_start on startup only)
 
-### Optional Hooks
+### Default Hook Configuration
 
-1. **RelatedFiles** - Suggests updating related files based on naming patterns after edits (PostToolUse hook for Write, Edit, MultiEdit)
-
-#### RelatedFiles Hook Examples
-
-The RelatedFiles hook helps you keep related files in sync by suggesting updates when you modify code. Here are some examples:
-
-**Basic Usage** - Enable with default patterns:
+The default `.claude.exs` includes these hooks:
 
 ```elixir
-# .claude.exs
 %{
-  hooks: [
-    # This will use the default lib <-> test mappings
-    Claude.Hooks.PostToolUse.RelatedFiles
-  ]
+  hooks: %{
+    stop: [:compile, :format],
+    subagent_stop: [:compile, :format], 
+    post_tool_use: [:compile, :format],
+    # These only run on git commit commands
+    pre_tool_use: [:compile, :format, :unused_deps]
+  }
 }
 ```
 
-**Custom Patterns** - Configure your own file relationships:
+### SessionStart Hooks
+
+Session start hooks run when Claude Code starts a new session:
 
 ```elixir
-# .claude.exs
 %{
-  hooks: [
-    {Claude.Hooks.PostToolUse.RelatedFiles, %{
-      patterns: [
-        # When editing Phoenix controllers, suggest updating views
-        {"lib/*_web/controllers/*_controller.ex", "lib/*_web/controllers/*_html.ex"},
-
-        # When editing LiveView modules, suggest updating tests
-        {"lib/*_web/live/*_live.ex", "test/*_web/live/*_live_test.exs"},
-
-        # When editing schemas, suggest updating migrations
-        {"lib/*/schemas/*.ex", "priv/repo/migrations/*_*.exs"},
-
-        # Bidirectional mapping for documentation
-        {"lib/**/*.ex", "docs/**/*.md"},
-        {"docs/**/*.md", "lib/**/*.ex"}
-      ]
-    }}
-  ]
+  hooks: %{
+    # Run custom startup tasks
+    session_start: ["custom_startup_task"],
+    # ... other hooks
+  }
 }
 ```
 
-The hook uses glob patterns (`*` matches any characters except `/`, `**` matches any characters including `/`) and will suggest Claude to review related files after you make edits.
+### Custom Hook Configuration
+
+You can use explicit configurations with options:
+
+```elixir
+%{
+  hooks: %{
+    post_tool_use: [
+      :format,
+      {"custom_check", when: [:write, :edit], halt_pipeline?: true},
+      {"cmd ./lint.sh", blocking?: false}  # Shell command with "cmd " prefix
+    ]
+  }
+}
+```
+
+**Available Options:**
+- `:when` - Tool/event matcher (atoms, strings, or lists)
+- `:command` - Command pattern for Bash tools (string or regex)
+- `:halt_pipeline?` - Stop subsequent hooks on failure (default: false)
+- `:blocking?` - Convert non-zero exit to code 2 (default: true)
+- `:env` - Environment variables map
 
 ### Hook Documentation
 
@@ -113,38 +132,58 @@ When you run `mix claude.install`, this configuration is automatically written t
 
 **Note**: While only Tidewave is officially supported through the installer, you can manually add other MCP servers to `.mcp.json` following the Claude Code documentation.
 
-## Sub-agents
+## Sub-agents (v0.3.0+)
 
 Claude supports creating specialized AI assistants (sub-agents) for your project with built-in best practices.
 
+### Interactive Generation
+
+Use the new generator to create sub-agents:
+
+```bash
+mix claude.gen.subagent
+```
+
+This will prompt you for:
+- Name and description
+- Tool permissions 
+- System prompt
+- Usage rules integration
+
 ### Built-in Meta Agent
 
-Claude includes a Meta Agent by default that helps you create new sub-agents following best practices. The Meta Agent:
-- Analyzes your requirements and suggests optimal configuration
+Claude includes a Meta Agent by default that helps you create new sub-agents proactively. The Meta Agent:
+- Generates complete sub-agent configurations from descriptions
 - Chooses appropriate tools and permissions
-- Integrates usage rules from your dependencies
 - Follows Claude Code best practices for performance and context management
+- Uses WebSearch to reference official Claude Code documentation
 
-**Usage**: Just ask Claude to create a new sub-agent, and the Meta Agent will automatically help.
+**Usage**: Just ask Claude to "create a new sub-agent for X" and it will automatically generate the configuration.
 
-### Creating Sub-agents
+### Manual Configuration
 
-Configure sub-agents in `.claude.exs`:
+You can also configure sub-agents manually in `.claude.exs`:
 
 ```elixir
 %{
   subagents: [
     %{
-      name: "genserver-agent",
-      role: "GenServer specialist",
-      instructions: "You excel at writing and testing GenServers...",
-      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]  # Automatically includes best practices!
+      name: "Database Expert", 
+      description: "MUST BE USED for Ecto migrations and database schema changes. Expert in database design.",
+      prompt: """
+      You are a database and Ecto expert specializing in migrations and schema design.
+      
+      Always check existing migration files and schemas before making changes.
+      Follow Ecto best practices for data integrity and performance.
+      """,
+      tools: [:read, :write, :edit, :grep, :bash],
+      usage_rules: [:ash, :ash_postgres]  # Automatically includes package best practices!
     }
   ]
 }
 ```
 
-**Usage Rules Integration**: Sub-agents can automatically include usage rules from your dependencies, ensuring they follow library best practices.
+**Usage Rules Integration**: Sub-agents can automatically include usage rules from your dependencies, ensuring they follow library-specific best practices.
 
 ## Settings Management
 
@@ -156,11 +195,14 @@ the `.claude` directory for use by Claude Code.
 ```elixir
 # .claude.exs - Claude configuration for this project
 %{
-  # Register hooks (built-in only)
-  hooks: [
-    # Optional: Enable related files suggestions
-    Claude.Hooks.PostToolUse.RelatedFiles
-  ],
+  # Hook configuration using atom shortcuts
+  hooks: %{
+    stop: [:compile, :format],
+    subagent_stop: [:compile, :format],
+    post_tool_use: [:compile, :format],
+    # Only run on git commit commands
+    pre_tool_use: [:compile, :format, :unused_deps]
+  },
 
   # MCP servers configuration
   mcp_servers: [
@@ -171,10 +213,16 @@ the `.claude` directory for use by Claude Code.
   # Specialized sub-agents
   subagents: [
     %{
-      name: "test_expert",
-      role: "ExUnit testing specialist",
-      instructions: "You excel at writing comprehensive test suites...",
-      usage_rules: ["usage_rules:elixir", "usage_rules:otp"]
+      name: "Test Expert",
+      description: "MUST BE USED for ExUnit testing and test file generation. Expert in test patterns.",
+      prompt: """
+      You are an ExUnit testing expert specializing in comprehensive test suites.
+      
+      Always check existing test patterns and follow project conventions.
+      Focus on testing behavior, edge cases, and integration scenarios.
+      """,
+      tools: [:read, :write, :edit, :grep, :bash],
+      usage_rules: [:usage_rules_elixir, :usage_rules_otp]
     }
   ]
 }

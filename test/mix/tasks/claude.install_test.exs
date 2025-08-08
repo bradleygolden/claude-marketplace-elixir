@@ -1007,9 +1007,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
-      settings_content = Rewrite.Source.get(settings_source, :content)
-      settings = Jason.decode!(settings_content)
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
       assert Map.has_key?(settings["hooks"], "SessionStart")
 
       [%{"hooks" => session_hooks, "matcher" => "*"}] = settings["hooks"]["SessionStart"]
@@ -1049,7 +1051,20 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
     test "does not include SessionStart by default" do
       igniter =
-        test_project()
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                stop: [:compile, :format],
+                subagent_stop: [:compile, :format],
+                post_tool_use: [:compile, :format],
+                pre_tool_use: [:compile, :format, :unused_deps]
+              }
+            }
+            """
+          }
+        )
         |> Igniter.compose_task("claude.install")
 
       settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
@@ -1074,9 +1089,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
-      settings_content = Rewrite.Source.get(settings_source, :content)
-      settings = Jason.decode!(settings_content)
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
       assert Map.has_key?(settings["hooks"], "SessionStart")
       [%{"hooks" => session_hooks}] = settings["hooks"]["SessionStart"]
 

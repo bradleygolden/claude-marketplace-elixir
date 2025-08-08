@@ -1,7 +1,7 @@
 defmodule Claude.MixProject do
   use Mix.Project
 
-  @version "0.2.3"
+  @version "0.3.0"
   @elixir_version "~> 1.18"
   @description "Batteries-included Claude Code integration for Elixir projects"
 
@@ -50,7 +50,7 @@ defmodule Claude.MixProject do
       },
       maintainers: ["Bradley Golden"],
       files:
-        ~w(lib .formatter.exs mix.exs documentation/quickstart.md documentation/hooks.md documentation/subagents.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+        ~w(lib .formatter.exs mix.exs documentation/quickstart.md documentation/hooks.md documentation/subagents.md documentation/generators.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
@@ -62,7 +62,19 @@ defmodule Claude.MixProject do
         {"README.md", title: "Overview"},
         {"documentation/hooks.md", title: "Hooks"},
         {"documentation/subagents.md", title: "Sub-Agents"},
-        {"CHANGELOG.md", title: "Changelog"}
+        {"documentation/generators.md", title: "Generators"},
+        {"CHANGELOG.md", title: "Changelog"},
+        {"cheatsheets/hooks.cheatmd", title: "Hook Configuration"}
+      ],
+      groups_for_extras: [
+        "Getting Started": ["documentation/quickstart.md", "README.md"],
+        Guides: [
+          "documentation/hooks.md",
+          "documentation/subagents.md",
+          "documentation/generators.md"
+        ],
+        Cheatsheets: ["cheatsheets/hooks.cheatmd"],
+        Meta: ["CHANGELOG.md"]
       ],
       source_ref: "v#{@version}",
       source_url: "https://github.com/bradleygolden/claude"
