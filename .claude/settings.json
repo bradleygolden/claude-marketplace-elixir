@@ -22,17 +22,6 @@
         "matcher": "*"
       }
     ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run session_start",
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
     "Stop": [
       {
         "hooks": [

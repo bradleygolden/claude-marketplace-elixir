@@ -38,10 +38,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Check that we have a notice about adding .claude.exs to formatter
-      assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "To format .claude.exs files")
-             end)
+      assert Igniter.exists?(igniter, ".formatter.exs")
+
+      formatter_source = Rewrite.source!(igniter.rewrite, ".formatter.exs")
+      content = Rewrite.Source.get(formatter_source, :content)
+      assert String.contains?(content, ".claude.exs")
     end
 
     test "formatter update is idempotent when .claude.exs already present" do
@@ -103,7 +104,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       assert_creates(igniter, ".claude.exs")
 
-      # Check that the generated file contains atom shortcuts by checking the rewrite map
       source = igniter.rewrite |> Rewrite.source!(".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
@@ -128,7 +128,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Check that an issue is raised for old format
       assert Enum.any?(igniter.issues, fn issue ->
                String.contains?(issue, "outdated hooks format") and
                  String.contains?(issue, "mix claude.upgrade")
@@ -153,7 +152,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should have no issues with new format
       assert igniter.issues == []
       assert_unchanged(igniter, ".claude.exs")
     end
@@ -176,7 +174,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should have no issues with mixed format
       assert igniter.issues == []
       assert_unchanged(igniter, ".claude.exs")
     end
@@ -208,7 +205,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Ensure no tidewave notice for non-Phoenix projects
       refute Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "Tidewave")
              end)
@@ -219,11 +215,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Verify files will be created using Igniter assertions
       assert_creates(igniter, ".claude/settings.json")
       assert_creates(igniter, ".claude.exs")
 
-      # Verify the tasks are composed
       assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
                task_name == "usage_rules.sync"
              end)
@@ -257,7 +251,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # The mix.exs should not be changed when dependency already exists
       refute Igniter.changed?(igniter, "mix.exs")
     end
 
@@ -266,7 +259,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Verify usage_rules.sync task is composed (it creates CLAUDE.md when run)
       assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
                task_name == "usage_rules.sync"
              end)
@@ -290,33 +282,33 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
 
     test "installation is idempotent" do
-      # First installation
       igniter1 =
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Verify files will be created
       assert_creates(igniter1, ".claude.exs")
       assert_creates(igniter1, ".claude/settings.json")
 
-      # Apply the changes to get the actual file contents
-      apply_igniter!(igniter1)
+      claude_exs_source = Rewrite.source!(igniter1.rewrite, ".claude.exs")
+      claude_exs_content = Rewrite.Source.get(claude_exs_source, :content)
 
-      # Second installation with existing files
+      settings_source = Rewrite.source!(igniter1.rewrite, ".claude/settings.json")
+      settings_content = Rewrite.Source.get(settings_source, :content)
+
+      mix_exs_source = Rewrite.source!(igniter1.rewrite, "mix.exs")
+      mix_exs_content = Rewrite.Source.get(mix_exs_source, :content)
+
       igniter2 =
         test_project(
           files: %{
-            ".claude.exs" => File.read!(".claude.exs"),
-            ".claude/settings.json" => File.read!(".claude/settings.json"),
-            "mix.exs" => File.read!("mix.exs")
+            ".claude.exs" => claude_exs_content,
+            ".claude/settings.json" => settings_content,
+            "mix.exs" => mix_exs_content
           }
         )
         |> Igniter.compose_task("claude.install")
 
-      # .claude.exs should not be changed in second run
       assert_unchanged(igniter2, ".claude.exs")
-
-      # Note: settings.json might have timestamp updates, so we just verify it exists
       assert Igniter.exists?(igniter2, ".claude/settings.json")
     end
   end
@@ -586,20 +578,31 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Meta agent should be created by default
       assert Enum.any?(Map.keys(igniter.rewrite.sources), fn path ->
-               path == ".claude/agents/meta-agent.md"
+               path == ".claude.exs"
              end)
 
-      # Check that the meta agent has the correct content
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/meta-agent.md")
-      content = Rewrite.Source.get(source, :content)
-      assert String.contains?(content, "name: meta-agent")
+      claude_exs_source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      claude_exs_content = Rewrite.Source.get(claude_exs_source, :content)
+      assert String.contains?(claude_exs_content, "Meta Agent")
+      assert String.contains?(claude_exs_content, "Generates new, complete Claude Code subagent")
 
-      assert String.contains?(
-               content,
-               "description: Generates new, complete Claude Code subagent"
-             )
+      {config, _} = Code.eval_string(claude_exs_content)
+      assert is_map(config)
+      assert Map.has_key?(config, :subagents)
+      subagents = Map.get(config, :subagents, [])
+      assert is_list(subagents)
+      assert length(subagents) > 0
+
+      meta_agent =
+        Enum.find(subagents, fn agent ->
+          Map.get(agent, :name) == "Meta Agent"
+        end)
+
+      assert meta_agent != nil
+      assert Map.has_key?(meta_agent, :description)
+      assert Map.has_key?(meta_agent, :prompt)
+      assert Map.has_key?(meta_agent, :tools)
     end
 
     test "generates subagents with correct YAML frontmatter format" do
@@ -741,7 +744,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert json["mcpServers"]["tidewave"] != nil
     end
 
-    test "shows tidewave configuration notice when specified in .claude.exs" do
+    test "does not show tidewave notice for default configuration" do
       igniter =
         phx_test_project(
           files: %{
@@ -754,8 +757,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Check that tidewave configuration notice is shown
-      assert Enum.any?(igniter.notices, fn notice ->
+      refute Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "Tidewave MCP server has been configured")
              end)
     end
@@ -959,15 +961,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       notices = igniter.notices
 
-      # Should have hook configuration notice
       assert Enum.any?(notices, &String.contains?(&1, "Claude hooks have been configured"))
-
-      # Should have usage rules sync notice
       assert Enum.any?(notices, &String.contains?(&1, "Syncing usage rules to CLAUDE.md"))
-
-      # Should have subagent generation notice for meta agent
-      assert Enum.any?(notices, &String.contains?(&1, "Generated 1 subagent(s)"))
-      assert Enum.any?(notices, &String.contains?(&1, "Meta Agent"))
     end
 
     test "includes subagent notice when subagents are configured" do
@@ -991,7 +986,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       notices = igniter.notices
 
-      # Should have subagent generation notice
       assert Enum.any?(notices, &String.contains?(&1, "Generated 1 subagent(s)"))
     end
   end
@@ -1013,9 +1007,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      apply_igniter!(igniter)
-
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
+      settings_content = Rewrite.Source.get(settings_source, :content)
+      settings = Jason.decode!(settings_content)
       assert Map.has_key?(settings["hooks"], "SessionStart")
 
       [%{"hooks" => session_hooks, "matcher" => "*"}] = settings["hooks"]["SessionStart"]
@@ -1058,9 +1052,10 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      apply_igniter!(igniter)
+      settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
+      settings_content = Rewrite.Source.get(settings_source, :content)
+      settings = Jason.decode!(settings_content)
 
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
       refute Map.has_key?(settings["hooks"], "SessionStart")
     end
 
@@ -1079,9 +1074,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      apply_igniter!(igniter)
-
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
+      settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
+      settings_content = Rewrite.Source.get(settings_source, :content)
+      settings = Jason.decode!(settings_content)
       assert Map.has_key?(settings["hooks"], "SessionStart")
       [%{"hooks" => session_hooks}] = settings["hooks"]["SessionStart"]
 
@@ -1104,7 +1099,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should show notice about no hooks configured
       assert Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "No hooks configured")
              end)
@@ -1122,8 +1116,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should not crash - the installer should handle nil config gracefully
-      # It will either show missing hooks notice or successfully install with empty hooks
       assert igniter.issues == []
     end
 
@@ -1152,15 +1144,12 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       settings = File.read!(".claude/settings.json") |> Jason.decode!()
 
-      # PostToolUse hooks should be grouped together
       assert post_hooks = settings["hooks"]["PostToolUse"]
       assert length(post_hooks) == 1
       [post_config] = post_hooks
-      # Single dispatcher hook
       assert length(post_config["hooks"]) == 1
       assert hd(post_config["hooks"])["command"] =~ "claude.hooks.run post_tool_use"
 
-      # PreToolUse hooks should be separate
       assert pre_hooks = settings["hooks"]["PreToolUse"]
       assert length(pre_hooks) == 1
       [pre_config] = pre_hooks

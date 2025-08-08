@@ -17,10 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Hooks now use JSON-only output format
 - **BREAKING**: Hooks now use `handle/1` callback instead of `run/1`
+- Improved `mix claude.install` output - hooks are now grouped by function, notices only appear for actual changes, and subsequent runs show minimal output
 
 ### Removed
 - Removed telemetry modules (unused)
 - Removed multiple test helper modules in favor of unified `Claude.Test`
+- Removed Phoenix, Tidewave, and usage_rules from dependencies (not needed - they're only managed as strings when installing to user projects)
 
 ## [0.2.4] - 2025-08-01
 
