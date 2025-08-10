@@ -2,6 +2,8 @@
 
 Claude provides a Mix task generator for creating specialized AI sub-agents.
 
+> 📋 **Quick Reference**: See the [Generators Cheatsheet](../cheatsheets/generators.cheatmd) for command options and examples.
+
 ## Sub-Agent Generator
 
 Create specialized AI assistants with focused capabilities.
@@ -62,34 +64,10 @@ Creating subagent 'elixir-tester'...
 
 The generator:
 
-1. Adds the sub-agent to `.claude.exs`:
-   ```elixir
-   %{
-     subagents: [
-       %{
-         name: "elixir-tester",
-         description: "When running or writing Elixir tests",
-         prompt: "...",
-         tools: [:read, :grep, :bash, :edit, :write]
-       }
-     ]
-   }
-   ```
+1. Adds the sub-agent configuration to `.claude.exs`
+2. Creates the agent file in `.claude/agents/`
 
-2. Creates `.claude/agents/elixir-tester.md`:
-   ```markdown
-   ---
-   name: elixir-tester
-   description: When running or writing Elixir tests
-   tools: Read, Grep, Bash, Edit, Write
-   ---
-   
-   You are an Elixir testing specialist. Your role is to:
-   - Write comprehensive ExUnit tests
-   - Follow testing best practices
-   - Use proper test organization
-   - Mock external dependencies appropriately
-   ```
+For details on the configuration format and fields, see the [Sub-Agents Guide](guide-subagents.md#configuration-format).
 
 ### Tool Selection
 
@@ -102,38 +80,20 @@ The generator provides guidance on tool selection:
 
 ### Best Practices
 
-1. **Focused Sub-Agents**: Create sub-agents with specific, well-defined purposes
-2. **Minimal Tools**: Only include tools the sub-agent actually needs
-3. **Clear Descriptions**: Write descriptions that help Claude know when to invoke
-4. **Detailed Prompts**: Include specific instructions and examples in prompts
+For sub-agent design principles and best practices, see:
+- [Important Design Principles](guide-subagents.md#important-design-principles) in the Sub-Agents Guide
+- [Performance Best Practices](guide-subagents.md#performance-best-practices) for optimization tips
 
-## Running Generated Code
+## After Generation
 
-After generating sub-agents:
+1. The sub-agent is added to `.claude.exs`
+2. Run `mix claude.install` to create the agent file in `.claude/agents/`
+3. The sub-agent is immediately available to Claude
 
-1. **Sub-agents** are available immediately after generation
-2. Run `mix claude.install` to ensure the agent file is created in `.claude/agents/`
-3. Sub-agents can be manually edited to customize behavior
+For more ways to create sub-agents, including using the Meta Agent, see [Creating Sub-Agents](guide-subagents.md#creating-sub-agents).
 
-## Hook Configuration
+## See Also
 
-In v0.3.0+, hooks are configured using atom shortcuts in `.claude.exs` rather than generated modules:
-
-```elixir
-%{
-  hooks: %{
-    stop: [:compile, :format],
-    subagent_stop: [:compile, :format],
-    post_tool_use: [:compile, :format],
-    pre_tool_use: [:compile, :format, :unused_deps],
-    session_start: [:deps_get]  # Optional
-  }
-}
-```
-
-Available atom shortcuts:
-- `:compile` - Runs compilation with warnings as errors
-- `:format` - Checks if files need formatting
-- `:unused_deps` - Checks for unused dependencies (pre_tool_use only)
-
-For more details on the hook system, see the [Hooks Documentation](hooks.md).
+- [Sub-Agents Guide](guide-subagents.md) - Complete sub-agent documentation and examples
+- [Hooks Guide](guide-hooks.md) - Hook configuration and atom shortcuts
+- [Usage Rules Guide](guide-usage-rules.md) - Integrating best practices into sub-agents

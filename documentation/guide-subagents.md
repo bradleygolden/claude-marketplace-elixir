@@ -2,18 +2,13 @@
 
 Claude includes a powerful sub-agent system that lets you create specialized AI assistants for specific tasks in your project. Sub-agents provide focused expertise with their own context and can be automatically invoked based on task requirements.
 
+> 📋 **Quick Reference**: See the [Sub-Agents Cheatsheet](../cheatsheets/subagents.cheatmd) for a concise reference of configuration options and patterns.
+
 ## Documentation
 
 For complete documentation on Claude Code's sub-agent system:
 - [Official Sub-Agents Guide](https://docs.anthropic.com/en/docs/claude-code/sub-agents) - Complete guide with examples
 - [Settings Reference](https://docs.anthropic.com/en/docs/claude-code/settings) - Configuration options
-
-## What's New in v0.3.0
-
-- **Interactive Generator**: `mix claude.gen.subagent` for guided creation
-- **Enhanced Meta Agent**: Proactive sub-agent generation with WebSearch integration
-- **Automatic Installation**: Sub-agents configured in `.claude.exs` are auto-generated
-- **Usage Rules Integration**: Automatic inclusion of dependency best practices
 
 ## What Claude Includes
 
@@ -58,9 +53,25 @@ Sub-agents are configured in `.claude.exs` using the v0.3.0+ format:
 
 ## Creating Sub-Agents
 
-### Method 1: Interactive Generator (Recommended)
+### Method 1: Using the Meta Agent (Recommended)
 
-The easiest way to create a new sub-agent is with the interactive generator:
+The easiest way to create a new sub-agent is to simply ask Claude:
+
+```
+Create a sub-agent for handling GraphQL queries and schema validation
+```
+
+The Meta Agent will automatically:
+- Generate a complete, ready-to-use sub-agent configuration
+- Choose appropriate tools based on the task requirements
+- Write performance-optimized prompts with context discovery patterns
+- Include relevant usage rules from your dependencies
+- Add the configuration to your `.claude.exs` file
+- Remind you to run `mix claude.install` to generate the agent file
+
+### Method 2: Interactive Generator
+
+For more control, use the interactive generator:
 
 ```bash
 mix claude.gen.subagent
@@ -78,23 +89,7 @@ The generator automatically:
 - Follows Claude Code best practices
 - Generates the agent file in `.claude/agents/`
 
-See the [Generators Documentation](generators.md#sub-agent-generator) for full details.
-
-### Method 2: Using the Meta Agent (Proactive)
-
-Simply ask Claude to create a sub-agent:
-
-```
-Create a sub-agent for handling GraphQL queries and schema validation
-```
-
-The Meta Agent will automatically:
-- Generate a complete, ready-to-use sub-agent configuration
-- Choose appropriate tools based on the task requirements
-- Write performance-optimized prompts with context discovery patterns
-- Include relevant usage rules from your dependencies
-- Add the configuration to your `.claude.exs` file
-- Remind you to run `mix claude.install` to generate the agent file
+See the [Generators Documentation](guide-generators.md#sub-agent-generator) for full details.
 
 ### Method 3: Manual Configuration
 
@@ -127,7 +122,7 @@ You can also manually add sub-agents to `.claude.exs`:
       - Focus on relevant files only
       """,
       tools: [:read, :write, :edit, :bash, :grep],
-      usage_rules: [:ash, :ash_postgres] # Automatically includes package best practices
+      usage_rules: [:igniter, :usage_rules_elixir] # Automatically includes package best practices
     }
   ]
 }
@@ -147,22 +142,23 @@ Sub-agents can automatically include best practices from your project dependenci
   name: "Phoenix Expert",
   description: "MUST BE USED for Phoenix controllers, views, and routing. Expert in web development.",
   prompt: "You are a Phoenix framework specialist...",
-  usage_rules: [:phoenix, :phoenix_html, :plug] # Automatically includes package best practices!
+  usage_rules: [:usage_rules_elixir, :usage_rules_otp] # Automatically includes package best practices!
 }
 ```
 
 **Common Usage Rules:**
 - `:usage_rules_elixir` - Elixir language best practices
 - `:usage_rules_otp` - OTP patterns and practices
-- `:phoenix` - Phoenix framework patterns
-- `:ecto` - Database and query best practices
-- `:ash` - Ash framework patterns
+- `:igniter` - Code generation and project patching patterns
+- `:phoenix` - Phoenix framework patterns (when Phoenix 1.8+ with usage rules is installed)
 - Any package with usage rules in your dependencies
 
 **Format Options:**
 - `:package_name` - Loads `deps/package_name/usage-rules.md`
-- `"package:all"` - Loads all usage rules from `deps/package/usage-rules/`
-- `"package:specific_rule"` - Loads `deps/package/usage-rules/specific_rule.md`
+- `"package_name:all"` - Loads all usage rules from `deps/package_name/usage-rules/`
+- `"package_name:specific_rule"` - Loads `deps/package_name/usage-rules/specific_rule.md`
+- `:usage_rules_elixir` - Special case: loads `deps/usage_rules/usage-rules/elixir.md`
+- `:usage_rules_otp` - Special case: loads `deps/usage_rules/usage-rules/otp.md`
 
 ## Important Design Principles
 
@@ -212,8 +208,18 @@ Sub-agents start with a **clean slate** on every invocation - they have no memor
   - Limit context to relevant database files only
   """,
   tools: [:read, :write, :edit, :grep, :bash], # No :task to prevent delegation loops
-  usage_rules: [:ecto, :usage_rules_elixir]
+  usage_rules: [:igniter, :usage_rules_elixir]
 }
 ```
+
+## Request New Sub-Agent Templates
+
+Want a pre-built sub-agent template for common tasks? We'd love to hear your ideas!
+
+[Request a new sub-agent template →](https://github.com/bradleygolden/claude/issues/new?title=Sub-Agent%20Template%20Request:%20[Name]&body=**Sub-Agent%20Name:**%20%0A**Use%20Case:**%20%0A**Common%20Tasks:**%20%0A%0APlease%20describe%20what%20this%20sub-agent%20would%20do%20and%20why%20it%20would%20be%20useful%20for%20Elixir%20developers.)
+
+Popular requests might be added as default templates or examples!
+
+## Learn More
 
 For more details on sub-agent architecture, delegation patterns, and advanced usage, see the [official documentation](https://docs.anthropic.com/en/docs/claude-code/sub-agents).

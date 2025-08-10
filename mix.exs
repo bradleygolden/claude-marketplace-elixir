@@ -50,30 +50,42 @@ defmodule Claude.MixProject do
       },
       maintainers: ["Bradley Golden"],
       files:
-        ~w(lib .formatter.exs mix.exs documentation/quickstart.md documentation/hooks.md documentation/subagents.md documentation/generators.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+        ~w(lib .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-subagents.md documentation/guide-generators.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
   defp docs do
     [
-      main: "quickstart",
+      main: "guide-quickstart",
       extras: [
-        {"documentation/quickstart.md", title: "Quickstart"},
+        {"documentation/guide-quickstart.md", title: "Quickstart"},
         {"README.md", title: "Overview"},
-        {"documentation/hooks.md", title: "Hooks"},
-        {"documentation/subagents.md", title: "Sub-Agents"},
-        {"documentation/generators.md", title: "Generators"},
+        {"documentation/guide-hooks.md", title: "Hooks Guide"},
+        {"documentation/guide-subagents.md", title: "Sub-Agents Guide"},
+        {"documentation/guide-mcp.md", title: "MCP Servers Guide"},
+        {"documentation/guide-usage-rules.md", title: "Usage Rules Guide"},
+        {"documentation/guide-generators.md", title: "Generators Guide"},
         {"CHANGELOG.md", title: "Changelog"},
-        {"cheatsheets/hooks.cheatmd", title: "Hook Configuration"}
+        {"cheatsheets/hooks.cheatmd", title: "Hooks Cheatsheet"},
+        {"cheatsheets/subagents.cheatmd", title: "Sub-Agents Cheatsheet"},
+        {"cheatsheets/mcp.cheatmd", title: "MCP Cheatsheet"},
+        {"cheatsheets/generators.cheatmd", title: "Generators Cheatsheet"}
       ],
       groups_for_extras: [
-        "Getting Started": ["documentation/quickstart.md", "README.md"],
+        "Getting Started": ["documentation/guide-quickstart.md", "README.md"],
         Guides: [
-          "documentation/hooks.md",
-          "documentation/subagents.md",
-          "documentation/generators.md"
+          "documentation/guide-hooks.md",
+          "documentation/guide-subagents.md",
+          "documentation/guide-mcp.md",
+          "documentation/guide-usage-rules.md",
+          "documentation/guide-generators.md"
         ],
-        Cheatsheets: ["cheatsheets/hooks.cheatmd"],
+        Cheatsheets: [
+          "cheatsheets/hooks.cheatmd",
+          "cheatsheets/subagents.cheatmd",
+          "cheatsheets/mcp.cheatmd",
+          "cheatsheets/generators.cheatmd"
+        ],
         Meta: ["CHANGELOG.md"]
       ],
       source_ref: "v#{@version}",

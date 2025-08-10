@@ -361,7 +361,6 @@ defmodule Mix.Tasks.Claude.Install do
     # - :compile - Runs compilation with warnings as errors
     # - :format - Checks formatting (includes file path for edits)
     # - :unused_deps - Checks for unused dependencies (pre_tool_use only)
-    # - :deps_get - Installs project dependencies (optional, session_start on startup only)
 
     %{
       hooks: %{

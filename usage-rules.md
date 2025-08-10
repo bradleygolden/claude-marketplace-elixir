@@ -5,7 +5,6 @@ Claude is an Elixir library that provides batteries-included Claude Code integra
 ## What's New in v0.3.0
 
 - **Mix Task Generator**: `mix claude.gen.subagent` for creating sub-agents
-- **SessionStart Hooks**: Run tasks on Claude Code startup
 - **Atom-based Hooks**: Simple atom shortcuts that expand to full configurations
 - **Single Dispatcher System**: Efficient hook execution via `mix claude.hooks.run`
 
@@ -35,12 +34,24 @@ mix claude.gen.subagent
 
 Claude provides an atom-based hook system with sensible defaults. Hooks are configured in `.claude.exs` using atom shortcuts that expand to full configurations.
 
+### Hook Events
+
+Claude supports all Claude Code hook events:
+
+- **`pre_tool_use`** - Before tool execution (can block tools)
+- **`post_tool_use`** - After tool execution completes successfully
+- **`user_prompt_submit`** - Before processing user prompts (can add context or block)
+- **`notification`** - When Claude needs permission or input is idle
+- **`stop`** - When Claude Code finishes responding (main agent)
+- **`subagent_stop`** - When a sub-agent finishes responding
+- **`pre_compact`** - Before context compaction (manual or automatic)
+- **`session_start`** - When Claude Code starts or resumes a session
+
 ### Available Hook Atoms
 
 - `:compile` - Runs `mix compile --warnings-as-errors` with `halt_pipeline?: true`
 - `:format` - Runs `mix format --check-formatted` (checks only, doesn't auto-format)
 - `:unused_deps` - Runs `mix deps.unlock --check-unused` (pre_tool_use on git commits only)
-- `:deps_get` - Runs `mix deps.get` (session_start on startup only)
 
 ### Default Hook Configuration
 
@@ -54,20 +65,6 @@ The default `.claude.exs` includes these hooks:
     post_tool_use: [:compile, :format],
     # These only run on git commit commands
     pre_tool_use: [:compile, :format, :unused_deps]
-  }
-}
-```
-
-### SessionStart Hooks
-
-Session start hooks run when Claude Code starts a new session:
-
-```elixir
-%{
-  hooks: %{
-    # Run custom startup tasks
-    session_start: ["custom_startup_task"],
-    # ... other hooks
   }
 }
 ```

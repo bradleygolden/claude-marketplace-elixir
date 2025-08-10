@@ -8,6 +8,8 @@ For complete documentation on Claude Code's hook system:
 - [Official Hooks Reference](https://docs.anthropic.com/en/docs/claude-code/hooks) - Complete API reference
 - [Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks-guide) - Getting started with examples
 
+For a quick reference of all hook configurations, see the [Hook Configuration Cheatsheet](../cheatsheets/hooks.cheatmd).
+
 ## What Claude Installs
 
 When you run `mix igniter.install claude`, it automatically sets up default hooks:
@@ -37,17 +39,19 @@ Claude provides these atom shortcuts that expand to full hook configurations:
 - **`:compile`** - Runs `mix compile --warnings-as-errors` with `halt_pipeline?: true` (stops on failure)
 - **`:format`** - Runs `mix format --check-formatted` (checks only, doesn't auto-format)
 - **`:unused_deps`** - Runs `mix deps.unlock --check-unused` (pre_tool_use on git commits only)
-- **`:deps_get`** - Runs `mix deps.get` (session_start on startup only)
 
 ## Hook Events
 
 Different hook events run at different times:
 
-- **`stop`** - When Claude Code finishes responding
+- **`pre_tool_use`** - Before tool execution (can block tools)
+- **`post_tool_use`** - After tool execution completes successfully
+- **`user_prompt_submit`** - Before processing user prompts (can add context or block)
+- **`notification`** - When Claude needs permission or input is idle
+- **`stop`** - When Claude Code finishes responding (main agent)
 - **`subagent_stop`** - When a sub-agent finishes responding
-- **`post_tool_use`** - After Claude edits/writes files
-- **`pre_tool_use`** - Before tool use (e.g., git commits)
-- **`session_start`** - When Claude Code starts
+- **`pre_compact`** - Before context compaction (manual or automatic)
+- **`session_start`** - When Claude Code starts or resumes a session
 
 ## Advanced Configuration
 

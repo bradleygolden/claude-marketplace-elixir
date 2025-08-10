@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-10
+
 ### Added
-- New `mix claude.gen.subagent` for interactive sub-agent generation. See [documentation/generators.md](documentation/generators.md) for details.
+- New `mix claude.gen.subagent` for interactive sub-agent generation. See [documentation/guide-generators.md](documentation/guide-generators.md) for details.
   - This also includes `mix claude.gen.hook` but it's currently for generating hooks for the `claude` library ATM.
 - New `Claude.Hook` macro for simplified hook creation with automatic JSON handling
 - Better testing capabilities via `Claude.Test` module with JSON output helpers
@@ -81,7 +83,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bradleygolden/claude/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/bradleygolden/claude/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/bradleygolden/claude/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/bradleygolden/claude/compare/v0.2.1...v0.2.2

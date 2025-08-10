@@ -61,14 +61,6 @@ Runs `mix deps.unlock --check-unused` to detect unused dependencies.
 pre_tool_use: [:unused_deps]
 ```
 
-### `:deps_get` - Install Dependencies
-
-Runs `mix deps.get` to install project dependencies.
-
-```elixir
-# Install deps on new Claude Code sessions only
-session_start: [:deps_get]
-```
 
 ## Full Expansion Reference
 
@@ -96,11 +88,6 @@ session_start: [:deps_get]
 |-------|------------|-------------|
 | `:pre_tool_use` | `{"deps.unlock --check-unused", when: "Bash", command: ~r/^git commit/}` | Check before commits |
 
-### `:deps_get` Expansions
-
-| Event | Expands To | Description |
-|-------|------------|-------------|
-| `:session_start` | `{"deps.get", when: :startup}` | Install deps on new sessions |
 
 ## Custom Hooks
 
@@ -155,7 +142,16 @@ when: "Bash(git commit:*)"
 # For session_start events
 when: :startup    # New session only
 when: :resume     # Resumed session only
+when: :clear      # Clear session
 when: "*"         # Any session
+
+# For pre_compact events
+when: "manual"    # Manual /compact command
+when: "auto"      # Automatic compaction
+when: "*"         # Any compaction
+
+# For user_prompt_submit and notification events
+when: "*"         # No specific matchers (always match)
 ```
 
 ### Command Patterns (`:command` option)
@@ -197,6 +193,45 @@ Variables replaced at runtime in hook commands (by `mix claude.hooks.run`):
 
 ## Event Types
 
+### `pre_tool_use`
+Runs before tool execution (can block the tool).
+
+```elixir
+pre_tool_use: [
+  {"validate_command", when: "Bash"},
+  {:compile, when: "Bash", command: ~r/^git commit/}
+]
+```
+
+### `post_tool_use`
+Runs after tool execution (file edits, etc).
+
+```elixir
+post_tool_use: [
+  {:compile, when: [:write, :edit]},
+  {:format, when: [:write, :edit]}
+]
+```
+
+### `user_prompt_submit`
+Runs before processing user prompts (can add context or block).
+
+```elixir
+user_prompt_submit: [
+  {"validate_prompt", blocking?: true},
+  {"add_context", blocking?: false}
+]
+```
+
+### `notification`
+Runs when Claude needs permission or input is idle.
+
+```elixir
+notification: [
+  {"send_desktop_notification", blocking?: false}
+]
+```
+
 ### `stop`
 Runs when Claude Code finishes responding.
 
@@ -211,23 +246,13 @@ Runs when a sub-agent task completes.
 subagent_stop: [:compile, :format]
 ```
 
-### `post_tool_use`
-Runs after tool execution (file edits, etc).
+### `pre_compact`
+Runs before context compaction (manual or automatic).
 
 ```elixir
-post_tool_use: [
-  {:compile, when: [:write, :edit]},
-  {:format, when: [:write, :edit]}
-]
-```
-
-### `pre_tool_use`
-Runs before tool execution (can block the tool).
-
-```elixir
-pre_tool_use: [
-  {"validate_command", when: "Bash"},
-  {:compile, when: "Bash", command: ~r/^git commit/}
+pre_compact: [
+  {"save_state", when: "manual"},
+  {"cleanup_context", when: "auto"}
 ]
 ```
 

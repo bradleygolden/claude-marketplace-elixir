@@ -998,7 +998,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             ".claude.exs" => """
             %{
               hooks: %{
-                session_start: [:deps_get],
+                session_start: ["custom_startup"],
                 stop: [:compile, :format]
               }
             }
@@ -1019,34 +1019,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert Enum.any?(session_hooks, fn hook ->
                hook["command"] == "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run session_start"
              end)
-    end
-
-    test "expands :deps_get atom shortcut correctly" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: %{
-                session_start: [:deps_get]
-              }
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      hooks = igniter.assigns[:claude_exs_hooks] || []
-
-      session_hooks =
-        Enum.filter(hooks, fn {_type, _task, event, _matcher, _desc, _opts} ->
-          event == :session_start
-        end)
-
-      assert length(session_hooks) == 1
-      [{_type, task, :session_start, _matcher, desc, _opts}] = session_hooks
-      assert task == "deps.get"
-      assert desc =~ "deps.get"
     end
 
     test "does not include SessionStart by default" do
@@ -1081,7 +1053,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             ".claude.exs" => """
             %{
               hooks: %{
-                session_start: [:deps_get, "custom_startup"]
+                session_start: ["custom_startup", "another_task"]
               }
             }
             """

@@ -34,6 +34,7 @@ This automatically:
 - ✅ Creates `.claude.exs` configuration
 - ✅ Installs formatting and compilation hooks
 - ✅ Sets up `.claude/` directory structure
+- ✅ Syncs usage rules from dependencies to `CLAUDE.md`
 
 ## Step 2: Test Format Checking
 
@@ -58,28 +59,6 @@ end
 - ⚠️ Claude is alerted that the file needs formatting (lines too long)
 - 🔧 Claude can run `mix format` to fix it
 
-If Claude formats the file, it will look like:
-```elixir
-defmodule UserService do
-  def format_user_info(user) do
-    "User: #{user.first_name} #{user.last_name} (#{user.email}) - Role: #{user.role}, Department: #{user.department}, Status: #{user.status}"
-  end
-
-  def build_response(user, account, preferences) do
-    {:ok,
-     %{
-       user_id: user.id,
-       account_id: account.id,
-       name: user.name,
-       email: user.email,
-       preferences: preferences,
-       created_at: user.created_at,
-       updated_at: user.updated_at
-     }}
-  end
-end
-```
-
 ## Step 3: Experience Compilation Checking
 
 Ask Claude Code to introduce a warning:
@@ -93,11 +72,6 @@ in the build_response function (but still use 'preferences' in the function body
 - ⚠️ Compilation warning detected immediately
 - 🔍 Warning details shown to Claude
 - 🔧 Claude can fix it automatically
-
-You'll see feedback like:
-```
-warning: variable "preferences" does not exist
-```
 
 ## Step 4: Try Pre-Commit Protection
 
@@ -120,21 +94,22 @@ You've just experienced Claude's core features:
 2. **Instant Compilation Checks** - Warnings and errors caught immediately
 3. **Pre-Commit Validation** - Only clean code gets committed
 4. **Intelligent Feedback** - Claude sees and can fix issues automatically
+5. **Best Practices** - Claude follows usage rules from your dependencies (see [Usage Rules Guide](guide-usage-rules.md))
 
 ## Next Steps
 
 ### Enable More Features
 
-- **[Create Sub-Agents](subagents.md)** - Use `mix claude.gen.subagent` to build specialized AI assistants
-- **[Configure Additional Hooks](hooks.md)** - Customize hook behavior and add custom checks
-- **Phoenix MCP Server** - Add `mcp_servers: [:tidewave]` to your `.claude.exs` (creates `.mcp.json` automatically)
+- **[Create Sub-Agents](guide-subagents.md)** - Use `mix claude.gen.subagent` to build specialized AI assistants
+- **[Configure Additional Hooks](guide-hooks.md)** - Customize hook behavior and add custom checks
+- **[Setup MCP Servers](guide-mcp.md)** - Configure Tidewave for Phoenix development (auto-configured for Phoenix projects)
 
 ### Learn More
 
-- 📖 [Full Documentation](https://hexdocs.pm/claude)
-- 🎪 [Hooks Reference](hooks.md)
-- 🤖 [Sub-Agents Reference](subagents.md)
-- 💡 [Usage Rules](https://hexdocs.pm/usage_rules)
+- 📖 [Overview](../README.md) - Full project documentation
+- 🎪 [Hooks Reference](guide-hooks.md)
+- 🤖 [Sub-Agents Reference](guide-subagents.md)
+- 💡 [Usage Rules Guide](guide-usage-rules.md) - How Claude uses best practices from your dependencies
 
 ## Troubleshooting
 
