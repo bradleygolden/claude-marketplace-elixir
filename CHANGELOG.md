@@ -10,9 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.2] - 2025-08-11
 
 ### Fixed
-- Fixed `mix claude.upgrade` task to correctly handle positional arguments from `mix igniter.upgrade`
-- Fixed upgrader to work for versions 0.3.0 and 0.3.1 (where the upgrader was broken)
-- Upgrader now properly handles both positional arguments (standard Igniter way) and options (for backward compatibility)
+- Hopefully fixed upgrader including for versions 0.3.0 and 0.3.1 (where the upgrader was broken)
 
 ## [0.3.1] - 2025-08-11
 
