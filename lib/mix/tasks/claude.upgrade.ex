@@ -57,8 +57,13 @@ defmodule Mix.Tasks.Claude.Upgrade do
         case Code.eval_string(content) do
           {config, _bindings} when is_map(config) ->
             updated_config = migrate_hooks_in_config(config)
-            new_content = inspect(updated_config, pretty: true, limit: :infinity)
-            Rewrite.Source.update(source, :content, new_content)
+
+            if updated_config != config do
+              new_content = inspect(updated_config, pretty: true, limit: :infinity)
+              Rewrite.Source.update(source, :content, new_content)
+            else
+              source
+            end
 
           _ ->
             source
