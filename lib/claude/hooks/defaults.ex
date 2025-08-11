@@ -10,7 +10,18 @@ defmodule Claude.Hooks.Defaults do
   Expands an atom hook to its full configuration based on the event type.
 
   Returns the expanded hook configuration or the original if not an atom.
+  Supports both plain atoms and tuples with atoms as the first element.
   """
+  def expand_hook({atom, opts}, event_type) when is_atom(atom) and is_list(opts) do
+    expanded = expand_hook(atom, event_type)
+
+    if expanded == atom do
+      {atom, opts}
+    else
+      merge_hook_with_opts(expanded, opts)
+    end
+  end
+
   def expand_hook(hook, event_type) when is_atom(hook) do
     case {hook, event_type} do
       {:compile, :stop} ->
@@ -56,4 +67,17 @@ defmodule Claude.Hooks.Defaults do
   end
 
   def expand_hooks(hooks, _event_type), do: hooks
+
+  defp merge_hook_with_opts(expanded, opts) do
+    case expanded do
+      {command, existing_opts} when is_binary(command) and is_list(existing_opts) ->
+        {command, Keyword.merge(existing_opts, opts)}
+
+      command when is_binary(command) ->
+        {command, opts}
+
+      _ ->
+        expanded
+    end
+  end
 end
