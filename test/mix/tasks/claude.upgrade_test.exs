@@ -4,7 +4,7 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
 
   alias Mix.Tasks.Claude.Upgrade
 
-  describe "upgrade from v0.2.4 to v0.3.0" do
+  describe "upgrade from versions < v0.3.2" do
     test "migrates old class-based hooks to new atom format" do
       igniter =
         test_project(
@@ -66,7 +66,7 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
 
       # Should still complete successfully with upgrade notices
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Claude has been upgraded to v0.3.0")
+               String.contains?(notice, "Claude has been upgraded!")
              end)
     end
 
@@ -177,13 +177,13 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
     test "adds upgrade notices" do
       igniter =
         test_project(files: %{})
-        |> Igniter.assign(:args, %{options: [from: "0.2.4", to: "0.3.0"]})
+        |> Igniter.assign(:args, %{options: [from: "0.2.4", to: "0.3.2"]})
         |> Upgrade.igniter()
 
       notices = igniter.notices
 
       assert Enum.any?(notices, fn notice ->
-               String.contains?(notice, "Claude has been upgraded to v0.3.0!")
+               String.contains?(notice, "Claude has been upgraded!")
              end)
 
       assert Enum.any?(notices, fn notice ->
@@ -193,10 +193,50 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
   end
 
   describe "version handling" do
-    test "only runs migration for versions less than 0.3.0" do
+    test "runs migration for v0.3.0 and v0.3.1" do
+      # Test v0.3.0
+      igniter_030 =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: [
+                Claude.Hooks.PostToolUse.ElixirFormatter
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.assign(:args, %{options: [from: "0.3.0", to: "0.3.2"]})
+        |> Upgrade.igniter()
+
+      assert Igniter.changed?(igniter_030, ".claude.exs")
+      assert Enum.any?(igniter_030.notices, &String.contains?(&1, "Claude has been upgraded!"))
+
+      # Test v0.3.1
+      igniter_031 =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: [
+                Claude.Hooks.PostToolUse.ElixirFormatter
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.assign(:args, %{options: [from: "0.3.1", to: "0.3.2"]})
+        |> Upgrade.igniter()
+
+      assert Igniter.changed?(igniter_031, ".claude.exs")
+      assert Enum.any?(igniter_031.notices, &String.contains?(&1, "Claude has been upgraded!"))
+    end
+
+    test "does not run migration for versions >= 0.3.2" do
       igniter =
         test_project(files: %{})
-        |> Igniter.assign(:args, %{options: [from: "0.3.0", to: "0.3.0"]})
+        |> Igniter.assign(:args, %{options: [from: "0.3.2", to: "0.3.3"]})
         |> Upgrade.igniter()
 
       assert igniter.notices == []
@@ -209,6 +249,38 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
         |> Upgrade.igniter()
 
       assert igniter.notices == []
+    end
+
+    test "handles positional arguments as expected from mix igniter.upgrade" do
+      # This tests that the upgrader works when called with positional arguments
+      # as it would be from mix igniter.upgrade
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: [
+                Claude.Hooks.PostToolUse.ElixirFormatter
+              ]
+            }
+            """
+          }
+        )
+        |> Map.put(:args, %Igniter.Mix.Task.Args{
+          positional: ["0.2.4", "0.3.0"],
+          options: [],
+          argv_flags: [],
+          argv: ["0.2.4", "0.3.0"]
+        })
+        |> Upgrade.igniter()
+
+      # Should have migrated the hooks
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      # Should have added upgrade notices
+      assert Enum.any?(igniter.notices, fn notice ->
+               String.contains?(notice, "Claude has been upgraded!")
+             end)
     end
   end
 end
