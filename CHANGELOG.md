@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0] - 2025-01-10
+## [0.3.0] - 2025-08-11
 
 ### Added
 - New `mix claude.gen.subagent` for interactive sub-agent generation. See [documentation/guide-generators.md](documentation/guide-generators.md) for details.
