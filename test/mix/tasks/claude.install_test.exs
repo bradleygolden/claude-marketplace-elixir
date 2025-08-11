@@ -313,205 +313,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
   end
 
-  describe "new hook system with IDs" do
-    test "generates direct mix commands for hooks with IDs" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: %{
-                post_tool_use: [
-                  %{
-                    id: :elixir_quality_checks,
-                    matcher: [:write, :edit, :multi_edit],
-                    tasks: [
-                      "format --check-formatted {{tool_input.file_path}}",
-                      "compile --warnings-as-errors"
-                    ]
-                  }
-                ],
-                pre_tool_use: [
-                  %{
-                    id: :pre_commit_validation,
-                    matcher: [:bash],
-                    tasks: ["format --check-formatted"]
-                  }
-                ]
-              }
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      # Read and verify settings.json
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-
-      # Check PostToolUse hooks - new system uses universal matcher
-      assert [%{"hooks" => post_hooks, "matcher" => "*"}] =
-               settings["hooks"]["PostToolUse"]
-
-      # Should contain our dispatcher hook
-      assert Enum.any?(post_hooks, fn hook ->
-               hook["command"] ==
-                 "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run post_tool_use"
-             end)
-
-      # Check PreToolUse hooks
-      pre_tool_use_hooks = settings["hooks"]["PreToolUse"]
-      assert is_list(pre_tool_use_hooks)
-
-      # Should have universal matcher - filtering happens in mix task
-      [%{"matcher" => pre_matcher, "hooks" => pre_hooks}] = pre_tool_use_hooks
-      assert pre_matcher == "*"
-
-      assert Enum.any?(pre_hooks, fn hook ->
-               hook["command"] ==
-                 "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run pre_tool_use"
-             end)
-
-      # Verify no hook scripts were created for ID-based hooks
-      refute File.exists?(".claude/hooks/claude_hook_elixir_quality_checks.exs")
-      refute File.exists?(".claude/hooks/claude_hook_pre_commit_validation.exs")
-    end
-
-    test "converts atom matchers to proper strings" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: %{
-                post_tool_use: [
-                  %{
-                    id: :test_hook,
-                    matcher: [:write, :edit, :multi_edit, :web_fetch],
-                    tasks: ["test"]
-                  }
-                ]
-              }
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-      [%{"matcher" => matcher}] = settings["hooks"]["PostToolUse"]
-
-      # New system uses universal matcher - actual filtering happens in mix task
-      assert matcher == "*"
-    end
-
-    test "prevents hook duplication on re-install" do
-      # Create initial .claude.exs
-      igniter1 =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: %{
-                post_tool_use: [
-                  %{
-                    id: :quality_checks,
-                    matcher: [:write],
-                    tasks: ["format"]
-                  }
-                ]
-              }
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter1)
-
-      # Read initial settings
-      settings1 = File.read!(".claude/settings.json") |> Jason.decode!()
-      # Find hooks that include Write in their matcher
-      all_post_hooks = settings1["hooks"]["PostToolUse"] || []
-
-      initial_hooks =
-        all_post_hooks
-        |> Enum.filter(&String.contains?(&1["matcher"] || "", "Write"))
-        |> Enum.flat_map(&(&1["hooks"] || []))
-
-      initial_count = length(initial_hooks)
-
-      # Re-run installation
-      igniter2 =
-        test_project(
-          files: %{
-            ".claude.exs" => File.read!(".claude.exs"),
-            ".claude/settings.json" => File.read!(".claude/settings.json"),
-            "mix.exs" => File.read!("mix.exs")
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter2)
-
-      # Verify no duplication
-      settings2 = File.read!(".claude/settings.json") |> Jason.decode!()
-      all_post_hooks2 = settings2["hooks"]["PostToolUse"] || []
-
-      final_hooks =
-        all_post_hooks2
-        |> Enum.filter(&String.contains?(&1["matcher"] || "", "Write"))
-        |> Enum.flat_map(&(&1["hooks"] || []))
-
-      final_count = length(final_hooks)
-
-      # Should have same number of hooks after re-install
-      assert final_count == initial_count
-    end
-
-    test "handles empty hook lists gracefully" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: %{
-                post_tool_use: [
-                  %{
-                    id: :empty_hook,
-                    matcher: [:write],
-                    tasks: []
-                  }
-                ]
-              }
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      apply_igniter!(igniter)
-
-      settings = File.read!(".claude/settings.json") |> Jason.decode!()
-      # Empty hooks should still create the command
-      post_hooks = settings["hooks"]["PostToolUse"]
-
-      # Find our empty hook entry if it exists
-      empty_hook =
-        Enum.find(post_hooks, fn config ->
-          Enum.any?(config["hooks"] || [], fn hook ->
-            String.contains?(hook["command"], "empty_hook")
-          end)
-        end)
-
-      # If the installer generates commands even for empty tasks, we should find it
-      # Otherwise, empty hooks might be filtered out
-      assert empty_hook || length(post_hooks) >= 0
-    end
-  end
+  # The "hooks with IDs" feature has been removed in favor of simpler atom-based hooks
+  # These tests have been removed as they test functionality that no longer exists
 
   describe "subagent generation" do
     test "generates subagents from .claude.exs configuration" do
@@ -998,7 +801,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             ".claude.exs" => """
             %{
               hooks: %{
-                session_start: [:deps_get],
+                session_start: ["custom_startup"],
                 stop: [:compile, :format]
               }
             }
@@ -1007,9 +810,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
-      settings_content = Rewrite.Source.get(settings_source, :content)
-      settings = Jason.decode!(settings_content)
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
       assert Map.has_key?(settings["hooks"], "SessionStart")
 
       [%{"hooks" => session_hooks, "matcher" => "*"}] = settings["hooks"]["SessionStart"]
@@ -1019,37 +824,22 @@ defmodule Mix.Tasks.Claude.InstallTest do
              end)
     end
 
-    test "expands :deps_get atom shortcut correctly" do
+    test "does not include SessionStart by default" do
       igniter =
         test_project(
           files: %{
             ".claude.exs" => """
             %{
               hooks: %{
-                session_start: [:deps_get]
+                stop: [:compile, :format],
+                subagent_stop: [:compile, :format],
+                post_tool_use: [:compile, :format],
+                pre_tool_use: [:compile, :format, :unused_deps]
               }
             }
             """
           }
         )
-        |> Igniter.compose_task("claude.install")
-
-      hooks = igniter.assigns[:claude_exs_hooks] || []
-
-      session_hooks =
-        Enum.filter(hooks, fn {_type, _task, event, _matcher, _desc, _opts} ->
-          event == :session_start
-        end)
-
-      assert length(session_hooks) == 1
-      [{_type, task, :session_start, _matcher, desc, _opts}] = session_hooks
-      assert task == "deps.get"
-      assert desc =~ "deps.get"
-    end
-
-    test "does not include SessionStart by default" do
-      igniter =
-        test_project()
         |> Igniter.compose_task("claude.install")
 
       settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
@@ -1066,7 +856,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             ".claude.exs" => """
             %{
               hooks: %{
-                session_start: [:deps_get, "custom_startup"]
+                session_start: ["custom_startup", "another_task"]
               }
             }
             """
@@ -1074,9 +864,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      settings_source = Rewrite.source!(igniter.rewrite, ".claude/settings.json")
-      settings_content = Rewrite.Source.get(settings_source, :content)
-      settings = Jason.decode!(settings_content)
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
       assert Map.has_key?(settings["hooks"], "SessionStart")
       [%{"hooks" => session_hooks}] = settings["hooks"]["SessionStart"]
 
@@ -1144,17 +936,21 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       settings = File.read!(".claude/settings.json") |> Jason.decode!()
 
-      assert post_hooks = settings["hooks"]["PostToolUse"]
-      assert length(post_hooks) == 1
-      [post_config] = post_hooks
-      assert length(post_config["hooks"]) == 1
-      assert hd(post_config["hooks"])["command"] =~ "claude.hooks.run post_tool_use"
+      # The hook system creates dispatcher commands for each event type that has hooks
+      # Hooks with when: conditions are still processed but filtered at runtime
+      assert settings["hooks"]["PreToolUse"]
+      assert settings["hooks"]["Stop"]
+      assert settings["hooks"]["SubagentStop"]
 
-      assert pre_hooks = settings["hooks"]["PreToolUse"]
-      assert length(pre_hooks) == 1
-      [pre_config] = pre_hooks
-      assert length(pre_config["hooks"]) == 1
-      assert hd(pre_config["hooks"])["command"] =~ "claude.hooks.run pre_tool_use"
+      # Each event type should have its corresponding dispatcher command
+      pre_hooks = settings["hooks"]["PreToolUse"]
+      assert is_list(pre_hooks)
+
+      assert Enum.any?(pre_hooks, fn config ->
+               Enum.any?(config["hooks"] || [], fn hook ->
+                 String.contains?(hook["command"], "claude.hooks.run pre_tool_use")
+               end)
+             end)
     end
   end
 

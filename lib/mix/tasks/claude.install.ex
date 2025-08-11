@@ -89,7 +89,7 @@ defmodule Mix.Tasks.Claude.Install do
         %{
           name: "Generated Name",
           description: "Generated action-oriented description",
-          prompt: \"""
+          prompt: \\\"""
           # Purpose
           You are [role definition].
 
@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Claude.Install do
           - [Domain-specific guidelines]
           - [Performance considerations]
           - [Common pitfalls to avoid]
-          \""",
+          \\\""",
           tools: [inferred tools]
         }
 
@@ -289,12 +289,16 @@ defmodule Mix.Tasks.Claude.Install do
           case hooks do
             hooks_map when is_map(hooks_map) ->
               hooks_map
-              |> Enum.flat_map(fn {event_type, event_configs} ->
-                event_configs
-                |> Enum.with_index()
-                |> Enum.map(fn {hook_spec, index} ->
-                  parse_hook_spec(hook_spec, event_type, index)
-                end)
+              |> Enum.flat_map(fn
+                {event_type, event_configs} when is_list(event_configs) ->
+                  event_configs
+                  |> Enum.with_index()
+                  |> Enum.map(fn {hook_spec, index} ->
+                    parse_hook_spec(hook_spec, event_type, index)
+                  end)
+
+                {_event_type, _non_list} ->
+                  []
               end)
               |> Enum.reject(&is_nil/1)
 
@@ -323,7 +327,7 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp parse_hook_spec({task, opts}, event_type, index) when is_binary(task) and is_list(opts) do
     id = :"#{event_type}_#{index}"
-    matcher = format_matcher(opts[:when] || "*")
+    matcher = if event_type == :session_start, do: "*", else: format_matcher(opts[:when] || "*")
     description = "Mix task: #{task}"
     {:mix_task, task, event_type, matcher, description, [id: id]}
   end
@@ -361,7 +365,6 @@ defmodule Mix.Tasks.Claude.Install do
     # - :compile - Runs compilation with warnings as errors
     # - :format - Checks formatting (includes file path for edits)
     # - :unused_deps - Checks for unused dependencies (pre_tool_use only)
-    # - :deps_get - Installs project dependencies (optional, session_start on startup only)
 
     %{
       hooks: %{

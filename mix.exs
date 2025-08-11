@@ -1,7 +1,7 @@
 defmodule Claude.MixProject do
   use Mix.Project
 
-  @version "0.2.3"
+  @version "0.3.0"
   @elixir_version "~> 1.18"
   @description "Batteries-included Claude Code integration for Elixir projects"
 
@@ -50,19 +50,42 @@ defmodule Claude.MixProject do
       },
       maintainers: ["Bradley Golden"],
       files:
-        ~w(lib .formatter.exs mix.exs documentation/quickstart.md documentation/hooks.md documentation/subagents.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+        ~w(lib .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-subagents.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
   defp docs do
     [
-      main: "quickstart",
+      main: "guide-quickstart",
       extras: [
-        {"documentation/quickstart.md", title: "Quickstart"},
+        {"documentation/guide-quickstart.md", title: "Quickstart"},
         {"README.md", title: "Overview"},
-        {"documentation/hooks.md", title: "Hooks"},
-        {"documentation/subagents.md", title: "Sub-Agents"},
-        {"CHANGELOG.md", title: "Changelog"}
+        {"documentation/guide-hooks.md", title: "Hooks Guide"},
+        {"documentation/guide-subagents.md", title: "Sub-Agents Guide"},
+        {"documentation/guide-mcp.md", title: "MCP Servers Guide"},
+        {"documentation/guide-usage-rules.md", title: "Usage Rules Guide"},
+        {"CHANGELOG.md", title: "Changelog"},
+        {"LICENSE", title: "License"},
+        {"cheatsheets/hooks.cheatmd", title: "Hooks Cheatsheet"},
+        {"cheatsheets/subagents.cheatmd", title: "Sub-Agents Cheatsheet"},
+        {"cheatsheets/mcp.cheatmd", title: "MCP Cheatsheet"},
+        {"cheatsheets/usage-rules.cheatmd", title: "Usage Rules Cheatsheet"}
+      ],
+      groups_for_extras: [
+        "Getting Started": ["documentation/guide-quickstart.md", "README.md"],
+        Guides: [
+          "documentation/guide-hooks.md",
+          "documentation/guide-subagents.md",
+          "documentation/guide-mcp.md",
+          "documentation/guide-usage-rules.md"
+        ],
+        Cheatsheets: [
+          "cheatsheets/hooks.cheatmd",
+          "cheatsheets/subagents.cheatmd",
+          "cheatsheets/mcp.cheatmd",
+          "cheatsheets/usage-rules.cheatmd"
+        ],
+        Meta: ["CHANGELOG.md", "LICENSE"]
       ],
       source_ref: "v#{@version}",
       source_url: "https://github.com/bradleygolden/claude"

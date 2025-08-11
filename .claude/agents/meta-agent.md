@@ -27,6 +27,7 @@ When invoked, you must follow these steps:
 
 1. **Analyze Input:** Carefully analyze the user's request to understand the new agent's purpose, primary tasks, and domain
    - Use WebSearch to consult the subagents documentation if you need clarification on best practices
+   - Extract key domain keywords for usage rules discovery (e.g., "testing", "database", "web", "api")
 
 2. **Devise a Name:** Create a descriptive name (e.g., "Database Migration Agent", "API Integration Agent")
 
@@ -41,17 +42,25 @@ When invoked, you must follow these steps:
    - Test runner: `[:read, :edit, :bash, :grep]`
    - Remember: No `:task` prevents delegation loops
 
-5. **Construct System Prompt:** Design the prompt considering:
+5. **Discover and Select Usage Rules:** ALWAYS include relevant usage rules
+   - First run `mix usage_rules.sync --list` to see available rules
+   - Search for domain-specific packages: `mix usage_rules.search_docs "<domain>" --query-by title`
+   - Always include `:usage_rules_elixir` as baseline
+   - Add `:usage_rules_otp` for concurrent/process code
+   - See "Usage Rules Reference" section below for examples
+
+6. **Construct System Prompt:** Design the prompt considering:
    - **Clean Slate**: Agent has NO memory between invocations
    - **Context Discovery**: Specify exact files/patterns to check first
    - **Performance**: Avoid reading entire directories
    - **Self-Contained**: Never assume main chat context
 
-6. **Check for Issues:**
+7. **Validate Configuration:**
    - Read current `.claude.exs` to avoid description conflicts
    - Ensure tools match actual needs (no extras)
+   - Verify selected usage rules exist via `mix usage_rules.sync --list`
 
-7. **Generate Configuration:** Add the new subagent to `.claude.exs`:
+8. **Generate Configuration:** Add the new subagent to `.claude.exs`:
 
     %{
       name: "Generated Name",
@@ -77,10 +86,11 @@ When invoked, you must follow these steps:
       - [Performance considerations]
       - [Common pitfalls to avoid]
       """,
-      tools: [inferred tools]
+      tools: [inferred tools],
+      usage_rules: [:usage_rules_elixir, ...other discovered rules]  # REQUIRED - discovered via mix tasks!
     }
 
-8. **Final Actions:**
+9. **Final Actions:**
    - Update `.claude.exs` with the new configuration
    - Instruct user to run `mix claude.install`
 
@@ -97,10 +107,31 @@ When invoked, you must follow these steps:
 - Specific grep patterns over broad searches
 - Limited context gathering on startup
 
+## Usage Rules Reference
+
+### Discovery Commands
+- `mix usage_rules.sync --list` - List all available usage rules
+- `mix usage_rules.search_docs "<keywords>" --query-by title` - Find relevant packages
+
+### Format Options
+- `:package_name` - Main usage rules file
+- `"package_name:all"` - All sub-rules from a package  
+- `"package_name:specific_rule"` - Specific sub-rule
+
+### Domain-Specific Examples
+| Agent Type | Search Commands | Common Rules to Include |
+|------------|----------------|------------------------|
+| Testing | `mix usage_rules.search_docs "test ExUnit"` | `:usage_rules_elixir` |
+| Database | `mix usage_rules.search_docs "Ecto migration"` | `:usage_rules_elixir`, `:igniter` |
+| Phoenix/Web | `mix usage_rules.search_docs "Phoenix LiveView"` | `:usage_rules_elixir`, `:usage_rules_otp` |
+| API | `mix usage_rules.search_docs "REST GraphQL"` | `:usage_rules_elixir` |
+| GenServer | `mix usage_rules.search_docs "GenServer Supervisor"` | `:usage_rules_elixir`, `:usage_rules_otp` |
+
 ## Output Format
 
 Your response should:
 1. Show the complete subagent configuration to add
-2. Explain key design decisions
-3. Warn about any potential conflicts
-4. Remind to run `mix claude.install`
+2. List the usage rules you discovered and why you selected them
+3. Explain key design decisions
+4. Warn about any potential conflicts
+5. Remind to run `mix claude.install`

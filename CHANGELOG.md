@@ -7,34 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-08-11
+
+**TLDR:** any mix task can be a hook now!
+
+This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix igniter.upgrade claude` to get the latest features.
+
 ### Added
-- New `mix claude.gen.subagent` for subagent generation. See [documentation/generators.md](documentation/generators.md) for details.
-  - This also includes `mix claude.gen.hook` but it's currently for generating hooks for the `claude` library ATM.
-- New `Claude.Hook` macro for simplified hook creation with automatic JSON handling
-- Better testing capabilities via `Claude.Test` module with JSON output helpers
 - Automatic Tidewave installation for Phoenix projects - `mix claude.install` now automatically installs and configures Tidewave when Phoenix is detected
+- Support for more hooks events
+- New atom-based hook system with shortcuts (`:compile`, `:format`, `:unused_deps`)
+- New cheatsheets for common patterns
 
 ### Changed
-- Hooks now use JSON-only output format
-- **BREAKING**: Hooks now use `handle/1` callback instead of `run/1`
-- Improved `mix claude.install` output - hooks are now grouped by function, notices only appear for actual changes, and subsequent runs show minimal output
+- **BREAKING** Hooks now use a single dispatcher system (`mix claude.hooks.run`) in `.claude/settings.json`
+- **BREAKING** Hook configuration has been completely overhauled, see the [hooks guide](documentation/guide-hooks.md)
+- **BREAKING** Temporarily dropped support for the related files hook to get this release out. I plan to add it back soon!
+- Improved `mix claude.install` output
+- Improved the meta-agent system prompt to better use usage rules
 
 ### Removed
 - Removed telemetry modules (unused)
-- Removed multiple test helper modules in favor of unified `Claude.Test`
-- Removed Phoenix, Tidewave, and usage_rules from dependencies (not needed - they're only managed as strings when installing to user projects)
 
 ## [0.2.4] - 2025-08-01
 
 ### Fixed
-
-- Output MCP server configuration to correct `.mcp.json` location instead of `.claude/settings.json`.
-
-## [0.2.4] - 2025-08-01
-
-### Fixed
-
-- Fixed a bug where hooks weren't configured properly which prevented them from being useful to claude claude code. Please run `mix claude.install` to sync the new settings and pull in the fix.
+- Output MCP server configuration to correct `.mcp.json` location instead of `.claude/settings.json`
+- Fixed a bug where hooks weren't configured properly which prevented them from being useful to claude claude code. Please run `mix claude.install` to sync the new settings and pull in the fix
 
 ## [0.2.3] - 2025-07-30
 
@@ -83,7 +82,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bradleygolden/claude/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/bradleygolden/claude/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/bradleygolden/claude/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/bradleygolden/claude/compare/v0.2.1...v0.2.2

@@ -35,13 +35,13 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
     config_reader = Keyword.get(opts, :config_reader, &Claude.Config.read/0)
 
     default_task_runner = fn
-      "cmd", args ->
+      "cmd", args, env_vars ->
         shell_command = Enum.join(args, " ")
-        run_with_port(shell_command)
+        run_with_port(shell_command, env_vars)
 
-      command, args ->
+      command, args, env_vars ->
         mix_command = "mix #{command} #{Enum.join(args, " ")}"
-        run_with_port(mix_command)
+        run_with_port(mix_command, env_vars)
     end
 
     task_runner = Keyword.get(opts, :task_runner, default_task_runner)
@@ -49,16 +49,26 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
     do_run(args, io_reader, config_reader, task_runner)
   end
 
-  defp run_with_port(command) do
-    port =
-      Port.open({:spawn, command}, [
-        :binary,
-        :exit_status,
-        :stderr_to_stdout,
-        :use_stdio,
-        :hide
-      ])
+  defp run_with_port(command, env_vars) do
+    port_opts = [
+      :binary,
+      :exit_status,
+      :stderr_to_stdout,
+      :use_stdio,
+      :hide
+    ]
 
+    # Add env option if there are env vars to set
+    port_opts =
+      if map_size(env_vars) > 0 do
+        # Convert map to list of {"KEY", "VALUE"} tuples for Port
+        env_list = Enum.map(env_vars, fn {k, v} -> {to_string(k), to_string(v)} end)
+        [{:env, env_list} | port_opts]
+      else
+        port_opts
+      end
+
+    port = Port.open({:spawn, command}, port_opts)
     handle_port_output(port)
   end
 
@@ -281,11 +291,10 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
       end
 
     env_vars = opts[:env] || %{}
-    original_env = save_and_set_env(env_vars)
 
     exit_code =
       try do
-        task_runner.(command, args)
+        task_runner.(command, args, env_vars)
         0
       rescue
         Mix.NoTaskError ->
@@ -315,8 +324,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
         :exit, reason ->
           IO.puts(:stderr, "Hook exited: #{inspect(reason)}")
           2
-      after
-        restore_env(original_env)
       end
 
     apply_exit_code_rules(exit_code, opts, event_data)
@@ -335,21 +342,6 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
       true ->
         exit_code
     end
-  end
-
-  defp save_and_set_env(env_vars) do
-    Enum.map(env_vars, fn {key, value} ->
-      original = System.get_env(key)
-      System.put_env(key, value)
-      {key, original}
-    end)
-  end
-
-  defp restore_env(original_env) do
-    Enum.each(original_env, fn
-      {key, nil} -> System.delete_env(key)
-      {key, value} -> System.put_env(key, value)
-    end)
   end
 
   defp execute_hooks_with_halt(hooks, event_data, task_runner) do

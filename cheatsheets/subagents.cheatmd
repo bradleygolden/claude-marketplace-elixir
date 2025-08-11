@@ -1,0 +1,137 @@
+# Sub-Agents Cheatsheet
+
+## Quick Reference
+
+### Configuration Format (.claude.exs)
+
+```elixir
+%{
+  subagents: [
+    %{
+      name: "agent-name",           # Required: kebab-case
+      description: "MUST BE USED...", # Required: delegation trigger
+      prompt: "You are...",          # Required: system prompt
+      tools: [:read, :write],        # Optional: defaults to all
+      usage_rules: [:package]        # Optional: best practices
+    }
+  ]
+}
+```
+
+### Field Reference
+
+| Field | Required | Description | Example |
+|-------|----------|-------------|---------|
+| `name` | ✓ | Agent identifier (kebab-case) | `"test-expert"` |
+| `description` | ✓ | Delegation trigger | `"MUST BE USED for tests"` |
+| `prompt` | ✓ | System instructions | `"You are a test expert..."` |
+| `tools` | | Tool restrictions | `[:read, :grep, :bash]` |
+| `usage_rules` | | Package best practices | `[:usage_rules_elixir]` |
+
+### Creation Methods
+
+```bash
+# Method 1: Meta Agent (Recommended)
+# Just ask Claude: "Create a sub-agent for GraphQL"
+
+# Method 2: Interactive Generator
+mix claude.gen.subagent
+
+# Method 3: Manual
+# Edit .claude.exs then run:
+mix claude.install
+```
+
+### Tool Inheritance
+
+| Config | Behavior | Use Case |
+|--------|----------|----------|
+| `tools` omitted | Inherits all tools + MCP | Maximum flexibility |
+| `tools: [...]` | Static list only | Security/performance |
+| No `:task` | Cannot delegate | Prevent loops |
+
+### Usage Rules Format
+
+```elixir
+# Package root rules
+:package_name              # deps/package_name/usage-rules.md
+
+# All package rules  
+"package_name:all"         # deps/package_name/usage-rules/*
+
+# Specific sub-rule
+"package_name:subrule"     # deps/package_name/usage-rules/subrule.md
+
+# Special cases
+:usage_rules_elixir        # Elixir best practices
+:usage_rules_otp           # OTP patterns
+```
+
+### Design Principles
+
+```elixir
+# ❌ Bad: Assumes context
+prompt: "Continue from where we left off..."
+
+# ✅ Good: Self-contained
+prompt: """
+## Context Discovery
+1. Check priv/repo/migrations/
+2. Read latest migration
+3. Check lib/*/repo.ex
+"""
+```
+
+### Performance Tips
+
+1. **Specify files**: `"Check lib/app/schema.ex first"`
+2. **Use patterns**: `grep "defmodule.*Schema"` not `read **/*`
+3. **Limit reads**: Don't read entire directories
+4. **Clean slate**: Each invocation starts fresh
+
+### Common Patterns
+
+```elixir
+# Database Expert
+%{
+  name: "database-expert",
+  description: "MUST BE USED for migrations and schema",
+  tools: [:read, :write, :grep, :bash],
+  prompt: """
+  ## Check First
+  - priv/repo/migrations/
+  - lib/*/schemas/
+  """
+}
+
+# Test Specialist
+%{
+  name: "test-expert",
+  description: "MUST BE USED for ExUnit tests",
+  tools: [:read, :write, :edit, :bash],
+  usage_rules: [:usage_rules_elixir]
+}
+
+# Phoenix Expert
+%{
+  name: "phoenix-expert",
+  description: "MUST BE USED for controllers and views",
+  tools: [:read, :edit, :grep],
+  usage_rules: [:phoenix]  # If Phoenix 1.8+
+}
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Agent not invoked | Check `description` starts with "MUST BE USED" |
+| Missing tools | Omit `tools` field to inherit all |
+| No memory | Design prompts to be self-contained |
+| Slow performance | Limit initial file reads |
+| Delegation loops | Don't include `:task` tool |
+
+## See Also
+
+- [Sub-Agents Guide](../documentation/guide-subagents.md) - Complete documentation
+- [Official Docs](https://docs.anthropic.com/en/docs/claude-code/sub-agents)
