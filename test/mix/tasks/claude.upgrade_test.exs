@@ -61,14 +61,13 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
         |> Igniter.assign(:args, %{options: [from: "0.2.4", to: "0.3.0"]})
         |> Upgrade.igniter()
 
-      # Should complete without errors
-      assert Igniter.changed?(igniter, ".claude.exs")
+      # File shouldn't change when there are no hooks to migrate
+      refute Igniter.changed?(igniter, ".claude.exs")
 
-      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
-      content = Rewrite.Source.get(source, :content)
-      {config, _} = Code.eval_string(content)
-
-      refute Map.has_key?(config, :hooks) or config.hooks == %{}
+      # Should still complete successfully with upgrade notices
+      assert Enum.any?(igniter.notices, fn notice ->
+               String.contains?(notice, "Claude has been upgraded to v0.3.0")
+             end)
     end
 
     test "preserves existing new format hooks" do

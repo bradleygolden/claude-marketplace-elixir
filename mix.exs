@@ -50,7 +50,7 @@ defmodule Claude.MixProject do
       },
       maintainers: ["Bradley Golden"],
       files:
-        ~w(lib .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-subagents.md documentation/guide-generators.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+        ~w(lib .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-subagents.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
@@ -64,12 +64,12 @@ defmodule Claude.MixProject do
         {"documentation/guide-subagents.md", title: "Sub-Agents Guide"},
         {"documentation/guide-mcp.md", title: "MCP Servers Guide"},
         {"documentation/guide-usage-rules.md", title: "Usage Rules Guide"},
-        {"documentation/guide-generators.md", title: "Generators Guide"},
         {"CHANGELOG.md", title: "Changelog"},
+        {"LICENSE", title: "License"},
         {"cheatsheets/hooks.cheatmd", title: "Hooks Cheatsheet"},
         {"cheatsheets/subagents.cheatmd", title: "Sub-Agents Cheatsheet"},
         {"cheatsheets/mcp.cheatmd", title: "MCP Cheatsheet"},
-        {"cheatsheets/generators.cheatmd", title: "Generators Cheatsheet"}
+        {"cheatsheets/usage-rules.cheatmd", title: "Usage Rules Cheatsheet"}
       ],
       groups_for_extras: [
         "Getting Started": ["documentation/guide-quickstart.md", "README.md"],
@@ -77,16 +77,15 @@ defmodule Claude.MixProject do
           "documentation/guide-hooks.md",
           "documentation/guide-subagents.md",
           "documentation/guide-mcp.md",
-          "documentation/guide-usage-rules.md",
-          "documentation/guide-generators.md"
+          "documentation/guide-usage-rules.md"
         ],
         Cheatsheets: [
           "cheatsheets/hooks.cheatmd",
           "cheatsheets/subagents.cheatmd",
           "cheatsheets/mcp.cheatmd",
-          "cheatsheets/generators.cheatmd"
+          "cheatsheets/usage-rules.cheatmd"
         ],
-        Meta: ["CHANGELOG.md"]
+        Meta: ["CHANGELOG.md", "LICENSE"]
       ],
       source_ref: "v#{@version}",
       source_url: "https://github.com/bradleygolden/claude"

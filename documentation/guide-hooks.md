@@ -2,6 +2,8 @@
 
 Claude provides a modern atom-based hook system that integrates with Claude Code to ensure your Elixir code is production-ready. The hooks use sensible defaults and can be configured with simple atom shortcuts.
 
+> 📋 **Quick Reference**: See the [Hooks Cheatsheet](../cheatsheets/hooks.cheatmd) for a concise reference of configuration options and patterns.
+
 ## Documentation
 
 For complete documentation on Claude Code's hook system:
@@ -28,7 +30,7 @@ When you run `mix igniter.install claude`, it automatically sets up default hook
 
 This provides:
 1. **Format checking** - Alerts when Elixir files need formatting
-2. **Compilation checking** - Catches errors and warnings immediately  
+2. **Compilation checking** - Catches errors and warnings immediately
 3. **Pre-commit validation** - Ensures clean code before commits
 
 ## Available Hook Atoms
@@ -62,14 +64,14 @@ You can mix atom shortcuts with explicit configurations:
   hooks: %{
     # Standard hooks
     post_tool_use: [:compile, :format],
-    
+
     # Custom hook with options
     stop: [
       :format,
       {"custom_task", halt_pipeline?: true},
       {"cmd echo 'Done'", blocking?: false}
     ],
-    
+
     # Conditional execution
     pre_tool_use: [
       {"test", when: "Bash", command: ~r/^git push/}
@@ -94,5 +96,32 @@ You can mix atom shortcuts with explicit configurations:
 4. **Expansion**: The dispatcher reads `.claude.exs` and expands atoms to full commands
 5. **Running**: Commands execute as Mix tasks (default) or shell commands (with "cmd " prefix)
 6. **Communication**: Hooks return exit codes only (0 = success, non-zero = failure, no JSON output)
+
+## Request a New Hook
+
+Have an idea for a new standardized hook that would be useful for Elixir development? We'd love to hear from you!
+
+[Request a new hook →](https://github.com/bradleygolden/claude/issues/new?title=Hook%20Request:%20[Name]&body=**Hook%20Name:**%20%0A**Mix%20Task%20or%20Command:**%20%0A**Use%20Case:**%20%0A**Which%20Events:**%20%0A%0APlease%20describe%20what%20this%20hook%20would%20do%20and%20why%20it%20would%20be%20useful%20for%20Elixir%20developers.)
+
+Popular requests might be added as default hooks in future releases!
+
+## Troubleshooting
+
+**Hooks not running?**
+- Check `.claude/settings.json` exists and contains hook configuration
+- Verify `.claude.exs` has the correct hook definitions
+- Run `mix claude.install` to regenerate hook configuration
+- Use Claude Code's `/hooks` command to verify hooks are registered
+
+**Compilation/format errors not showing?**
+- Ensure hooks are defined for the right events (`post_tool_use`, `stop`, etc.)
+- Check that the `:compile` and `:format` atoms are included
+- Verify Mix is available in your PATH
+
+**Need help?**
+- 💬 [GitHub Discussions](https://github.com/bradleygolden/claude/discussions)
+- 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
+
+## Learn More
 
 For more details on hook events, configuration, and advanced usage, see the [official documentation](https://docs.anthropic.com/en/docs/claude-code/hooks).

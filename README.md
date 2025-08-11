@@ -27,50 +27,28 @@ mix igniter.install claude
 ## The Problem
 
 When Claude Code writes Elixir, you often need to:
-- Run `mix format` manually after every edit
-- Discover compilation errors only when you run the code
-- Remember to update related test files
-- Ensure consistent code style across your team
+- Run `mix format` manually or prompt Claude to format the file
+- Discover compilation errors only when you run the code or tests
 
 ## The Solution
 
-Claude hooks directly into Claude Code's workflow:
+This project hooks directly into Claude Code's workflow:
 
 ```elixir
 # When Claude writes this code with formatting and compilation issues:
 defmodule MyModule do
   def process_user_data(user, _options) do
-    {:ok, %{id: user.id, name: user.name, email: user.email, created_at: user.created_at, updated_at: user.updated_at, status: user.status, role: user.role}}
+    {:ok, %{id: user.id, name: user.name, email: user.email, created_at: user.created_at, updated_at: user.updated_at, status: user.status, role: user.role}} # Line too long!
   end
 
-  def calculate_total(items) do
-    Enum.reduce(items, 0, fn item, acc -> acc + item.price * item.quantty end)  # Typo!
+  def calculate_total(items) do # Unused function!
+    Enum.reduce(items, 0, fn item, acc -> acc + item.price * item.quantity end)
   end
 end
 
 # Claude immediately sees:
 # ⚠️ File needs formatting (line too long)
-# ❌ Compilation error: undefined field or unknown variable "quantty"
-#
-# And can fix both issues to produce:
-defmodule MyModule do
-  def process_user_data(user, _options) do
-    {:ok,
-     %{
-       id: user.id,
-       name: user.name,
-       email: user.email,
-       created_at: user.created_at,
-       updated_at: user.updated_at,
-       status: user.status,
-       role: user.role
-     }}
-  end
-
-  def calculate_total(items) do
-    Enum.reduce(items, 0, fn item, acc -> acc + item.price * item.quantity end)
-  end
-end
+# ❌ Compilation error: unused function `calculate_total/1`
 ```
 
 ## Features

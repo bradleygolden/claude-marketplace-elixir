@@ -21,7 +21,7 @@ When you install Claude, you automatically get:
 
 ## Configuration Format
 
-Sub-agents are configured in `.claude.exs` using the v0.3.0+ format:
+Sub-agents are configured in `.claude.exs`:
 
 ```elixir
 %{
@@ -31,7 +31,7 @@ Sub-agents are configured in `.claude.exs` using the v0.3.0+ format:
       description: "MUST BE USED for ExUnit testing and test file generation. Expert in test patterns.",
       prompt: """
       You are an ExUnit testing expert specializing in comprehensive test suites.
-      
+
       Always check existing test patterns and follow project conventions.
       Focus on testing behavior, edge cases, and integration scenarios.
       """,
@@ -89,7 +89,7 @@ The generator automatically:
 - Follows Claude Code best practices
 - Generates the agent file in `.claude/agents/`
 
-See the [Generators Documentation](guide-generators.md#sub-agent-generator) for full details.
+This provides an interactive way to create sub-agents with guided prompts.
 
 ### Method 3: Manual Configuration
 
@@ -103,19 +103,19 @@ You can also manually add sub-agents to `.claude.exs`:
       description: "MUST BE USED for Ecto migrations and database schema changes. Expert in database design.",
       prompt: """
       You are a database and Ecto expert specializing in migrations and schema design.
-      
+
       ## Context Discovery
       When invoked, first check:
       - `lib/*/repo.ex` - Database configuration
       - `priv/repo/migrations/` - Existing migration patterns
       - `lib/*/schemas/` or similar - Current schema definitions
-      
+
       ## Instructions
       1. Analyze existing database patterns
       2. Write efficient, safe migrations
       3. Ensure data integrity and performance
       4. Follow Ecto best practices
-      
+
       ## Performance Notes
       - Limit initial context gathering
       - Use specific grep patterns
@@ -188,20 +188,20 @@ Sub-agents start with a **clean slate** on every invocation - they have no memor
   prompt: """
   # Purpose
   You are a database migration specialist focusing on safe, efficient schema changes.
-  
+
   ## Context Discovery (Check These First)
   Since you start fresh each time:
   1. Check `priv/repo/migrations/` for existing patterns
   2. Read the latest migration file to understand current schema
   3. Check `lib/*/repo.ex` for database configuration
   4. Look for schema files in `lib/*/schemas/` or similar
-  
+
   ## Core Instructions
   1. Always create reversible migrations when possible
   2. Use appropriate indexes for performance
   3. Handle data migrations separately from schema changes
   4. Validate migration safety (no data loss)
-  
+
   ## Performance Guidelines
   - Read only specific migration files, not entire directories
   - Use grep to find specific schema patterns
@@ -219,6 +219,34 @@ Want a pre-built sub-agent template for common tasks? We'd love to hear your ide
 [Request a new sub-agent template →](https://github.com/bradleygolden/claude/issues/new?title=Sub-Agent%20Template%20Request:%20[Name]&body=**Sub-Agent%20Name:**%20%0A**Use%20Case:**%20%0A**Common%20Tasks:**%20%0A%0APlease%20describe%20what%20this%20sub-agent%20would%20do%20and%20why%20it%20would%20be%20useful%20for%20Elixir%20developers.)
 
 Popular requests might be added as default templates or examples!
+
+## Troubleshooting
+
+**Sub-agents not appearing in Claude?**
+- Check `.claude/agents/` directory exists with agent files
+- Verify `.claude.exs` has subagent definitions
+- Run `mix claude.install` to regenerate agent files
+- Restart your Claude Code session
+
+**Sub-agent not working as expected?**
+- Remember: sub-agents have no memory between invocations
+- Ensure the prompt is self-contained with all needed context
+- Check tool restrictions - agent might need additional tools
+- Verify usage rules are correctly specified
+
+**Generator issues?**
+- Use `mix claude.gen.subagent` for interactive mode
+- Provide all flags for non-interactive: `--name`, `--description`, `--prompt`
+- Tool names should be in snake_case when entering
+
+**Meta Agent not creating agents?**
+- Ensure Meta Agent has write permissions (`:write` tool)
+- Check `.claude.exs` after Meta Agent runs
+- Run `mix claude.install` to activate new agents
+
+**Need help?**
+- 💬 [GitHub Discussions](https://github.com/bradleygolden/claude/discussions)
+- 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
 
 ## Learn More
 

@@ -64,7 +64,7 @@ end
 Ask Claude Code to introduce a warning:
 
 ```
-Please edit lib/user_service.ex and rename the 'preferences' parameter to '_preferences' 
+Please edit lib/user_service.ex and rename the 'preferences' parameter to '_preferences'
 in the build_response function (but still use 'preferences' in the function body)
 ```
 
@@ -104,13 +104,6 @@ You've just experienced Claude's core features:
 - **[Configure Additional Hooks](guide-hooks.md)** - Customize hook behavior and add custom checks
 - **[Setup MCP Servers](guide-mcp.md)** - Configure Tidewave for Phoenix development (auto-configured for Phoenix projects)
 
-### Learn More
-
-- 📖 [Overview](../README.md) - Full project documentation
-- 🎪 [Hooks Reference](guide-hooks.md)
-- 🤖 [Sub-Agents Reference](guide-subagents.md)
-- 💡 [Usage Rules Guide](guide-usage-rules.md) - How Claude uses best practices from your dependencies
-
 ## Troubleshooting
 
 **Claude hooks not running?**
@@ -118,13 +111,16 @@ You've just experienced Claude's core features:
 - Check `.claude/settings.json` exists
 - Try `mix claude.install` to reinstall hooks
 
-**Can't install Igniter?**
-- Ensure you're using Elixir 1.18 or later
-- Run `mix deps.get` after manual installation
-
 **Need help?**
 - 💬 [GitHub Discussions](https://github.com/bradleygolden/claude/discussions)
 - 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
+
+### Learn More
+
+- 📖 [Overview](../README.md)
+- 🎪 [Hooks Reference](guide-hooks.md)
+- 🤖 [Sub-Agents Reference](guide-subagents.md)
+- 💡 [Usage Rules Guide](guide-usage-rules.md)
 
 ---
 

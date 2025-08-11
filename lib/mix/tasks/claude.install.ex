@@ -89,7 +89,7 @@ defmodule Mix.Tasks.Claude.Install do
         %{
           name: "Generated Name",
           description: "Generated action-oriented description",
-          prompt: \"""
+          prompt: \\\"""
           # Purpose
           You are [role definition].
 
@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Claude.Install do
           - [Domain-specific guidelines]
           - [Performance considerations]
           - [Common pitfalls to avoid]
-          \""",
+          \\\""",
           tools: [inferred tools]
         }
 
@@ -289,12 +289,16 @@ defmodule Mix.Tasks.Claude.Install do
           case hooks do
             hooks_map when is_map(hooks_map) ->
               hooks_map
-              |> Enum.flat_map(fn {event_type, event_configs} ->
-                event_configs
-                |> Enum.with_index()
-                |> Enum.map(fn {hook_spec, index} ->
-                  parse_hook_spec(hook_spec, event_type, index)
-                end)
+              |> Enum.flat_map(fn
+                {event_type, event_configs} when is_list(event_configs) ->
+                  event_configs
+                  |> Enum.with_index()
+                  |> Enum.map(fn {hook_spec, index} ->
+                    parse_hook_spec(hook_spec, event_type, index)
+                  end)
+
+                {_event_type, _non_list} ->
+                  []
               end)
               |> Enum.reject(&is_nil/1)
 

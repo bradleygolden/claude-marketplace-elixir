@@ -74,12 +74,6 @@ Want support for additional MCP servers? We'd love to hear from you!
 
 [Request a new MCP server →](https://github.com/bradleygolden/claude/issues/new?title=MCP%20Server%20Request:%20[Server%20Name]&body=**Server%20Name:**%20%0A**Server%20Repository:**%20%0A**Use%20Case:**%20%0A%0APlease%20describe%20why%20this%20MCP%20server%20would%20be%20useful%20for%20Elixir%20development.)
 
-## Learn More
-
-- [Claude Code MCP Documentation](https://docs.anthropic.com/en/docs/claude-code/mcp) - Official guide
-- [MCP Specification](https://modelcontextprotocol.io/) - Protocol details
-- [Tidewave](https://tidewave.ai/) - Phoenix MCP server
-
 ## Troubleshooting
 
 **MCP server not starting?**
@@ -95,3 +89,9 @@ Want support for additional MCP servers? We'd love to hear from you!
 **Need help?**
 - 💬 [GitHub Discussions](https://github.com/bradleygolden/claude/discussions)
 - 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
+
+## Learn More
+
+- [Claude Code MCP Documentation](https://docs.anthropic.com/en/docs/claude-code/mcp) - Official guide
+- [MCP Specification](https://modelcontextprotocol.io/) - Protocol details
+- [Tidewave](https://tidewave.ai/) - Phoenix MCP server

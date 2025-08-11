@@ -9,26 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2025-08-11
 
+**TLDR:** any mix task can be a hook now!
+
+This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix igniter.upgrade claude` to get the latest features.
+
 ### Added
-- New `mix claude.gen.subagent` for interactive sub-agent generation. See [documentation/guide-generators.md](documentation/guide-generators.md) for details.
-  - This also includes `mix claude.gen.hook` but it's currently for generating hooks for the `claude` library ATM.
-- New `Claude.Hook` macro for simplified hook creation with automatic JSON handling
-- Better testing capabilities via `Claude.Test` module with JSON output helpers
 - Automatic Tidewave installation for Phoenix projects - `mix claude.install` now automatically installs and configures Tidewave when Phoenix is detected
-- SessionStart hook support for running tasks on Claude Code startup
+- Support for more hooks events
 - New atom-based hook system with shortcuts (`:compile`, `:format`, `:unused_deps`)
+- New cheatsheets for common patterns
 
 ### Changed
-- Hooks now use JSON-only output format
-- **BREAKING**: Hooks now use `handle/1` callback instead of `run/1`
-- Hooks now use a single dispatcher system (`mix claude.hooks.run`)
-- Hook configuration moved from class-based to atom-based shortcuts in `.claude.exs`
-- Improved `mix claude.install` output - hooks are now grouped by function, notices only appear for actual changes, and subsequent runs show minimal output
+- **BREAKING** Hooks now use a single dispatcher system (`mix claude.hooks.run`) in `.claude/settings.json`
+- **BREAKING** Hook configuration has been completely overhauled, see the [hooks guide](documentation/guide-hooks.md)
+- **BREAKING** Temporarily dropped support for the related files hook to get this release out. I plan to add it back soon!
+- Improved `mix claude.install` output
+- Improved the meta-agent system prompt to better use usage rules
 
 ### Removed
 - Removed telemetry modules (unused)
-- Removed multiple test helper modules in favor of unified `Claude.Test`
-- Removed Phoenix, Tidewave, and usage_rules from dependencies (not needed - they're only managed as strings when installing to user projects)
 
 ## [0.2.4] - 2025-08-01
 
