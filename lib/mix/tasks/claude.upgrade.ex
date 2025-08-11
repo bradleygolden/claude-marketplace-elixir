@@ -18,13 +18,26 @@ defmodule Mix.Tasks.Claude.Upgrade do
   @shortdoc "Upgrades Claude configuration from older versions"
 
   @impl Igniter.Mix.Task
+  def info(_argv, _composing_task) do
+    %Igniter.Mix.Task.Info{
+      positional: [
+        from: [
+          optional: true
+        ],
+        to: [
+          optional: true
+        ]
+      ]
+    }
+  end
+
+  @impl Igniter.Mix.Task
   def igniter(igniter) do
-    from =
-      igniter.assigns[:args][:options][:from] ||
-        get_in(igniter, [Access.key(:args), Access.key(:options), :from])
+    igniter = ensure_args_struct(igniter)
+    from = get_from_version(igniter)
 
     cond do
-      not is_nil(from) and Version.compare(from, "0.3.0") == :lt ->
+      not is_nil(from) and Version.compare(from, "0.3.2") == :lt ->
         upgrade_to_0_3_0(igniter)
 
       not is_nil(from) ->
@@ -32,6 +45,37 @@ defmodule Mix.Tasks.Claude.Upgrade do
 
       true ->
         igniter
+    end
+  end
+
+  defp ensure_args_struct(igniter) do
+    case igniter.assigns[:args] do
+      %{options: options} when is_list(options) ->
+        args_struct = %Igniter.Mix.Task.Args{
+          positional: [],
+          options: options,
+          argv_flags: [],
+          argv: []
+        }
+
+        %{igniter | args: args_struct}
+
+      _ ->
+        igniter
+    end
+  end
+
+  defp get_from_version(igniter) do
+    cond do
+      is_struct(igniter.args, Igniter.Mix.Task.Args) and is_list(igniter.args.positional) and
+          length(igniter.args.positional) > 0 ->
+        hd(igniter.args.positional)
+
+      is_struct(igniter.args, Igniter.Mix.Task.Args) and is_list(igniter.args.options) ->
+        igniter.args.options[:from]
+
+      true ->
+        nil
     end
   end
 
@@ -123,9 +167,9 @@ defmodule Mix.Tasks.Claude.Upgrade do
   defp add_upgrade_notices(igniter) do
     igniter
     |> Igniter.add_notice("""
-    Claude has been upgraded to v0.3.0! 🎉
+    Claude has been upgraded! 🎉
 
-    ## Major Changes:
+    ## Major Changes (v0.3.0+):
 
     ### Hook System Overhaul
     - Hooks now use atom-based shortcuts (`:compile`, `:format`, `:unused_deps`)
