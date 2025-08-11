@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-08-11
+
+### Fixed
+- Fixed `mix claude.upgrade` generating invalid `.claude.exs` syntax when migrating custom hooks from v0.2.x
+
 ## [0.3.0] - 2025-08-11
 
 **TLDR:** any mix task can be a hook now!
 
-This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix igniter.upgrade claude` to get the latest features.
+This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix claude.upgrade`.
 
 ### Added
 - Automatic Tidewave installation for Phoenix projects - `mix claude.install` now automatically installs and configures Tidewave when Phoenix is detected
@@ -82,7 +87,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/bradleygolden/claude/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/bradleygolden/claude/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/bradleygolden/claude/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/bradleygolden/claude/compare/v0.2.2...v0.2.3

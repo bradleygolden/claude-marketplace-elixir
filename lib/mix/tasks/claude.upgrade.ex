@@ -23,12 +23,8 @@ defmodule Mix.Tasks.Claude.Upgrade do
       igniter.assigns[:args][:options][:from] ||
         get_in(igniter, [Access.key(:args), Access.key(:options), :from])
 
-    to =
-      igniter.assigns[:args][:options][:to] ||
-        get_in(igniter, [Access.key(:args), Access.key(:options), :to]) || "0.3.0"
-
     cond do
-      not is_nil(from) and to == "0.3.0" and Version.compare(from, "0.3.0") == :lt ->
+      not is_nil(from) and Version.compare(from, "0.3.0") == :lt ->
         upgrade_to_0_3_0(igniter)
 
       not is_nil(from) ->
@@ -105,7 +101,7 @@ defmodule Mix.Tasks.Claude.Upgrade do
         default_hooks
 
       length(hooks_list) > 0 ->
-        Map.put(default_hooks, :custom_hooks_detected, true)
+        default_hooks
 
       true ->
         %{}
