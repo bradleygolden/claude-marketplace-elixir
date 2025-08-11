@@ -97,7 +97,7 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
       assert config.hooks.custom_event == ["my_custom_hook"]
     end
 
-    test "handles custom old hooks with migration notice" do
+    test "handles custom old hooks by using default hooks" do
       igniter =
         test_project(
           files: %{
@@ -116,11 +116,43 @@ defmodule Mix.Tasks.Claude.UpgradeTest do
 
       source = igniter.rewrite |> Rewrite.source!(".claude.exs")
       content = Rewrite.Source.get(source, :content)
+
       {config, _} = Code.eval_string(content)
 
       assert is_map(config.hooks)
-      assert Map.has_key?(config.hooks, :custom_hooks_detected)
-      assert config.hooks.custom_hooks_detected == true
+      assert config.hooks.stop == [:compile, :format]
+      assert config.hooks.subagent_stop == [:compile, :format]
+      assert config.hooks.post_tool_use == [:compile, :format]
+      assert config.hooks.pre_tool_use == [:compile, :format, :unused_deps]
+      refute Map.has_key?(config.hooks, :custom_hooks_detected)
+    end
+
+    test "generated .claude.exs is valid Elixir syntax" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: [
+                My.Custom.Hook
+              ],
+              subagents: [
+                %{name: "Test Agent", description: "Test", prompt: "Test"}
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.assign(:args, %{options: [from: "0.2.4", to: "0.3.0"]})
+        |> Upgrade.igniter()
+
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert {config, _} = Code.eval_string(content)
+      assert is_map(config)
+      assert is_map(config.hooks)
+      assert is_list(config.subagents)
     end
 
     test "composes claude.install task" do
