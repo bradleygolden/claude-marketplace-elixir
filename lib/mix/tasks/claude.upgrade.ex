@@ -1,193 +1,101 @@
 defmodule Mix.Tasks.Claude.Upgrade do
   @moduledoc """
-  Upgrades Claude configuration from older versions to the current version.
+  Checks if Claude configuration needs upgrading and provides instructions.
 
-  This task handles breaking changes between Claude versions, ensuring smooth
-  migration while preserving user customizations.
+  This task checks for outdated configuration formats and provides clear
+  instructions for manual migration.
 
   ## Usage
 
       mix claude.upgrade
 
-  This task is automatically invoked when using `mix igniter.upgrade` if Claude
-  needs to be upgraded.
   """
 
   use Igniter.Mix.Task
 
-  @shortdoc "Upgrades Claude configuration from older versions"
+  @shortdoc "Checks Claude configuration and provides upgrade instructions"
 
   @impl Igniter.Mix.Task
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
-      positional: [
-        from: [
-          optional: true
-        ],
-        to: [
-          optional: true
-        ]
-      ]
+      positional: []
     }
   end
 
   @impl Igniter.Mix.Task
   def igniter(igniter) do
-    igniter = ensure_args_struct(igniter)
-    from = get_from_version(igniter)
-
-    cond do
-      not is_nil(from) and Version.compare(from, "0.3.2") == :lt ->
-        upgrade_to_0_3_0(igniter)
-
-      not is_nil(from) ->
-        igniter
-
-      true ->
-        igniter
-    end
-  end
-
-  defp ensure_args_struct(igniter) do
-    case igniter.assigns[:args] do
-      %{options: options} when is_list(options) ->
-        args_struct = %Igniter.Mix.Task.Args{
-          positional: [],
-          options: options,
-          argv_flags: [],
-          argv: []
-        }
-
-        %{igniter | args: args_struct}
-
-      _ ->
-        igniter
-    end
-  end
-
-  defp get_from_version(igniter) do
-    cond do
-      is_struct(igniter.args, Igniter.Mix.Task.Args) and is_list(igniter.args.positional) and
-          length(igniter.args.positional) > 0 ->
-        hd(igniter.args.positional)
-
-      is_struct(igniter.args, Igniter.Mix.Task.Args) and is_list(igniter.args.options) ->
-        igniter.args.options[:from]
-
-      true ->
-        nil
-    end
-  end
-
-  defp upgrade_to_0_3_0(igniter) do
-    igniter
-    |> migrate_hooks_configuration()
-    |> run_claude_install()
-    |> add_upgrade_notices()
-  end
-
-  defp migrate_hooks_configuration(igniter) do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
+      result = read_and_eval_claude_exs(igniter, claude_exs_path)
+
+      case result do
+        {:ok, config} when is_map(config) ->
+          hooks = Map.get(config, :hooks, %{})
+
+          if is_list(hooks) do
+            igniter
+            |> Igniter.add_issue("""
+            Your .claude.exs is using an outdated hooks format.
+
+            Please manually update your .claude.exs file to use the new format:
+
+            %{
+              hooks: %{
+                stop: [:compile, :format],
+                subagent_stop: [:compile, :format],
+                post_tool_use: [:compile, :format],
+                pre_tool_use: [:compile, :format, :unused_deps]
+              }
+            }
+
+            After updating, run `mix claude.install` to regenerate the hook scripts.
+            """)
+          else
+            igniter
+            |> Igniter.add_notice("Your Claude configuration is already up to date! ✨")
+          end
+
+        _error ->
+          igniter
+      end
+    else
       igniter
-      |> Igniter.update_file(claude_exs_path, fn source ->
+      |> Igniter.add_notice("No .claude.exs file found. Run `mix claude.install` to create one.")
+    end
+  end
+
+  defp read_and_eval_claude_exs(igniter, path) do
+    try do
+      source =
+        case Rewrite.source(igniter.rewrite, path) do
+          {:ok, source} ->
+            source
+
+          {:error, _} ->
+            igniter = Igniter.include_existing_file(igniter, path)
+
+            case Rewrite.source(igniter.rewrite, path) do
+              {:ok, source} -> source
+              _ -> nil
+            end
+        end
+
+      if source do
         content = Rewrite.Source.get(source, :content)
 
         case Code.eval_string(content) do
           {config, _bindings} when is_map(config) ->
-            updated_config = migrate_hooks_in_config(config)
-
-            if updated_config != config do
-              new_content = inspect(updated_config, pretty: true, limit: :infinity)
-              Rewrite.Source.update(source, :content, new_content)
-            else
-              source
-            end
+            {:ok, config}
 
           _ ->
-            source
+            {:error, :invalid_config}
         end
-      end)
-    else
-      igniter
+      else
+        {:error, :file_not_found}
+      end
+    rescue
+      _ -> {:error, :eval_error}
     end
-  end
-
-  defp migrate_hooks_in_config(config) do
-    case Map.get(config, :hooks) do
-      hooks when is_list(hooks) ->
-        migrated_hooks = migrate_hooks_list_to_map(hooks)
-        Map.put(config, :hooks, migrated_hooks)
-
-      hooks when is_map(hooks) ->
-        config
-
-      _ ->
-        config
-    end
-  end
-
-  defp migrate_hooks_list_to_map(hooks_list) do
-    default_hooks = %{
-      stop: [:compile, :format],
-      subagent_stop: [:compile, :format],
-      post_tool_use: [:compile, :format],
-      pre_tool_use: [:compile, :format, :unused_deps]
-    }
-
-    has_formatter = Enum.any?(hooks_list, &module_matches?(&1, "ElixirFormatter"))
-    has_compiler = Enum.any?(hooks_list, &module_matches?(&1, "CompilationChecker"))
-    has_precommit = Enum.any?(hooks_list, &module_matches?(&1, "PreCommitCheck"))
-
-    cond do
-      has_formatter and has_compiler and has_precommit ->
-        default_hooks
-
-      length(hooks_list) > 0 ->
-        default_hooks
-
-      true ->
-        %{}
-    end
-  end
-
-  defp module_matches?(module_atom, name_part) when is_atom(module_atom) do
-    module_atom
-    |> Atom.to_string()
-    |> String.contains?(name_part)
-  end
-
-  defp module_matches?(_, _), do: false
-
-  defp run_claude_install(igniter) do
-    Igniter.compose_task(igniter, "claude.install", [])
-  end
-
-  defp add_upgrade_notices(igniter) do
-    igniter
-    |> Igniter.add_notice("""
-    Claude has been upgraded! 🎉
-
-    ## Major Changes (v0.3.0+):
-
-    ### Hook System Overhaul
-    - Hooks now use atom-based shortcuts (`:compile`, `:format`, `:unused_deps`)
-    - Old class-based hook modules have been replaced with a unified dispatcher
-    - Your `.claude.exs` has been migrated to the new format
-
-    ### New Features Available:
-    - Mix task generators: `mix claude.gen.subagent`
-    - Comprehensive cheatsheets and documentation
-    - Enhanced MCP server support
-    - Usage rules integration from dependencies
-
-    ### Documentation:
-    - All documentation has been restructured with `guide-` prefixes
-    - New cheatsheets available for quick reference
-    - See the updated README.md for current capabilities
-
-    Run `mix claude.install` if you need to regenerate your Claude settings.
-    """)
   end
 end

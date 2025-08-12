@@ -258,7 +258,7 @@ defmodule Mix.Tasks.Claude.Install do
           Igniter.add_issue(igniter, """
           Your .claude.exs is using an outdated hooks format.
 
-          Please run `mix claude.upgrade` to update to the new format, or manually update to:
+          Please manually update your .claude.exs file to use the new format:
 
           %{
             hooks: %{
@@ -268,6 +268,8 @@ defmodule Mix.Tasks.Claude.Install do
               pre_tool_use: [:compile, :format, :unused_deps]
             }
           }
+
+          Then run `mix claude.install` again to regenerate the hook scripts.
           """)
         else
           igniter

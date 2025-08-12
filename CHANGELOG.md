@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2025-08-11
+
+### Fixed
+- Fixed confusing upgrade message loop where `mix claude.install` would tell users to run `mix claude.upgrade`, which didn't actually fix the issue
+- `mix claude.install` now provides clear manual upgrade instructions when detecting outdated hooks format
+- `mix claude.upgrade` converted to a diagnostic tool that shows manual upgrade instructions instead of attempting auto-upgrade
+
 ## [0.3.2] - 2025-08-11
 
 ### Fixed
@@ -21,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **TLDR:** any mix task can be a hook now!
 
-This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix claude.upgrade`.
+This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix claude.install`.
 
 ### Added
 - Automatic Tidewave installation for Phoenix projects - `mix claude.install` now automatically installs and configures Tidewave when Phoenix is detected

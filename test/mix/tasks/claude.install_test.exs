@@ -130,7 +130,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       assert Enum.any?(igniter.issues, fn issue ->
                String.contains?(issue, "outdated hooks format") and
-                 String.contains?(issue, "mix claude.upgrade")
+                 String.contains?(issue, "manually update your .claude.exs file")
              end)
     end
 
