@@ -54,7 +54,7 @@ end
 ## Features
 
 ### 🎯 **Smart Hooks**
-Automatically check formatting, catch compilation errors, validate commits, and more.
+Automatically check formatting, catch compilation errors, validate commits, and more - with smart output handling that prevents context overflow.
 
 → See [Hooks Documentation](documentation/guide-hooks.md) for details and configuration.
 

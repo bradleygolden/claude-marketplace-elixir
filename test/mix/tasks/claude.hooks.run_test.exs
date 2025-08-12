@@ -51,7 +51,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -80,7 +80,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -143,7 +143,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -179,7 +179,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, args})
         :ok
       end
@@ -210,7 +210,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, args})
         :ok
       end
@@ -241,7 +241,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, args})
         # Simulate Mix.NoTaskError for non-cmd tasks
         if task != "cmd" do
@@ -293,7 +293,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, args})
         :ok
       end
@@ -338,7 +338,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -373,7 +373,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -409,7 +409,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -444,7 +444,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -482,7 +482,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         # Simulate the cmd echo/exit command - it should fail with exit code 2
         if task == "cmd" && Enum.any?(args, &String.contains?(&1, "--no-verify")) do
@@ -525,7 +525,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -558,7 +558,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -590,7 +590,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -622,7 +622,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -651,7 +651,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -682,7 +682,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         :ok
       end
@@ -712,7 +712,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "blocking"), do: raise("Blocking error")
       end
@@ -742,7 +742,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         # Simulate a task that exits with code 1 (like compile --warnings-as-errors failing)
         if task == "compile" && "--warnings-as-errors" in args do
@@ -775,7 +775,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         # Simulate a validation task that fails
         if task == "validate" do
@@ -809,7 +809,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
 
         if task == "compile" && "--warnings-as-errors" in args do
@@ -841,7 +841,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         # Simulate a check that fails but shouldn't block stoppage
         if task == "check" do
@@ -875,7 +875,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
 
         if task == "check" do
@@ -909,7 +909,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
 
         if task == "check" do
@@ -945,7 +945,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
 
         cond do
@@ -1005,7 +1005,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "error"), do: raise("Non-blocking error")
         :ok
@@ -1037,7 +1037,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         :ok
       end
@@ -1062,7 +1062,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
         "hook_event_name" => "pre_tool_use"
       }
 
-      task_runner = fn _task, _args, _env_vars ->
+      task_runner = fn _task, _args, _env_vars, _output_mode ->
         raise "Blocking error"
       end
 
@@ -1088,7 +1088,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
         "hook_event_name" => "post_tool_use"
       }
 
-      task_runner = fn _task, _args, _env_vars ->
+      task_runner = fn _task, _args, _env_vars, _output_mode ->
         raise "Warning message"
       end
 
@@ -1122,7 +1122,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "validate"), do: raise("Permission denied")
       end
@@ -1155,7 +1155,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "check_format"), do: raise("Format error")
       end
@@ -1184,7 +1184,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         raise "Validation failed"
       end
@@ -1213,7 +1213,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn _task, _args, _env_vars ->
+      task_runner = fn _task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, "test.add_context"})
         :ok
       end
@@ -1247,7 +1247,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "check_format"), do: raise("Format check failed")
         :ok
@@ -1283,7 +1283,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "error"), do: raise("Error occurred")
         :ok
@@ -1319,7 +1319,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
 
         cond do
@@ -1358,7 +1358,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -1390,7 +1390,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         raise "#{task} failed"
       end
@@ -1448,7 +1448,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -1483,7 +1483,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -1516,7 +1516,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -1550,7 +1550,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -1583,7 +1583,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -1610,7 +1610,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, _env_vars ->
+      task_runner = fn task, args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task, args})
         :ok
       end
@@ -1652,7 +1652,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "validator"), do: raise("Validation failed")
         :ok
@@ -1686,7 +1686,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         :ok
       end
@@ -1719,7 +1719,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
         if String.contains?(task, "check"), do: raise("Check failed")
         :ok
@@ -1755,7 +1755,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, _env_vars ->
+      task_runner = fn task, _args, _env_vars, _output_mode ->
         send(test_pid, {:mix_task_run, task})
 
         cond do

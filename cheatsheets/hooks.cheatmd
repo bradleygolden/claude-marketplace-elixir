@@ -123,6 +123,7 @@ pre_tool_use: [:unused_deps]
 | `:halt_pipeline?` | boolean | `false` | Stop on failure |
 | `:blocking?` | boolean | `true` | Treat as blocking error |
 | `:env` | map | `%{}` | Environment variables |
+| `:output` | atom | `:none` | Output verbosity (`:none` or `:full`) |
 
 ### Tool Matchers (`:when` option)
 
@@ -179,6 +180,21 @@ command: ~r/^git (commit|push)/
 # Non-blocking (informational only)
 {"credo --strict", blocking?: false}
 ```
+
+### Output Control (⚠️ Use Sparingly)
+
+```elixir
+# Default: Only show pipeline summary (prevents context overflow)
+{"compile", output: :none}  # Or just "compile" - :none is default
+
+# Full output: Shows complete hook output (WARNING: Can cause context issues)
+{"compile", output: :full}  # AVOID - only use for debugging
+
+# Recommended: Always use default :none unless absolutely necessary
+stop: [:compile, :format]  # Both use :none by default
+```
+
+**Important:** The `:output` option defaults to `:none` to prevent context overflow. Using `:full` can cause Claude to run out of context space with long outputs (test failures, compilation errors, etc). Claude can run commands directly when it needs details.
 
 ## Template Variables
 

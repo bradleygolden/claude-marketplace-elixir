@@ -20,7 +20,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, env_vars ->
+      task_runner = fn task, _args, env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, env_vars})
         :ok
       end
@@ -52,7 +52,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, env_vars ->
+      task_runner = fn task, _args, env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, env_vars})
         :ok
       end
@@ -86,7 +86,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, env_vars ->
+      task_runner = fn task, _args, env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, env_vars})
         :ok
       end
@@ -115,7 +115,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, env_vars ->
+      task_runner = fn task, _args, env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, env_vars})
         :ok
       end
@@ -144,7 +144,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, env_vars ->
+      task_runner = fn task, args, env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, args, env_vars})
         :ok
       end
@@ -173,7 +173,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
 
       test_pid = self()
 
-      task_runner = fn task, args, env_vars ->
+      task_runner = fn task, args, env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, args, env_vars})
         :ok
       end
@@ -205,7 +205,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
 
       test_pid = self()
 
-      task_runner = fn task, _args, env_vars ->
+      task_runner = fn task, _args, env_vars, _output_mode ->
         send(test_pid, {:task_executed, task, env_vars})
         :ok
       end

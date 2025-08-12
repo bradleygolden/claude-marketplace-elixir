@@ -75,6 +75,12 @@ You can mix atom shortcuts with explicit configurations:
     # Conditional execution
     pre_tool_use: [
       {"test", when: "Bash", command: ~r/^git push/}
+    ],
+    
+    # Control output verbosity (rarely needed)
+    subagent_stop: [
+      {:compile, output: :full},  # WARNING: Can cause context overflow
+      :format                      # Default :none - recommended
     ]
   }
 }
@@ -87,6 +93,9 @@ You can mix atom shortcuts with explicit configurations:
 - **`:halt_pipeline?`** - Stop subsequent hooks on failure (default: false)
 - **`:blocking?`** - Treat non-zero exit as blocking error (default: true)
 - **`:env`** - Environment variables as a map
+- **`:output`** - Control output verbosity (default: `:none`)
+  - `:none` - Only show pipeline summary on failures (prevents context overflow) **[Recommended]**
+  - `:full` - Show complete hook output plus pipeline summary (use sparingly - can cause context issues)
 
 ## How It Works
 
