@@ -10,9 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.4] - 2025-08-12
 
 ### Fixed
-- Meta agent now generates subagent names using lowercase-hyphen format to ensure compatibility
-- Meta agent now automatically runs `mix claude.install` after creating subagents for immediate availability
-- Improved meta agent instructions for clearer subagent name generation requirements
+- Meta agent now properly generates lowercase-hyphen subagent names and auto-installs them
 
 ## [0.3.3] - 2025-08-11
 
