@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **TLDR:** any mix task can be a hook now!
 
-This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix claude.upgrade`.
+This release focuses on enhancing the hook system and improving the user experience. If you're using a previous version, please run `mix claude.install`.
 
 ### Added
 - Automatic Tidewave installation for Phoenix projects - `mix claude.install` now automatically installs and configures Tidewave when Phoenix is detected
