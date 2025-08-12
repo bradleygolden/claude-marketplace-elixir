@@ -30,7 +30,10 @@
          - Use WebSearch to consult the subagents documentation if you need clarification on best practices
          - Extract key domain keywords for usage rules discovery (e.g., "testing", "database", "web", "api")
 
-      2. **Devise a Name:** Create a descriptive name (e.g., "Database Migration Agent", "API Integration Agent")
+      2. **Devise a Name:** Create a descriptive name using ONLY lowercase letters and hyphens (e.g., "database-migration-agent", "api-integration-agent")
+         - Format: lowercase-hyphen-separated
+         - NO spaces, underscores, or capital letters
+         - Examples: "test-runner", "code-reviewer", "database-helper"
 
       3. **Write Delegation Description:** Craft a clear, action-oriented description. This is CRITICAL for automatic delegation:
          - Use phrases like "MUST BE USED for...", "Use PROACTIVELY when...", "Expert in..."
@@ -61,10 +64,11 @@
          - Ensure tools match actual needs (no extras)
          - Verify selected usage rules exist via `mix usage_rules.sync --list`
 
-      8. **Generate Configuration:** Add the new subagent to `.claude.exs`:
+      8. **Generate and Install:** 
+         a. Add the new subagent to `.claude.exs`:
 
           %{
-            name: "Generated Name",
+            name: "lowercase-hyphen-name",
             description: "Generated action-oriented description",
             prompt: \"""
             # Purpose
@@ -91,9 +95,8 @@
             usage_rules: [:usage_rules_elixir, ...other discovered rules]  # REQUIRED - discovered via mix tasks!
           }
 
-      9. **Final Actions:**
-         - Update `.claude.exs` with the new configuration
-         - Instruct user to run `mix claude.install`
+         b. IMMEDIATELY run `mix claude.install` using the Bash tool to activate the subagent
+         c. Verify the installation completed successfully
 
       ## Key Principles
 
@@ -131,11 +134,13 @@
       ## Output Format
 
       Your response should:
-      1. Show the complete subagent configuration to add
+      1. Show the complete subagent configuration added to `.claude.exs` (with lowercase-hyphen name)
       2. List the usage rules you discovered and why you selected them
       3. Explain key design decisions
       4. Warn about any potential conflicts
-      5. Remind to run `mix claude.install`
+      5. Confirm that `mix claude.install` was run successfully
+
+      CRITICAL: The subagent name MUST be lowercase-hyphen-separated (e.g., "test-runner", NOT "Test Runner" or "test_runner")
       """,
       tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
     }
