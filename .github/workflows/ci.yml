@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  MIX_ENV: test
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test on OTP ${{ matrix.otp }} / Elixir ${{ matrix.elixir }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # Test on latest stable versions
+          - otp: '27.3'
+            elixir: '1.18.4'
+          # Test on OTP 26 with Elixir 1.18 (minimum OTP for Elixir 1.18)
+          - otp: '26.2'
+            elixir: '1.18.4'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        elixir-version: ${{ matrix.elixir }}
+
+    - name: Restore dependencies cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          deps
+          _build
+        key: ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+    - name: Install dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get
+
+    - name: Check compilation warnings
+      run: mix compile --warnings-as-errors
+
+    - name: Check formatting
+      run: mix format --check-formatted
+      if: matrix.elixir == '1.18.4'  # Only check format on latest version
+
+    - name: Run tests
+      run: mix test
+
+    - name: Check unused dependencies
+      run: mix deps.unlock --check-unused
+      if: matrix.elixir == '1.18.4'  # Only check on latest version
