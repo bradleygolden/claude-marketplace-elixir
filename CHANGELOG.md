@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- New `:output` option for hooks to control output verbosity (defaults to `:none`)
+  - `:none` mode shows only pipeline summary, preventing context overflow (fixes #93)
+  - `:full` mode shows complete output (use sparingly)
+
+### Changed
+- Hook output now defaults to `:none` mode to prevent context exhaustion from long outputs
+- Pipeline failure message changed from "Review the output above" to "Run the failed commands directly to see details" when in `:none` mode
+
+### Fixed
+- Fixed "Error during compaction" issue caused by long hook outputs exceeding context window (#93)
+
 ## [0.3.4] - 2025-08-12
 
 ### Fixed

@@ -35,13 +35,13 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
     config_reader = Keyword.get(opts, :config_reader, &Claude.Config.read/0)
 
     default_task_runner = fn
-      "cmd", args, env_vars ->
+      "cmd", args, env_vars, output_mode ->
         shell_command = Enum.join(args, " ")
-        run_with_port(shell_command, env_vars)
+        run_with_port(shell_command, env_vars, output_mode)
 
-      command, args, env_vars ->
+      command, args, env_vars, output_mode ->
         mix_command = "mix #{command} #{Enum.join(args, " ")}"
-        run_with_port(mix_command, env_vars)
+        run_with_port(mix_command, env_vars, output_mode)
     end
 
     task_runner = Keyword.get(opts, :task_runner, default_task_runner)
@@ -49,7 +49,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
     do_run(args, io_reader, config_reader, task_runner)
   end
 
-  defp run_with_port(command, env_vars) do
+  defp run_with_port(command, env_vars, output_mode) do
     port_opts = [
       :binary,
       :exit_status,
@@ -58,10 +58,8 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
       :hide
     ]
 
-    # Add env option if there are env vars to set
     port_opts =
       if map_size(env_vars) > 0 do
-        # Convert map to list of {"KEY", "VALUE"} tuples for Port
         env_list = Enum.map(env_vars, fn {k, v} -> {to_string(k), to_string(v)} end)
         [{:env, env_list} | port_opts]
       else
@@ -69,14 +67,19 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
       end
 
     port = Port.open({:spawn, command}, port_opts)
-    handle_port_output(port)
+    handle_port_output(port, output_mode)
   end
 
-  defp handle_port_output(port, accumulated_output \\ "") do
+  defp handle_port_output(port, output_mode, accumulated_output \\ "") do
     receive do
       {^port, {:data, data}} ->
-        IO.write(:stderr, data)
-        handle_port_output(port, accumulated_output <> data)
+        new_accumulated = accumulated_output <> data
+
+        if output_mode == :full do
+          IO.write(:stderr, data)
+        end
+
+        handle_port_output(port, output_mode, new_accumulated)
 
       {^port, {:exit_status, 0}} ->
         :ok
@@ -136,7 +139,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
         IO.puts(:stderr, "  • #{task_name} (exit code: #{exit_code})")
       end)
 
-      IO.puts(:stderr, "\nReview the output above for details on each issue.")
+      IO.puts(:stderr, "\nRun the failed commands directly to see details.")
 
       max_exit_code =
         failed_hooks
@@ -291,10 +294,11 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
       end
 
     env_vars = opts[:env] || %{}
+    output_mode = opts[:output] || :none
 
     exit_code =
       try do
-        task_runner.(command, args, env_vars)
+        task_runner.(command, args, env_vars, output_mode)
         0
       rescue
         Mix.NoTaskError ->
