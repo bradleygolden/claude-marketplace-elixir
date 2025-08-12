@@ -20,11 +20,11 @@ jobs:
       matrix:
         include:
           # Test on latest stable versions
-          - otp: '27.3'
-            elixir: '1.18.4'
+          - otp: '27'
+            elixir: '1.18'
           # Test on OTP 26 with Elixir 1.18 (minimum OTP for Elixir 1.18)
-          - otp: '26.2'
-            elixir: '1.18.4'
+          - otp: '26'
+            elixir: '1.18'
     
     steps:
     - name: Checkout code
@@ -57,11 +57,11 @@ jobs:
 
     - name: Check formatting
       run: mix format --check-formatted
-      if: matrix.elixir == '1.18.4'  # Only check format on latest version
+      if: matrix.otp == '27'  # Only check format on latest version
 
     - name: Run tests
       run: mix test
 
     - name: Check unused dependencies
       run: mix deps.unlock --check-unused
-      if: matrix.elixir == '1.18.4'  # Only check on latest version
+      if: matrix.otp == '27'  # Only check on latest version
