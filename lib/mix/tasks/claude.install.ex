@@ -767,11 +767,7 @@ defmodule Mix.Tasks.Claude.Install do
     igniter
     |> Igniter.add_task("usage_rules.sync", [
       "CLAUDE.md",
-      "--all",
-      "--inline",
-      "usage_rules:all",
-      "--link-to-folder",
-      "deps"
+      "--all"
     ])
     |> then(fn igniter_with_task ->
       if show_notice do
