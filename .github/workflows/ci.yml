@@ -59,7 +59,7 @@ jobs:
       if: matrix.otp == '27'
 
     - name: Run tests
-      run: mix test
+      run: mix test --warnings-as-errors
 
     - name: Check unused dependencies
       run: mix deps.unlock --check-unused
