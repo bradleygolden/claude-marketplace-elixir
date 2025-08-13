@@ -36,6 +36,8 @@ defmodule Claude.MixProject do
     [
       {:usage_rules, "~> 0.1", only: [:dev]},
       {:jason, "~> 1.4"},
+      {:req, "~> 0.5", optional: true},
+      {:plug, "~> 1.0", only: :test},
       {:mimic, "~> 1.7", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:igniter, "~> 0.6", optional: true}
