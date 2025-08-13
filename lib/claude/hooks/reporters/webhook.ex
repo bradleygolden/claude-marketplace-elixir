@@ -118,7 +118,6 @@ if Code.ensure_loaded?(Req) do
       timeout = Keyword.get(opts, :timeout, 5_000)
       retry_count = Keyword.get(opts, :retry_count, 3)
 
-      # Support passing additional Req options for testing
       req_options = Keyword.get(opts, :req_options, [])
 
       base_options = [
@@ -129,7 +128,6 @@ if Code.ensure_loaded?(Req) do
         receive_timeout: timeout
       ]
 
-      # Merge test options (like :plug) with base options
       final_options = Keyword.merge(base_options, req_options)
 
       case Req.post(url, final_options) do

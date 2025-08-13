@@ -14,8 +14,6 @@ defmodule Claude.Hooks.Reporter do
 
         @impl true
         def report(event_data, opts) do
-          # Process the event_data
-          # opts come from .claude.exs configuration
           :ok
         end
       end
@@ -26,10 +24,7 @@ defmodule Claude.Hooks.Reporter do
 
       %{
         reporters: [
-          # Built-in webhook reporter
           {:webhook, url: "https://example.com/events"},
-          
-          # Custom reporter
           {MyApp.CustomReporter, custom_option: "value"}
         ]
       }
@@ -103,16 +98,13 @@ defmodule Claude.Hooks.Reporter do
     :ok
   end
 
-  # Check if reporter is enabled
   defp enabled?({_type_or_module, opts}) when is_list(opts) do
     Keyword.get(opts, :enabled, true)
   end
 
   defp enabled?(_), do: true
 
-  # Expand reporter atoms to their full module references
   defp expand_reporter(:webhook) do
-    # Bare :webhook atom requires CLAUDE_WEBHOOK_URL env var
     url = System.get_env("CLAUDE_WEBHOOK_URL")
 
     if url do
@@ -132,7 +124,6 @@ defmodule Claude.Hooks.Reporter do
   end
 
   defp expand_reporter({module, opts}) when is_atom(module) do
-    # Handle map-style opts by converting to keyword list
     {module, Enum.to_list(opts)}
   end
 
@@ -141,7 +132,6 @@ defmodule Claude.Hooks.Reporter do
     nil
   end
 
-  # Execute a reporter, with optional async execution
   defp run_reporter(nil, _event_data, _async?), do: :ok
 
   defp run_reporter({module, opts}, event_data, async?) do
@@ -156,7 +146,6 @@ defmodule Claude.Hooks.Reporter do
     :ok
   end
 
-  # Safely execute a reporter with error handling
   defp safe_report(module, opts, event_data) do
     if function_exported?(module, :report, 2) do
       case module.report(event_data, opts) do
