@@ -177,6 +177,7 @@ defmodule Mix.Tasks.Claude.Install do
     |> install_hooks()
     |> setup_phoenix_mcp()
     |> sync_usage_rules()
+    |> generate_nested_memories()
     |> generate_subagents()
     |> setup_tidewave_if_configured()
     |> add_claude_exs_to_formatter()
@@ -781,6 +782,10 @@ defmodule Mix.Tasks.Claude.Install do
         igniter_with_task
       end
     end)
+  end
+
+  defp generate_nested_memories(igniter) do
+    Claude.NestedMemories.generate(igniter)
   end
 
   defp generate_subagents(igniter) do
