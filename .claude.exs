@@ -150,7 +150,8 @@
     pre_tool_use: [
       :compile,
       :format,
-      :unused_deps
+      :unused_deps,
+      {"test --warnings-as-errors", when: "Bash", command: ~r/^git commit/}
     ],
     post_tool_use: [
       :compile,
@@ -158,11 +159,13 @@
     ],
     stop: [
       :compile,
-      :format
+      :format,
+      "test --warnings-as-errors --stale"
     ],
     subagent_stop: [
       :compile,
-      :format
+      :format,
+      "test --warnings-as-errors --stale"
     ]
   }
 }
