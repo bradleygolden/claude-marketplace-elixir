@@ -1,4 +1,5 @@
 %{
+  auto_install_deps?: true,
   subagents: [
     %{
       name: "Meta Agent",
@@ -64,7 +65,7 @@
          - Ensure tools match actual needs (no extras)
          - Verify selected usage rules exist via `mix usage_rules.sync --list`
 
-      8. **Generate and Install:** 
+      8. **Generate and Install:**
          a. Add the new subagent to `.claude.exs`:
 
           %{
@@ -119,7 +120,7 @@
 
       ### Format Options
       - `:package_name` - Main usage rules file
-      - `"package_name:all"` - All sub-rules from a package  
+      - `"package_name:all"` - All sub-rules from a package
       - `"package_name:specific_rule"` - Specific sub-rule
 
       ### Domain-Specific Examples

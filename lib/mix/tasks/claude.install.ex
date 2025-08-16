@@ -175,6 +175,7 @@ defmodule Mix.Tasks.Claude.Install do
     |> create_claude_exs()
     |> add_usage_rules_dependency()
     |> install_hooks()
+    |> copy_wrapper_script()
     |> setup_phoenix_mcp()
     |> sync_usage_rules()
     |> generate_nested_memories()
@@ -411,6 +412,26 @@ defmodule Mix.Tasks.Claude.Install do
     |> add_hooks_notice(relative_settings_path, claude_exs_hooks)
   end
 
+  defp copy_wrapper_script(igniter) do
+    wrapper_source = Path.join(:code.priv_dir(:claude), "claude_hook_wrapper.exs")
+    wrapper_dest = Path.join(igniter.assigns.claude_dir_path, "hooks/wrapper.exs")
+
+    if File.exists?(wrapper_source) do
+      content = File.read!(wrapper_source)
+
+      igniter
+      |> Igniter.create_or_update_file(wrapper_dest, content, fn source ->
+        Rewrite.Source.update(source, :content, content)
+      end)
+      |> Igniter.add_notice("""
+      Claude hook wrapper script installed: #{wrapper_dest}
+      This script ensures dependencies are installed before running hooks.
+      """)
+    else
+      igniter
+    end
+  end
+
   defp add_hooks_notice(igniter, relative_settings_path, hooks) do
     if Igniter.changed?(igniter, relative_settings_path) do
       hooks_message =
@@ -485,7 +506,7 @@ defmodule Mix.Tasks.Claude.Install do
                  %{
                    "type" => "command",
                    "command" =>
-                     "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run #{Macro.underscore(event_type)}"
+                     "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs #{Macro.underscore(event_type)}"
                  }
                ]
              }

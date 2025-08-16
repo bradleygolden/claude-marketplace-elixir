@@ -820,7 +820,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
       [%{"hooks" => session_hooks, "matcher" => "*"}] = settings["hooks"]["SessionStart"]
 
       assert Enum.any?(session_hooks, fn hook ->
-               hook["command"] == "cd $CLAUDE_PROJECT_DIR && mix claude.hooks.run session_start"
+               hook["command"] ==
+                 "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs session_start"
              end)
     end
 
@@ -873,7 +874,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       [%{"hooks" => session_hooks}] = settings["hooks"]["SessionStart"]
 
       assert length(session_hooks) == 1
-      assert hd(session_hooks)["command"] =~ "claude.hooks.run session_start"
+      assert hd(session_hooks)["command"] =~ ".claude/hooks/wrapper.exs session_start"
     end
   end
 
@@ -948,7 +949,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       assert Enum.any?(pre_hooks, fn config ->
                Enum.any?(config["hooks"] || [], fn hook ->
-                 String.contains?(hook["command"], "claude.hooks.run pre_tool_use")
+                 String.contains?(hook["command"], ".claude/hooks/wrapper.exs pre_tool_use")
                end)
              end)
     end
