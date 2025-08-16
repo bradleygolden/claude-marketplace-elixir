@@ -24,6 +24,24 @@ mix igniter.install claude
 # ✓ Validates code before commits
 ```
 
+### Hook Wrapper for Missing Dependencies
+
+Claude includes a wrapper script (`.claude/hooks/wrapper.exs`) that can automatically handle missing dependencies. This ensures hooks work even when you haven't run `mix deps.get` yet.
+
+The wrapper is automatically installed by `mix claude.install` and configured in `.claude/settings.json`. By default, it will NOT automatically install dependencies. To enable automatic dependency installation, add to `.claude.exs`:
+
+```elixir
+%{
+  auto_install_deps?: true,
+  # ... other config
+}
+```
+
+When enabled, the wrapper will:
+1. Check if dependencies are installed
+2. Run `mix deps.get` if needed
+3. Execute the actual hook
+
 ## The Problem
 
 When Claude Code writes Elixir, you often need to:

@@ -33,7 +33,7 @@ defmodule ClaudeHookWrapper do
   end
 
   defp ensure_dependencies_installed(config) do
-    auto_install? = Map.get(config, :auto_install_deps?, true)
+    auto_install? = Map.get(config, :auto_install_deps?, false)
 
     if auto_install? do
       check_and_install_deps()
