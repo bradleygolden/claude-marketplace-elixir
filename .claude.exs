@@ -158,13 +158,11 @@
     ],
     stop: [
       :compile,
-      :format,
-      {"test", halt_pipeline?: false}
+      :format
     ],
     subagent_stop: [
       :compile,
-      :format,
-      {"test", halt_pipeline?: false}
+      :format
     ]
   }
 }
