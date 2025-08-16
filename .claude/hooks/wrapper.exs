@@ -53,10 +53,7 @@ defmodule ClaudeHookWrapper do
     {output, _exit_status} = collect_port_output(port)
 
     needs_deps =
-      String.contains?(output, "mix deps.get") ||
-        String.contains?(output, "are not available") ||
-        String.contains?(output, "could not find") ||
-        String.contains?(output, "the dependency is not available") ||
+      String.contains?(output, "the dependency is not available, run \"mix deps.get\"") ||
         not File.exists?("deps")
 
     if needs_deps do
