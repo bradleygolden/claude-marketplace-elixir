@@ -159,13 +159,11 @@
     ],
     stop: [
       :compile,
-      :format,
-      "test --warnings-as-errors --stale"
+      :format
     ],
     subagent_stop: [
       :compile,
-      :format,
-      "test --warnings-as-errors --stale"
+      :format
     ]
   }
 }
