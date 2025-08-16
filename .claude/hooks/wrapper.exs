@@ -41,76 +41,50 @@ defmodule ClaudeHookWrapper do
   end
 
   defp check_and_install_deps() do
-    port_opts = [
-      :binary,
-      :exit_status,
-      :stderr_to_stdout,
-      :use_stdio,
-      :hide
-    ]
+    case System.cmd("mix", ["deps"], stderr_to_stdout: true) do
+      {output, _} ->
+        needs_deps? =
+          String.contains?(output, "the dependency is not available, run \"mix deps.get\"") ||
+            not File.exists?("deps")
 
-    port = Port.open({:spawn, "mix deps"}, port_opts)
-    {output, _exit_status} = collect_port_output(port)
+        if needs_deps? do
+          IO.puts(:stderr, "Dependencies not installed. Running mix deps.get...")
 
-    needs_deps =
-      String.contains?(output, "the dependency is not available, run \"mix deps.get\"") ||
-        not File.exists?("deps")
+          case System.cmd("mix", ["deps.get"], stderr_to_stdout: true) do
+            {_, 0} ->
+              IO.puts(:stderr, "Dependencies installed successfully.")
 
-    if needs_deps do
-      IO.puts(:stderr, "Dependencies not installed. Running mix deps.get...")
-      deps_port = Port.open({:spawn, "mix deps.get"}, port_opts)
-      {deps_output, deps_exit_status} = collect_port_output(deps_port)
-
-      if deps_exit_status != 0 do
-        IO.puts(:stderr, "Failed to install dependencies:")
-        IO.puts(:stderr, deps_output)
-        System.halt(1)
-      else
-        IO.puts(:stderr, "Dependencies installed successfully.")
-      end
+            {output, _} ->
+              IO.puts(:stderr, "Failed to install dependencies:")
+              IO.puts(:stderr, output)
+              System.halt(1)
+          end
+        end
     end
   end
 
   defp run_hook(event_type, json_input) do
     temp_file = Path.join(System.tmp_dir!(), "claude_hook_#{:os.system_time()}.json")
-    File.write!(temp_file, json_input)
 
-    port_opts = [
-      :binary,
-      :exit_status,
-      :stderr_to_stdout,
-      :use_stdio,
-      :hide
-    ]
+    try do
+      File.write!(temp_file, json_input)
 
-    command = "sh -c 'mix claude.hooks.run #{event_type} < #{temp_file}'"
-    port = Port.open({:spawn, command}, port_opts)
+      {output, exit_status} =
+        System.cmd(
+          "mix",
+          ["claude.hooks.run", event_type, "--json-file", temp_file],
+          stderr_to_stdout: true
+        )
 
-    {output, exit_status} = collect_port_output(port)
+      if exit_status == 0 do
+        IO.write(:stdio, output)
+      else
+        IO.write(:stderr, output)
+      end
 
-    File.rm(temp_file)
-
-    if exit_status == 0 do
-      IO.write(:stdio, output)
-    else
-      IO.write(:stderr, output)
-    end
-
-    System.halt(exit_status)
-  end
-
-  defp collect_port_output(port, accumulated \\ "") do
-    receive do
-      {^port, {:data, data}} ->
-        collect_port_output(port, accumulated <> data)
-
-      {^port, {:exit_status, status}} ->
-        {accumulated, status}
+      System.halt(exit_status)
     after
-      60_000 ->
-        Port.close(port)
-        IO.puts(:stderr, "Command timed out after 60 seconds")
-        {"", 1}
+      File.rm(temp_file)
     end
   end
 end

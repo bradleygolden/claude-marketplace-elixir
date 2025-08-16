@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
 
   ## Usage
 
-      mix claude.hooks.run EVENT_TYPE
+      mix claude.hooks.run EVENT_TYPE [--json-file PATH]
 
   Where EVENT_TYPE is one of:
   - pre_tool_use
@@ -17,7 +17,8 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   - pre_compact
   - session_start
 
-  The task reads the event data from stdin and executes matching hooks sequentially.
+  The task reads the event data from stdin by default, or from a file when
+  --json-file is provided, and executes matching hooks sequentially.
   """
 
   use Mix.Task
@@ -89,6 +90,23 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
     end
   end
 
+  defp do_run([event_type, "--json-file", file_path], _io_reader, config_reader, task_runner) do
+    event_json = File.read!(file_path)
+
+    with {:ok, event_data} <- Jason.decode(event_json),
+         {:ok, config} <- config_reader.() do
+      execute_hooks(event_type, event_data, config, task_runner)
+    else
+      {:error, %Jason.DecodeError{}} ->
+        IO.puts(:stderr, "Invalid JSON input")
+        System.halt(1)
+
+      {:error, reason} ->
+        IO.puts(:stderr, "Failed to read .claude.exs: #{reason}")
+        System.halt(1)
+    end
+  end
+
   defp do_run([event_type], io_reader, config_reader, task_runner) do
     event_json = io_reader.(:stdio, :eof)
 
@@ -107,7 +125,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   end
 
   defp do_run(_, _, _, _) do
-    IO.puts(:stderr, "Usage: mix claude.hooks.run <event_type>")
+    IO.puts(:stderr, "Usage: mix claude.hooks.run <event_type> [--json-file <path>]")
     System.halt(1)
   end
 
