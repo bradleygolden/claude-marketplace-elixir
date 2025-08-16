@@ -417,16 +417,40 @@ defmodule Mix.Tasks.Claude.Install do
     wrapper_dest = Path.join(igniter.assigns.claude_dir_path, "hooks/wrapper.exs")
 
     if File.exists?(wrapper_source) do
-      content = File.read!(wrapper_source)
+      new_content = File.read!(wrapper_source)
 
-      igniter
-      |> Igniter.create_or_update_file(wrapper_dest, content, fn source ->
-        Rewrite.Source.update(source, :content, content)
-      end)
-      |> Igniter.add_notice("""
-      Claude hook wrapper script installed: #{wrapper_dest}
-      This script ensures dependencies are installed before running hooks.
-      """)
+      if Igniter.exists?(igniter, wrapper_dest) do
+        igniter
+        |> Igniter.update_file(wrapper_dest, fn source ->
+          current_content = Rewrite.Source.get(source, :content)
+
+          if current_content == new_content do
+            source
+          else
+            Rewrite.Source.update(source, :content, new_content)
+          end
+        end)
+        |> then(fn updated_igniter ->
+          if Igniter.changed?(updated_igniter, wrapper_dest) do
+            Igniter.add_notice(
+              updated_igniter,
+              """
+              Claude hook wrapper script updated: #{wrapper_dest}
+              This script ensures dependencies are installed before running hooks.
+              """
+            )
+          else
+            updated_igniter
+          end
+        end)
+      else
+        igniter
+        |> Igniter.create_new_file(wrapper_dest, new_content)
+        |> Igniter.add_notice("""
+        Claude hook wrapper script installed: #{wrapper_dest}
+        This script ensures dependencies are installed before running hooks.
+        """)
+      end
     else
       igniter
     end
