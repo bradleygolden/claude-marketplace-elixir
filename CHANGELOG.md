@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed "Error during compaction" issue caused by long hook outputs exceeding context window (#93)
 - Fixed startup issues when dependencies are missing (#99)
+- Hook wrapper now uses exit code 2 for dependency installation failures to properly block and inform Claude
 
 ## [0.3.4] - 2025-08-12
 
