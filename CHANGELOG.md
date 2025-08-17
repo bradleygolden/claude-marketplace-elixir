@@ -7,17 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-08-16
+
 ### Added
 - New `:output` option for hooks to control output verbosity (defaults to `:none`)
   - `:none` mode shows only pipeline summary, preventing context overflow (fixes #93)
   - `:full` mode shows complete output (use sparingly)
+- Nested memories support for distributing CLAUDE.md files across different directories (#98)
+- Webhook reporter (experimental) for hook events with configurable HTTP endpoints (#97)
+- GitHub Actions CI workflow for automated testing across Elixir/OTP versions (#95)
+- Hook wrapper system for improved dependency management during hook execution
+- Auto-installation of dependencies when `auto_install_deps?` is configured
 
 ### Changed
 - Hook output now defaults to `:none` mode to prevent context exhaustion from long outputs
 - Pipeline failure message changed from "Review the output above" to "Run the failed commands directly to see details" when in `:none` mode
+- Usage rules documentation now embedded directly in CLAUDE.md for better LLM context (#96)
 
 ### Fixed
 - Fixed "Error during compaction" issue caused by long hook outputs exceeding context window (#93)
+- Fixed startup issues when dependencies are missing (#99)
 
 ## [0.3.4] - 2025-08-12
 
@@ -116,7 +125,9 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bradleygolden/claude/compare/v0.3.4...v0.4.0
+[0.3.4]: https://github.com/bradleygolden/claude/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/bradleygolden/claude/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/bradleygolden/claude/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/bradleygolden/claude/compare/v0.3.0...v0.3.1

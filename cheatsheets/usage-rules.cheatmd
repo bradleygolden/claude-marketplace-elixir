@@ -83,6 +83,30 @@ usage_rules: ["ash", "ecto"]
 # Agent sees only relevant framework docs
 ```
 
+## Nested Memories
+
+### Distribute CLAUDE.md Files Across Directories
+```elixir
+# In .claude.exs
+%{
+  nested_memories: %{
+    "lib/my_app_web" => ["phoenix", "ash_phoenix"],
+    "lib/my_app/accounts" => ["ash"]
+  }
+}
+```
+
+### Creates Context-Specific Files
+```
+lib/my_app_web/CLAUDE.md      # Phoenix and Ash Phoenix rules
+lib/my_app/accounts/CLAUDE.md  # Ash framework rules
+```
+
+### Benefits
+- Context-aware guidance per directory
+- Reduced cognitive load for Claude
+- Better organization of domain rules
+
 ## CLAUDE.md Structure
 
 ### Auto-Generated Section

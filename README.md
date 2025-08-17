@@ -56,6 +56,10 @@ end
 ### 🎯 **Smart Hooks**
 Automatically check formatting, catch compilation errors, validate commits, and more - with smart output handling that prevents context overflow.
 
+- **Output Control**: Choose between `:none` mode (summary only) or `:full` mode for detailed output
+- **Webhook Reporting (Experimental)**: Send hook events to external endpoints for monitoring and integration
+- **Automatic Dependency Management**: Auto-install missing dependencies during hook execution
+
 → See [Hooks Documentation](documentation/guide-hooks.md) for details and configuration.
 
 ### 🤖 **Sub-agents**
@@ -71,6 +75,9 @@ Integrate with Phoenix development tools via Tidewave. MCP servers are configure
 ### 📚 **Best Practices**
 
 [Usage rules](https://hexdocs.pm/usage_rules) from your dependencies are automatically synced to `CLAUDE.md`, ensuring Claude follows library-specific best practices.
+
+- **Nested Memories**: Distribute CLAUDE.md files across different directories for context-specific guidance
+- **Embedded Documentation**: Usage rules are now embedded directly in CLAUDE.md for better visibility
 
 → See [Usage Rules Guide](documentation/guide-usage-rules.md) for how Claude integrates with usage rules.
 
