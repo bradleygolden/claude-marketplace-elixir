@@ -1039,4 +1039,31 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert formatter_config[:inputs] == [".claude.exs"]
     end
   end
+
+  describe "command installation" do
+    test "does not block installation when commands already exist" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                stop: [:compile]
+              }
+            }
+            """,
+            ".claude/commands/mix/deps.md" => """
+            ---
+            description: Existing command
+            ---
+            # Deps
+            """
+          }
+        )
+
+      result = Igniter.compose_task(igniter, "claude.install", ["--yes"])
+
+      assert length(result.issues) == 0
+    end
+  end
 end
