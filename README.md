@@ -171,14 +171,16 @@ mix compile --warnings-as-errors
   - Multi-line prompt support
   - Automatic `.claude.exs` integration
 
+**Nested Memories**
+- Directory-specific CLAUDE.md files (e.g., `lib/my_app_web/CLAUDE.md` for Phoenix)
+- Configure via `nested_memories` in `.claude.exs`
+- Distribute context-specific usage rules across your codebase
+
 ### 🚀 Coming Soon
 
 **Custom Slash Commands**
 - `/create-subagent` - Generate a new sub-agent with guided prompts (wraps mix task)
 - Auto-generate commands in `.claude/commands/` during installation
-
-**Scoped CLAUDE.md's**
-- Directory-specific instructions (e.g., `*_web/CLAUDE.md` for Phoenix)
 
 **More MCP Servers**
 - Database tools (PostgreSQL, MySQL, Redis)
