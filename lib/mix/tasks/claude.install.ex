@@ -180,6 +180,7 @@ defmodule Mix.Tasks.Claude.Install do
     |> sync_usage_rules()
     |> generate_nested_memories()
     |> generate_subagents()
+    |> install_commands()
     |> setup_tidewave_if_configured()
     |> add_claude_exs_to_formatter()
   end
@@ -1125,6 +1126,10 @@ defmodule Mix.Tasks.Claude.Install do
 
     (["Failed to generate some subagents:"] ++ error_lines)
     |> Enum.join("\n")
+  end
+
+  defp install_commands(igniter) do
+    Claude.CommandInstaller.install(igniter)
   end
 
   defp setup_tidewave_if_configured(igniter) do

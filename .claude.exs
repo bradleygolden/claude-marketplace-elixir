@@ -146,6 +146,9 @@
       tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
     }
   ],
+  nested_memories: %{
+    "test" => ["usage_rules:elixir", "usage_rules:otp"]
+  },
   hooks: %{
     pre_tool_use: [
       :compile,

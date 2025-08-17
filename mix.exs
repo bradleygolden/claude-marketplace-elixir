@@ -52,7 +52,7 @@ defmodule Claude.MixProject do
       },
       maintainers: ["Bradley Golden"],
       files:
-        ~w(lib .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-subagents.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+        ~w(lib priv .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-subagents.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
