@@ -2,11 +2,13 @@
 
 Claude is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It automatically formats code, checks for compilation errors after Claude makes edits, and provides generators and tooling for deeply integrating Claude Code into your project.
 
-## What's New in v0.3.0
+## What's New in v0.4.0
 
-- **Mix Task Generator**: `mix claude.gen.subagent` for creating sub-agents
-- **Atom-based Hooks**: Simple atom shortcuts that expand to full configurations
-- **Single Dispatcher System**: Efficient hook execution via `mix claude.hooks.run`
+- **Bundled Slash Commands**: Pre-configured commands for library, dependency, and memory management
+- **Nested Memories**: Distribute CLAUDE.md files across directories for context-specific guidance
+- **Hook Output Control**: New `:output` option to prevent context overflow (defaults to `:none`)
+- **Webhook Reporter (Experimental)**: Send hook events to external HTTP endpoints
+- **Improved Dependency Management**: Auto-installation and better lock mismatch detection
 
 ## Installation
 
@@ -129,7 +131,35 @@ When you run `mix claude.install`, this configuration is automatically written t
 
 **Note**: While only Tidewave is officially supported through the installer, you can manually add other MCP servers to `.mcp.json` following the Claude Code documentation.
 
-## Sub-agents (v0.3.0+)
+## Bundled Slash Commands
+
+Claude includes pre-configured slash commands that are automatically installed in `.claude/commands/` when you run `mix claude.install`:
+
+### Available Commands
+
+- **Claude Library Management**: `/claude-install`, `/claude-uninstall`, `/claude-config`, `/claude-status`
+- **Dependency Management**: `/mix-deps`, `/mix-deps-add`, `/mix-deps-remove`, `/mix-deps-upgrade`
+- **Nested Memories**: `/memory-nested-add`, `/memory-nested-list`, `/memory-nested-remove`, `/memory-nested-sync`
+- **Elixir Version**: `/elixir-version-check`, `/elixir-compatibility`, `/elixir-upgrade`
+
+Type `/` in Claude Code to see all available commands with descriptions.
+
+## Nested Memories
+
+Distribute CLAUDE.md files across different directories in your project for context-specific guidance:
+
+```elixir
+%{
+  nested_memories: %{
+    "lib/my_app_web" => ["phoenix", "ash_phoenix"],
+    "lib/my_app/accounts" => ["ash"]
+  }
+}
+```
+
+This creates separate `CLAUDE.md` files in each directory with the relevant usage rules, reducing cognitive load for Claude by providing only the context needed for that part of your codebase.
+
+## Sub-agents
 
 Claude supports creating specialized AI assistants (sub-agents) for your project with built-in best practices.
 
