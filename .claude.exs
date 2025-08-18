@@ -143,7 +143,8 @@
 
       CRITICAL: The subagent name MUST be lowercase-hyphen-separated (e.g., "test-runner", NOT "Test Runner" or "test_runner")
       """,
-      tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
+      tools: [:write, :read, :edit, :multi_edit, :bash, :web_search],
+      usage_rules: ["claude:all"]
     }
   ],
   nested_memories: %{

@@ -92,13 +92,13 @@ If there are any formatting issues, compilation errors, or unused dependencies, 
 Claude comes with bundled slash commands for common tasks. Type `/` in Claude Code to see all available commands, or try:
 
 ```
-/mix-deps check
+/mix:deps-check
 ```
 
 This will check your dependency status using the bundled command. Other useful commands include:
-- `/claude-status` - Check Claude installation status
-- `/mix-deps-add` - Add new dependencies
-- `/memory-nested-add` - Configure nested memories for directories
+- `/claude:status` - Check Claude installation status
+- `/mix:deps-add` - Add new dependencies
+- `/memory:nested-add` - Configure nested memories for directories
 
 ## What Just Happened?
 

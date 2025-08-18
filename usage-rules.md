@@ -137,10 +137,10 @@ Claude includes pre-configured slash commands that are automatically installed i
 
 ### Available Commands
 
-- **Claude Library Management**: `/claude-install`, `/claude-uninstall`, `/claude-config`, `/claude-status`
-- **Dependency Management**: `/mix-deps`, `/mix-deps-add`, `/mix-deps-remove`, `/mix-deps-upgrade`
-- **Nested Memories**: `/memory-nested-add`, `/memory-nested-list`, `/memory-nested-remove`, `/memory-nested-sync`
-- **Elixir Version**: `/elixir-version-check`, `/elixir-compatibility`, `/elixir-upgrade`
+- **Claude Library Management**: `/claude:install`, `/claude:uninstall`, `/claude:config`, `/claude:status`
+- **Dependency Management**: `/mix:deps`, `/mix:deps-add`, `/mix:deps-remove`, `/mix:deps-upgrade`
+- **Nested Memories**: `/memory:nested-add`, `/memory:nested-list`, `/memory:nested-remove`, `/memory:nested-sync`
+- **Elixir Version**: `/elixir:version-check`, `/elixir:compatibility`, `/elixir:upgrade`
 
 Type `/` in Claude Code to see all available commands with descriptions.
 

@@ -16,10 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nested memories support for distributing CLAUDE.md files across different directories (#98)
 - Webhook reporter (experimental) for hook events with configurable HTTP endpoints (#97)
 - Bundled slash commands for common Elixir development tasks (#101)
-  - `/claude-*` commands for Claude library management  
-  - `/elixir-*` commands for Elixir version management
-  - `/memory-*` commands for nested memories management
-  - `/mix-*` commands for dependency management
+  - `/claude:*` commands for Claude library management  
+  - `/elixir:*` commands for Elixir version management
+  - `/memory:*` commands for nested memories management
+  - `/mix:*` commands for dependency management
 - GitHub Actions CI workflow for automated testing across Elixir/OTP versions (#95)
 - Hook wrapper system for improved dependency management during hook execution
 - Auto-installation of dependencies when `auto_install_deps?` is configured

@@ -85,9 +85,9 @@ Integrate with Phoenix development tools via Tidewave. MCP servers are configure
 
 Pre-configured slash commands for common Elixir development tasks, automatically installed in `.claude/commands/`.
 
-- **Library Management**: `/claude-install`, `/claude-uninstall`, `/claude-config`
-- **Dependency Management**: `/mix-deps`, `/mix-deps-add`, `/mix-deps-upgrade`
-- **Nested Memories**: `/memory-nested-add`, `/memory-nested-sync`, `/memory-check`
+- **Library Management**: `/claude:install`, `/claude:uninstall`, `/claude:config`
+- **Dependency Management**: `/mix:deps`, `/mix:deps-add`, `/mix:deps-upgrade`
+- **Nested Memories**: `/memory:nested-add`, `/memory:nested-sync`, `/memory:check`
 
 → Type `/` in Claude Code to see all available commands.
 
@@ -188,10 +188,10 @@ mix compile --warnings-as-errors
 - Distribute context-specific usage rules across your codebase
 
 **Bundled Slash Commands**
-- `/claude-*` commands for library management (install, uninstall, config, status)
-- `/elixir-*` commands for version management and compatibility checks
-- `/memory-*` commands for nested memories management
-- `/mix-*` commands for dependency management
+- `/claude:*` commands for library management (install, uninstall, config, status)
+- `/elixir:*` commands for version management and compatibility checks
+- `/memory:*` commands for nested memories management
+- `/mix:*` commands for dependency management
 - Auto-installed in `.claude/commands/` during `mix claude.install`
 
 ### 🚀 Coming Soon
