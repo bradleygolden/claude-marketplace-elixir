@@ -471,6 +471,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
 
     test "generates subagents with usage_rules when specified" do
+      # Create temporary test file
+      File.mkdir_p!("deps/ash")
+
+      File.write!(
+        "deps/ash/usage-rules.md",
+        "# Ash Usage Rules\n\nUse Ash for declarative resources."
+      )
+
+      on_exit(fn -> File.rm_rf!("deps/ash") end)
+
       igniter =
         test_project(
           files: %{
@@ -502,6 +512,17 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
 
     test "handles multiple usage_rules for subagents" do
+      # Create temporary test files
+      File.mkdir_p!("deps/ash")
+      File.mkdir_p!("deps/phoenix")
+      File.write!("deps/ash/usage-rules.md", "# Ash Rules\n\nAsh content.")
+      File.write!("deps/phoenix/usage-rules.md", "# Phoenix Rules\n\nPhoenix content.")
+
+      on_exit(fn ->
+        File.rm_rf!("deps/ash")
+        File.rm_rf!("deps/phoenix")
+      end)
+
       igniter =
         test_project(
           files: %{
@@ -526,14 +547,24 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       assert content =~ "## Usage Rules"
       assert content =~ "### ash"
-      assert content =~ "# Ash Usage Rules"
-      assert content =~ "Use Ash for declarative resources."
+      assert content =~ "# Ash Rules"
+      assert content =~ "Ash content."
       assert content =~ "### phoenix"
       assert content =~ "# Phoenix Rules"
       assert content =~ "Phoenix content."
     end
 
     test "handles string-based usage_rules with sub-rules" do
+      # Create temporary test files
+      File.mkdir_p!("deps/ash/usage-rules")
+
+      File.write!(
+        "deps/ash/usage-rules/resources.md",
+        "# Resource Rules\n\nResource specific rules."
+      )
+
+      on_exit(fn -> File.rm_rf!("deps/ash") end)
+
       igniter =
         test_project(
           files: %{
