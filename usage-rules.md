@@ -2,14 +2,6 @@
 
 Claude is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It automatically formats code, checks for compilation errors after Claude makes edits, and provides generators and tooling for deeply integrating Claude Code into your project.
 
-## What's New in v0.4.0
-
-- **Bundled Slash Commands**: Pre-configured commands for library, dependency, and memory management
-- **Nested Memories**: Distribute CLAUDE.md files across directories for context-specific guidance
-- **Hook Output Control**: New `:output` option to prevent context overflow (defaults to `:none`)
-- **Webhook Reporter (Experimental)**: Send hook events to external HTTP endpoints
-- **Improved Dependency Management**: Auto-installation and better lock mismatch detection
-
 ## Installation
 
 Claude only supports Igniter installation:
@@ -63,7 +55,7 @@ The default `.claude.exs` includes these hooks:
 %{
   hooks: %{
     stop: [:compile, :format],
-    subagent_stop: [:compile, :format], 
+    subagent_stop: [:compile, :format],
     post_tool_use: [:compile, :format],
     # These only run on git commit commands
     pre_tool_use: [:compile, :format, :unused_deps]
@@ -173,7 +165,7 @@ mix claude.gen.subagent
 
 This will prompt you for:
 - Name and description
-- Tool permissions 
+- Tool permissions
 - System prompt
 - Usage rules integration
 
@@ -195,11 +187,11 @@ You can also configure sub-agents manually in `.claude.exs`:
 %{
   subagents: [
     %{
-      name: "Database Expert", 
+      name: "Database Expert",
       description: "MUST BE USED for Ecto migrations and database schema changes. Expert in database design.",
       prompt: """
       You are a database and Ecto expert specializing in migrations and schema design.
-      
+
       Always check existing migration files and schemas before making changes.
       Follow Ecto best practices for data integrity and performance.
       """,
@@ -222,13 +214,16 @@ the `.claude` directory for use by Claude Code.
 ```elixir
 # .claude.exs - Claude configuration for this project
 %{
+  # Optionally enable auto-installation of dependencies
+  auto_install_deps?: true,
+
   # Hook configuration using atom shortcuts
   hooks: %{
-    stop: [:compile, :format],
-    subagent_stop: [:compile, :format],
+    stop: [:compile, :format, "test --warnings-as-errors --stale"],
+    subagent_stop: [:compile, :format, "test --warnings-as-errors --stale"],
     post_tool_use: [:compile, :format],
     # Only run on git commit commands
-    pre_tool_use: [:compile, :format, :unused_deps]
+    pre_tool_use: [:compile, :format, :unused_deps, {"test --warnings-as-errors", when: "Bash", command: ~r/^git commit/}]
   },
 
   # MCP servers configuration
@@ -244,7 +239,7 @@ the `.claude` directory for use by Claude Code.
       description: "MUST BE USED for ExUnit testing and test file generation. Expert in test patterns.",
       prompt: """
       You are an ExUnit testing expert specializing in comprehensive test suites.
-      
+
       Always check existing test patterns and follow project conventions.
       Focus on testing behavior, edge cases, and integration scenarios.
       """,
