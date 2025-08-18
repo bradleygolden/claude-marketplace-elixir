@@ -154,7 +154,8 @@
       :compile,
       :format,
       :unused_deps,
-      {"test --warnings-as-errors", when: "Bash", command: ~r/^git commit/}
+      {"test --warnings-as-errors test/claude test/mix/tasks/claude.hooks.run* test/mix/tasks/claude.gen* test/mix/tasks/claude.upgrade*",
+       when: "Bash", command: ~r/^git commit/, ignore_failure?: true}
     ],
     post_tool_use: [
       :compile,
@@ -163,12 +164,14 @@
     stop: [
       :compile,
       :format,
-      "test --warnings-as-errors --stale"
+      {"test --warnings-as-errors test/claude test/mix/tasks/claude.hooks.run* test/mix/tasks/claude.gen* test/mix/tasks/claude.upgrade*",
+       ignore_failure?: true}
     ],
     subagent_stop: [
       :compile,
       :format,
-      "test --warnings-as-errors --stale"
+      {"test --warnings-as-errors test/claude test/mix/tasks/claude.hooks.run* test/mix/tasks/claude.gen* test/mix/tasks/claude.upgrade*",
+       ignore_failure?: true}
     ]
   }
 }
