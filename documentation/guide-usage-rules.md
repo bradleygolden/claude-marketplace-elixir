@@ -56,6 +56,28 @@ _Productive. Reliable. Fast._
 
 Claude Code reads this file at the start of every session, ensuring it follows these guidelines.
 
+## Nested Memories
+
+Claude supports distributing CLAUDE.md files across different directories in your project for context-specific guidance:
+
+```elixir
+%{
+  nested_memories: %{
+    "lib/my_app_web" => ["phoenix", "ash_phoenix"],
+    "lib/my_app/accounts" => ["ash"]
+  }
+}
+```
+
+This creates separate `CLAUDE.md` files in each directory with the relevant usage rules:
+- `lib/my_app_web/CLAUDE.md` - Phoenix and Ash Phoenix integration rules for web code
+- `lib/my_app/accounts/CLAUDE.md` - Ash framework rules for business logic
+
+Benefits of nested memories:
+- **Context-aware guidance** - Different rules for different parts of your codebase
+- **Reduced noise** - Claude only sees relevant rules for the current context
+- **Better organization** - Keep domain-specific guidance with the code
+
 ## Usage Rules in Sub-Agents
 
 Sub-agents can include specific usage rules to ensure they follow library best practices:

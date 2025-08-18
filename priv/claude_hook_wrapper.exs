@@ -42,9 +42,12 @@ defmodule ClaudeHookWrapper do
 
   defp check_and_install_deps() do
     case System.cmd("mix", ["deps"], stderr_to_stdout: true) do
-      {output, _} ->
+      {output, exit_code} ->
         needs_deps? =
-          String.contains?(output, "the dependency is not available, run \"mix deps.get\"") ||
+          String.contains?(output, "run \"mix deps.get\"") ||
+            String.contains?(output, "lock mismatch") ||
+            String.contains?(output, "Can't continue due to errors on dependencies") ||
+            exit_code != 0 ||
             not File.exists?("deps")
 
         if needs_deps? do
@@ -57,7 +60,7 @@ defmodule ClaudeHookWrapper do
             {output, _} ->
               IO.puts(:stderr, "Failed to install dependencies:")
               IO.puts(:stderr, output)
-              System.halt(1)
+              System.halt(2)
           end
         end
     end

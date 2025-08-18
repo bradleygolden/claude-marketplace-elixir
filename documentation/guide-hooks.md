@@ -97,6 +97,34 @@ You can mix atom shortcuts with explicit configurations:
   - `:none` - Only show pipeline summary on failures (prevents context overflow) **[Recommended]**
   - `:full` - Show complete hook output plus pipeline summary (use sparingly - can cause context issues)
 
+## Hook Event Reporting (Experimental)
+
+Claude supports sending hook events to external systems for monitoring and integration.
+
+### Webhook Reporter
+
+**Note: This feature is experimental and the API may change in future releases.**
+
+Send hook events to HTTP endpoints:
+
+```elixir
+%{
+  reporters: [
+    {:webhook,
+      url: "https://example.com/webhook",
+      headers: %{"Authorization" => "Bearer token"},
+      timeout: 5000,
+      retry_count: 3
+    }
+  ]
+}
+```
+
+The webhook reporter sends the raw Claude Code hook event data as JSON, including:
+- Event type and timestamp
+- Tool information (for tool-related events)
+- Session and project context
+
 ## How It Works
 
 1. **Configuration**: Define hooks in `.claude.exs` using atoms, strings, or tuples with options
@@ -105,6 +133,7 @@ You can mix atom shortcuts with explicit configurations:
 4. **Expansion**: The dispatcher reads `.claude.exs` and expands atoms to full commands
 5. **Running**: Commands execute as Mix tasks (default) or shell commands (with "cmd " prefix)
 6. **Communication**: Hooks return exit codes only (0 = success, non-zero = failure, no JSON output)
+7. **Reporting**: Events are dispatched to configured reporters for external integration
 
 ## Request a New Hook
 

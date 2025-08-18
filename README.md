@@ -56,6 +56,10 @@ end
 ### 🎯 **Smart Hooks**
 Automatically check formatting, catch compilation errors, validate commits, and more - with smart output handling that prevents context overflow.
 
+- **Output Control**: Choose between `:none` mode (summary only) or `:full` mode for detailed output
+- **Webhook Reporting (Experimental)**: Send hook events to external endpoints for monitoring and integration
+- **Automatic Dependency Management**: Auto-install missing dependencies during hook execution
+
 → See [Hooks Documentation](documentation/guide-hooks.md) for details and configuration.
 
 ### 🤖 **Sub-agents**
@@ -72,7 +76,20 @@ Integrate with Phoenix development tools via Tidewave. MCP servers are configure
 
 [Usage rules](https://hexdocs.pm/usage_rules) from your dependencies are automatically synced to `CLAUDE.md`, ensuring Claude follows library-specific best practices.
 
+- **Nested Memories**: Distribute CLAUDE.md files across different directories for context-specific guidance
+- **Embedded Documentation**: Usage rules are now embedded directly in CLAUDE.md for better visibility
+
 → See [Usage Rules Guide](documentation/guide-usage-rules.md) for how Claude integrates with usage rules.
+
+### 🛠️ **Bundled Commands**
+
+Pre-configured slash commands for common Elixir development tasks, automatically installed in `.claude/commands/`.
+
+- **Library Management**: `/claude:install`, `/claude:uninstall`, `/claude:config`
+- **Dependency Management**: `/mix:deps`, `/mix:deps-add`, `/mix:deps-upgrade`
+- **Nested Memories**: `/memory:nested-add`, `/memory:nested-sync`, `/memory:check`
+
+→ Type `/` in Claude Code to see all available commands.
 
 ## Installation
 
@@ -92,8 +109,9 @@ This will:
 2. Generate `.claude.exs` configuration file
 3. Configure hooks in `.claude/settings.json`
 4. Generate sub-agents in `.claude/agents/`
-5. Sync usage rules to `CLAUDE.md`
-6. Create `.mcp.json` for MCP servers (if configured)
+5. Install bundled slash commands in `.claude/commands/`
+6. Sync usage rules to `CLAUDE.md`
+7. Create `.mcp.json` for MCP servers (if configured)
 
 ## Configuration File
 
@@ -164,14 +182,19 @@ mix compile --warnings-as-errors
   - Multi-line prompt support
   - Automatic `.claude.exs` integration
 
+**Nested Memories**
+- Directory-specific CLAUDE.md files (e.g., `lib/my_app_web/CLAUDE.md` for Phoenix)
+- Configure via `nested_memories` in `.claude.exs`
+- Distribute context-specific usage rules across your codebase
+
+**Bundled Slash Commands**
+- `/claude:*` commands for library management (install, uninstall, config, status)
+- `/elixir:*` commands for version management and compatibility checks
+- `/memory:*` commands for nested memories management
+- `/mix:*` commands for dependency management
+- Auto-installed in `.claude/commands/` during `mix claude.install`
+
 ### 🚀 Coming Soon
-
-**Custom Slash Commands**
-- `/create-subagent` - Generate a new sub-agent with guided prompts (wraps mix task)
-- Auto-generate commands in `.claude/commands/` during installation
-
-**Scoped CLAUDE.md's**
-- Directory-specific instructions (e.g., `*_web/CLAUDE.md` for Phoenix)
 
 **More MCP Servers**
 - Database tools (PostgreSQL, MySQL, Redis)

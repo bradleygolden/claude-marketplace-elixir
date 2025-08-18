@@ -2,12 +2,6 @@
 
 Claude is an Elixir library that provides batteries-included Claude Code integration for Elixir projects. It automatically formats code, checks for compilation errors after Claude makes edits, and provides generators and tooling for deeply integrating Claude Code into your project.
 
-## What's New in v0.3.0
-
-- **Mix Task Generator**: `mix claude.gen.subagent` for creating sub-agents
-- **Atom-based Hooks**: Simple atom shortcuts that expand to full configurations
-- **Single Dispatcher System**: Efficient hook execution via `mix claude.hooks.run`
-
 ## Installation
 
 Claude only supports Igniter installation:
@@ -61,7 +55,7 @@ The default `.claude.exs` includes these hooks:
 %{
   hooks: %{
     stop: [:compile, :format],
-    subagent_stop: [:compile, :format], 
+    subagent_stop: [:compile, :format],
     post_tool_use: [:compile, :format],
     # These only run on git commit commands
     pre_tool_use: [:compile, :format, :unused_deps]
@@ -129,7 +123,35 @@ When you run `mix claude.install`, this configuration is automatically written t
 
 **Note**: While only Tidewave is officially supported through the installer, you can manually add other MCP servers to `.mcp.json` following the Claude Code documentation.
 
-## Sub-agents (v0.3.0+)
+## Bundled Slash Commands
+
+Claude includes pre-configured slash commands that are automatically installed in `.claude/commands/` when you run `mix claude.install`:
+
+### Available Commands
+
+- **Claude Library Management**: `/claude:install`, `/claude:uninstall`, `/claude:config`, `/claude:status`
+- **Dependency Management**: `/mix:deps`, `/mix:deps-add`, `/mix:deps-remove`, `/mix:deps-upgrade`
+- **Nested Memories**: `/memory:nested-add`, `/memory:nested-list`, `/memory:nested-remove`, `/memory:nested-sync`
+- **Elixir Version**: `/elixir:version-check`, `/elixir:compatibility`, `/elixir:upgrade`
+
+Type `/` in Claude Code to see all available commands with descriptions.
+
+## Nested Memories
+
+Distribute CLAUDE.md files across different directories in your project for context-specific guidance:
+
+```elixir
+%{
+  nested_memories: %{
+    "lib/my_app_web" => ["phoenix", "ash_phoenix"],
+    "lib/my_app/accounts" => ["ash"]
+  }
+}
+```
+
+This creates separate `CLAUDE.md` files in each directory with the relevant usage rules, reducing cognitive load for Claude by providing only the context needed for that part of your codebase.
+
+## Sub-agents
 
 Claude supports creating specialized AI assistants (sub-agents) for your project with built-in best practices.
 
@@ -143,7 +165,7 @@ mix claude.gen.subagent
 
 This will prompt you for:
 - Name and description
-- Tool permissions 
+- Tool permissions
 - System prompt
 - Usage rules integration
 
@@ -165,11 +187,11 @@ You can also configure sub-agents manually in `.claude.exs`:
 %{
   subagents: [
     %{
-      name: "Database Expert", 
+      name: "Database Expert",
       description: "MUST BE USED for Ecto migrations and database schema changes. Expert in database design.",
       prompt: """
       You are a database and Ecto expert specializing in migrations and schema design.
-      
+
       Always check existing migration files and schemas before making changes.
       Follow Ecto best practices for data integrity and performance.
       """,
@@ -192,13 +214,16 @@ the `.claude` directory for use by Claude Code.
 ```elixir
 # .claude.exs - Claude configuration for this project
 %{
+  # Optionally enable auto-installation of dependencies
+  auto_install_deps?: true,
+
   # Hook configuration using atom shortcuts
   hooks: %{
-    stop: [:compile, :format],
-    subagent_stop: [:compile, :format],
+    stop: [:compile, :format, "test --warnings-as-errors --stale"],
+    subagent_stop: [:compile, :format, "test --warnings-as-errors --stale"],
     post_tool_use: [:compile, :format],
     # Only run on git commit commands
-    pre_tool_use: [:compile, :format, :unused_deps]
+    pre_tool_use: [:compile, :format, :unused_deps, {"test --warnings-as-errors", when: "Bash", command: ~r/^git commit/}]
   },
 
   # MCP servers configuration
@@ -214,7 +239,7 @@ the `.claude` directory for use by Claude Code.
       description: "MUST BE USED for ExUnit testing and test file generation. Expert in test patterns.",
       prompt: """
       You are an ExUnit testing expert specializing in comprehensive test suites.
-      
+
       Always check existing test patterns and follow project conventions.
       Focus on testing behavior, edge cases, and integration scenarios.
       """,
