@@ -277,7 +277,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Verify the .claude.exs file is unchanged
       assert_unchanged(igniter, ".claude.exs")
     end
 
@@ -342,11 +341,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Verify subagent files are created
       assert_creates(igniter, ".claude/agents/ecto-expert.md")
       assert_creates(igniter, ".claude/agents/phoenix-specialist.md")
 
-      # Verify notice about generated subagents
       assert Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "Generated 2 subagent(s)")
              end)
@@ -370,7 +367,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should have a warning about failed subagent generation
       assert Enum.any?(igniter.warnings, fn warning ->
                String.contains?(warning, "Failed to generate some subagents")
              end)
@@ -428,15 +424,12 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Get the generated content
       source = Rewrite.source!(igniter.rewrite, ".claude/agents/test-agent.md")
       content = Rewrite.Source.get(source, :content)
 
-      # Verify YAML frontmatter format
       assert content =~
                ~r/^---\nname: test-agent\ndescription: A test agent for verification\ntools: Read, Grep\n---\n\n/
 
-      # Verify the prompt is included after the frontmatter
       assert content =~ "You are a test agent that helps with testing."
     end
 
@@ -459,11 +452,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Get the generated content
       source = Rewrite.source!(igniter.rewrite, ".claude/agents/no-tools-agent.md")
       content = Rewrite.Source.get(source, :content)
 
-      # Verify YAML frontmatter format without tools line
       assert content =~
                ~r/^---\nname: no-tools-agent\ndescription: An agent with no tool restrictions\n---\n\n/
 
@@ -471,7 +462,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
 
     test "generates subagents with usage_rules when specified" do
-      # Create temporary test file
       File.mkdir_p!("deps/ash")
 
       File.write!(
@@ -512,7 +502,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
 
     test "handles multiple usage_rules for subagents" do
-      # Create temporary test files
       File.mkdir_p!("deps/ash")
       File.mkdir_p!("deps/phoenix")
       File.write!("deps/ash/usage-rules.md", "# Ash Rules\n\nAsh content.")
@@ -555,7 +544,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
 
     test "handles string-based usage_rules with sub-rules" do
-      # Create temporary test files
       File.mkdir_p!("deps/ash/usage-rules")
 
       File.write!(
@@ -780,7 +768,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Check that tidewave configuration notice with custom port is shown
       assert Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "Tidewave MCP server has been configured") &&
                  String.contains?(notice, "http://localhost:5000/tidewave/mcp")
@@ -856,7 +843,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Should create default files
       assert_creates(igniter, ".claude.exs")
       assert_creates(igniter, ".claude/settings.json")
     end
@@ -886,7 +872,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Check that the file will be updated
       assert Igniter.changed?(igniter, ".claude/settings.json")
     end
 
@@ -899,10 +884,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should overwrite with valid JSON
       apply_igniter!(igniter)
 
-      # Should be able to parse the result
       assert {:ok, settings} = File.read!(".claude/settings.json") |> Jason.decode()
       assert Map.has_key?(settings, "hooks")
     end
@@ -917,7 +900,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Check the dependency is added correctly
       assert_has_patch(igniter, "mix.exs", """
         23 23   |    [
            24 + |      {:usage_rules, "~> 0.1", only: [:dev]}
@@ -953,7 +935,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should not modify the existing dependency
       refute Igniter.changed?(igniter, "mix.exs")
     end
   end
