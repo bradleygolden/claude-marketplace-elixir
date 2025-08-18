@@ -23,7 +23,7 @@ defmodule Claude do
       # Or add to your dependencies
       def deps do
         [
-          {:claude, "~> 0.2.0", only: :dev, runtime: false}
+          {:claude, "~> 0.4.0", only: :dev, runtime: false}
         ]
       end
 
