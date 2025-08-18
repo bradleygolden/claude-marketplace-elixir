@@ -942,8 +942,13 @@ defmodule Mix.Tasks.Claude.Install do
 
       rules when is_list(rules) ->
         usage_rules_content = load_usage_rules(rules)
-        enhanced_prompt = config.prompt <> "\n\n## Usage Rules\n\n" <> usage_rules_content
-        {:ok, enhanced_prompt}
+
+        if usage_rules_content == "" do
+          {:ok, config.prompt}
+        else
+          enhanced_prompt = config.prompt <> "\n\n## Usage Rules\n\n" <> usage_rules_content
+          {:ok, enhanced_prompt}
+        end
 
       _ ->
         {:error, "usage_rules must be a list"}
@@ -958,7 +963,6 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp load_single_usage_rule(rule) when is_atom(rule) do
-    # Look for deps/package_name/usage-rules.md
     path = Path.join(["deps", Atom.to_string(rule), "usage-rules.md"])
 
     case File.read(path) do
@@ -970,11 +974,9 @@ defmodule Mix.Tasks.Claude.Install do
   defp load_single_usage_rule(rule) when is_binary(rule) do
     case String.split(rule, ":", parts: 2) do
       [package] ->
-        # Same as atom version
         load_single_usage_rule(String.to_atom(package))
 
       [package, "all"] ->
-        # Load all usage-rules files in the package
         deps_path = Path.join("deps", package)
         usage_rules_path = Path.join(deps_path, "usage-rules")
 
@@ -997,7 +999,6 @@ defmodule Mix.Tasks.Claude.Install do
         end
 
       [package, sub_rule] ->
-        # Load specific sub-rule
         path = Path.join(["deps", package, "usage-rules", "#{sub_rule}.md"])
 
         case File.read(path) do
