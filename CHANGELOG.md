@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.0] - 2025-08-16
+## [0.4.0] - 2025-08-18
 
 ### Added
 - New `:output` option for hooks to control output verbosity (defaults to `:none`)
