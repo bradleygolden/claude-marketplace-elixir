@@ -143,8 +143,7 @@
 
       CRITICAL: The subagent name MUST be lowercase-hyphen-separated (e.g., "test-runner", NOT "Test Runner" or "test_runner")
       """,
-      tools: [:write, :read, :edit, :multi_edit, :bash, :web_search],
-      usage_rules: ["claude:all"]
+      tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
     }
   ],
   nested_memories: %{
@@ -155,8 +154,7 @@
       :compile,
       :format,
       :unused_deps,
-      {"test --warnings-as-errors test/claude test/mix/tasks/claude.hooks.run* test/mix/tasks/claude.gen* test/mix/tasks/claude.upgrade*",
-       when: "Bash", command: ~r/^git commit/, ignore_failure?: true}
+      {"test --warnings-as-errors", when: "Bash", command: ~r/^git commit/}
     ],
     post_tool_use: [
       :compile,
@@ -165,14 +163,12 @@
     stop: [
       :compile,
       :format,
-      {"test --warnings-as-errors test/claude test/mix/tasks/claude.hooks.run* test/mix/tasks/claude.gen* test/mix/tasks/claude.upgrade*",
-       ignore_failure?: true}
+      "test --warnings-as-errors --stale"
     ],
     subagent_stop: [
       :compile,
       :format,
-      {"test --warnings-as-errors test/claude test/mix/tasks/claude.hooks.run* test/mix/tasks/claude.gen* test/mix/tasks/claude.upgrade*",
-       ignore_failure?: true}
+      "test --warnings-as-errors --stale"
     ]
   }
 }

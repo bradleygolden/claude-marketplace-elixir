@@ -140,6 +140,3 @@ Your response should:
 5. Confirm that `mix claude.install` was run successfully
 
 CRITICAL: The subagent name MUST be lowercase-hyphen-separated (e.g., "test-runner", NOT "Test Runner" or "test_runner")
-
-
-## Usage Rules
