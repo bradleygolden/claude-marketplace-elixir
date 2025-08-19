@@ -1,7 +1,7 @@
 defmodule Claude.MixProject do
   use Mix.Project
 
-  @version "0.4.0"
+  @version "0.5.0"
   @elixir_version "~> 1.18"
   @description "Batteries-included Claude Code integration for Elixir projects"
 

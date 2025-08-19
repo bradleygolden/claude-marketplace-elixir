@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-08-19
+
+### Changed
+
+**BREAKING CHANGE**: Root CLAUDE.md now uses reference links to usage rules instead of inlining content
+
+- Previously was a little overzealous pulling in all context into CLAUDE.md which resulted in this error: ⚠ Large CLAUDE.md will impact performance (...k chars > 40.0k)
+- Root CLAUDE.md now contains links to usage rules in `deps/` instead of inlining full content
+- Nested memory CLAUDE.md files continue to inline usage rules for focused context-specific guidance
+- Existing projects will get the optimized format on next `mix claude.install`
+
 ## [0.4.0] - 2025-08-18
 
 ### Added

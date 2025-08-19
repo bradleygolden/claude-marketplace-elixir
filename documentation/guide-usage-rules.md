@@ -21,18 +21,18 @@ This ensures Claude Code follows the exact patterns and conventions that library
 When you run `mix claude.install`, Claude automatically runs:
 
 ```bash
-mix usage_rules.sync CLAUDE.md --all --inline usage_rules:all --link-to-folder deps
+mix usage_rules.sync CLAUDE.md --all --link-to-folder deps
 ```
 
 This command:
 - Gathers usage rules from all dependencies that provide them
-- Adds them inline to your `CLAUDE.md` file
-- Creates links to the source files in `deps/`
-- Ensures Claude Code always has access to current best practices
+- Creates links to the usage rules files in `deps/` instead of inlining content
+- Keeps your root `CLAUDE.md` file lean and reduces context window usage
+- Ensures Claude Code always has access to current best practices when needed
 
 ### In Your CLAUDE.md
 
-After installation, your `CLAUDE.md` will contain sections like:
+After installation, your `CLAUDE.md` will contain links to usage rules instead of full content:
 
 ```markdown
 ## ash usage
@@ -45,16 +45,13 @@ _Productive. Reliable. Fast._
 
 [phoenix usage rules](deps/phoenix/usage-rules.md)
 
-## usage_rules:elixir usage
-# Elixir Core Usage Rules
+## usage_rules usage
+_A dev tool for Elixir projects to gather LLM usage rules from dependencies_
 
-## Pattern Matching
-- Use pattern matching over conditional logic when possible
-- Prefer to match on function heads instead of using `if`/`else`
-...
+[usage_rules usage rules](deps/usage_rules/usage-rules.md)
 ```
 
-Claude Code reads this file at the start of every session, ensuring it follows these guidelines.
+This keeps the root CLAUDE.md file lean while Claude Code can still access the full usage rules when needed. For core Elixir rules and critical guidelines that are frequently referenced, some packages may still be inlined.
 
 ## Nested Memories
 
@@ -69,12 +66,13 @@ Claude supports distributing CLAUDE.md files across different directories in you
 }
 ```
 
-This creates separate `CLAUDE.md` files in each directory with the relevant usage rules:
-- `lib/my_app_web/CLAUDE.md` - Phoenix and Ash Phoenix integration rules for web code
-- `lib/my_app/accounts/CLAUDE.md` - Ash framework rules for business logic
+This creates separate `CLAUDE.md` files in each directory with the relevant usage rules inlined for focused context:
+- `lib/my_app_web/CLAUDE.md` - Phoenix and Ash Phoenix integration rules for web code (inlined)
+- `lib/my_app/accounts/CLAUDE.md` - Ash framework rules for business logic (inlined)
 
 Benefits of nested memories:
 - **Context-aware guidance** - Different rules for different parts of your codebase
+- **Inlined for focus** - Nested memory files have rules inlined since they're context-specific
 - **Reduced noise** - Claude only sees relevant rules for the current context
 - **Better organization** - Keep domain-specific guidance with the code
 
