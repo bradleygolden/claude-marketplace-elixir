@@ -244,33 +244,33 @@ _A code generation and project patching framework_
 <!-- documentation-references-start -->
 ## Documentation References
 
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-hooks-md:start -->
-- [Claude Code Hooks Reference](https://docs.anthropic.com/en/docs/claude-code/hooks.md)
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-hooks-md:end -->
+<!-- doc-ref:ai-claude-code-hooks-reference-md:start -->
+- [Claude Code Hooks Reference](./ai/claude_code/hooks_reference.md)
+<!-- doc-ref:ai-claude-code-hooks-reference-md:end -->
 
 
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-slash-commands-md:start -->
-- [Claude Code Slash Commands](https://docs.anthropic.com/en/docs/claude-code/slash-commands.md)
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-slash-commands-md:end -->
+<!-- doc-ref:ai-claude-code-slash-commands-md:start -->
+- [Claude Code Slash Commands](./ai/claude_code/slash_commands.md)
+<!-- doc-ref:ai-claude-code-slash-commands-md:end -->
 
 
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-sub-agents-md:start -->
-- [Claude Code Subagents](https://docs.anthropic.com/en/docs/claude-code/sub-agents.md)
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-sub-agents-md:end -->
+<!-- doc-ref:ai-claude-code-sub-agents-md:start -->
+- [Claude Code Subagents](./ai/claude_code/sub-agents.md)
+<!-- doc-ref:ai-claude-code-sub-agents-md:end -->
 
 
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-hooks-guide-md:start -->
-- [Claude Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks-guide.md)
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-hooks-guide-md:end -->
+<!-- doc-ref:ai-claude-code-hooks-guide-md:start -->
+- [Claude Code Hooks Guide](./ai/claude_code/hooks_guide.md)
+<!-- doc-ref:ai-claude-code-hooks-guide-md:end -->
 
 
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-memory-md:start -->
-- [Claude Code Memory Configuration](https://docs.anthropic.com/en/docs/claude-code/memory.md)
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-memory-md:end -->
+<!-- doc-ref:ai-claude-code-memory-md:start -->
+- [Claude Code Memory Configuration](./ai/claude_code/memory.md)
+<!-- doc-ref:ai-claude-code-memory-md:end -->
 
 
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-settings-md:start -->
-- [Claude Code Settings Configuration](https://docs.anthropic.com/en/docs/claude-code/settings.md)
-<!-- doc-ref:docs-anthropic-com-en-docs-claude-code-settings-md:end -->
+<!-- doc-ref:ai-claude-code-settings-md:start -->
+- [Claude Code Settings Configuration](./ai/claude_code/settings.md)
+<!-- doc-ref:ai-claude-code-settings-md:end -->
 
 <!-- documentation-references-end -->

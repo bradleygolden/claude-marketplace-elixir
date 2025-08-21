@@ -6,7 +6,7 @@ defmodule Claude.Documentation.Processor do
   and removing orphaned blocks when configuration changes.
   """
 
-  alias Claude.Documentation.{Fetcher, Cache, References}
+  alias Claude.Documentation.{Fetcher, Cache}
 
   @doc """
   Processes documentation references and updates the content accordingly.
@@ -20,13 +20,9 @@ defmodule Claude.Documentation.Processor do
     updated_blocks = update_blocks(existing_blocks, doc_refs)
     _orphaned_blocks = find_orphaned_blocks(existing_blocks, doc_refs)
 
-    updated_content =
-      content
-      |> remove_documentation_section()
-      |> append_documentation_section(updated_blocks)
-
-    # Process @references in the final content
-    process_at_references(updated_content)
+    content
+    |> remove_documentation_section()
+    |> append_documentation_section(updated_blocks)
   end
 
   @doc """
@@ -188,23 +184,12 @@ defmodule Claude.Documentation.Processor do
     """
   end
 
-  defp process_at_references(content) do
-    try do
-      References.process_references(content, mode: :link)
-    rescue
-      _ ->
-        # If reference processing fails, return content unchanged
-        # This ensures the system is robust even if some references are broken
-        content
-    end
-  end
-
-  defp build_file_block(path, name) do
+  defp build_file_block(path, _name) do
     doc_id = generate_file_doc_id(path)
 
     """
     <!-- doc-ref:#{doc_id}:start -->
-    - [#{name}](#{Cache.resolve_reference(path)})
+    - #{path}
     <!-- doc-ref:#{doc_id}:end -->
     """
   end

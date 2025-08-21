@@ -52,10 +52,10 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       assert root_content =~ "## Documentation References"
 
       # Should have file reference blocks
-      assert root_content =~ "- [Architecture Guide](docs/architecture.md)"
+      assert root_content =~ "- @docs/architecture.md"
 
       # Should have cached URL converted to @reference (now points to local file)
-      assert root_content =~ "- [Example Docs](.claude/docs/example.md)"
+      assert root_content =~ "- @.claude/docs/example.md"
 
       # Test @references processing separately with sample content
       arch_content = """
@@ -82,7 +82,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       {:ok, lib_source} = Rewrite.source(result.rewrite, "lib/CLAUDE.md")
       lib_content = Rewrite.Source.get(lib_source, :content)
 
-      assert lib_content =~ "- [Implementation Details](docs/implementation.md)"
+      assert lib_content =~ "- @docs/implementation.md"
     end
 
     test "handles mixed usage rules and file references" do
@@ -123,7 +123,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       test_content = Rewrite.Source.get(test_source, :content)
 
       assert test_content =~ "<!-- documentation-references-start -->"
-      assert test_content =~ "- [Testing Guide](docs/testing.md)"
+      assert test_content =~ "- @docs/testing.md"
     end
 
     test "validates file references exist" do
@@ -193,7 +193,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       assert root_content =~ "## Documentation References"
 
       # Should reference the cached file (not the original URL) because cache was specified
-      assert root_content =~ "- [User Guide](.claude/docs/guide.md)"
+      assert root_content =~ "- @.claude/docs/guide.md"
       # Should NOT contain the original URL
       refute root_content =~ "https://example.com/guide.md"
 
@@ -203,6 +203,44 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       assert cached_content =~ "# User Guide"
       # Source URL in metadata
       assert cached_content =~ "https://example.com/guide.md"
+    end
+
+    test "cache without 'as' clause automatically becomes @reference with auto-generated name" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              nested_memories: %{
+                "." => [
+                  {:url, "https://example.com/api-reference.md", cache: ".claude/docs/api.md"}
+                ]
+              }
+            }
+            """
+          }
+        )
+
+      # Mock the Fetcher for URL caching
+      Mimic.copy(Claude.Documentation.Fetcher)
+
+      Mimic.stub(Claude.Documentation.Fetcher, :fetch_url!, fn _url ->
+        "# API Reference\\n\\nAPI documentation here."
+      end)
+
+      result = Claude.NestedMemories.generate(igniter)
+
+      # Check that root CLAUDE.md was processed
+      {:ok, root_source} = Rewrite.source(result.rewrite, "CLAUDE.md")
+      root_content = Rewrite.Source.get(root_source, :content)
+
+      # Should reference the cached file with auto-generated name from URL
+      assert root_content =~ "- @.claude/docs/api.md"
+      # Should NOT contain the original URL
+      refute root_content =~ "https://example.com/api-reference.md"
+
+      # Verify the cache file was created
+      assert File.exists?(".claude/docs/api.md")
     end
   end
 end
