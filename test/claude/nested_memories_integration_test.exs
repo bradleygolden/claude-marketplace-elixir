@@ -2,7 +2,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
   use Claude.ClaudeCodeCase
 
   describe "integration with new @reference and cache functionality" do
-    test "processes file references and caches URLs" do
+    test "automatically converts cached URLs to @references" do
       igniter =
         test_project(
           files: %{
@@ -54,8 +54,8 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       # Should have file reference blocks
       assert root_content =~ "- [Architecture Guide](docs/architecture.md)"
 
-      # Should have cached URL reference
-      assert root_content =~ "- [Example Docs](https://example.com/docs.md)"
+      # Should have cached URL converted to @reference (now points to local file)
+      assert root_content =~ "- [Example Docs](.claude/docs/example.md)"
 
       # Test @references processing separately with sample content
       arch_content = """
@@ -157,6 +157,52 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       assert processed =~ "[A](#{file_a})"
 
       File.rm_rf!(temp_dir)
+    end
+
+    test "URL with cache automatically becomes @reference" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              nested_memories: %{
+                "." => [
+                  {:url, "https://example.com/guide.md", cache: ".claude/docs/guide.md", as: "User Guide"}
+                ]
+              }
+            }
+            """
+          }
+        )
+
+      # Mock the Fetcher for URL caching
+      Mimic.copy(Claude.Documentation.Fetcher)
+
+      Mimic.stub(Claude.Documentation.Fetcher, :fetch_url!, fn _url ->
+        "# User Guide\\n\\nThis is the cached guide content."
+      end)
+
+      result = Claude.NestedMemories.generate(igniter)
+
+      # Check that root CLAUDE.md was processed
+      {:ok, root_source} = Rewrite.source(result.rewrite, "CLAUDE.md")
+      root_content = Rewrite.Source.get(root_source, :content)
+
+      # Should contain documentation references
+      assert root_content =~ "<!-- documentation-references-start -->"
+      assert root_content =~ "## Documentation References"
+
+      # Should reference the cached file (not the original URL) because cache was specified
+      assert root_content =~ "- [User Guide](.claude/docs/guide.md)"
+      # Should NOT contain the original URL
+      refute root_content =~ "https://example.com/guide.md"
+
+      # Verify the cache file was created
+      assert File.exists?(".claude/docs/guide.md")
+      cached_content = File.read!(".claude/docs/guide.md")
+      assert cached_content =~ "# User Guide"
+      # Source URL in metadata
+      assert cached_content =~ "https://example.com/guide.md"
     end
   end
 end

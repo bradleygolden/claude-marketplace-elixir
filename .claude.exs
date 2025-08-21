@@ -149,7 +149,7 @@
   nested_memories: %{
     "." => [
       {:url, "https://docs.anthropic.com/en/docs/claude-code/hooks.md",
-       as: "Claude Code Hooks Reference"},
+       as: "Claude Code Hooks Reference", cache: "./ai/claude-code/hooks_reference.md"},
       {:url, "https://docs.anthropic.com/en/docs/claude-code/slash-commands.md",
        as: "Claude Code Slash Commands"},
       {:url, "https://docs.anthropic.com/en/docs/claude-code/sub-agents.md",

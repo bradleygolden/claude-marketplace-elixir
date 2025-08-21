@@ -84,25 +84,29 @@ defmodule Claude.Documentation.Processor do
     # Handle caching if cache path is specified
     if cache_path do
       Cache.cache_url!(url, cache_path)
-    end
 
-    if inline do
-      doc_id = Fetcher.generate_doc_id(url)
-
-      # Check if we already have content for this block
-      case Map.get(existing_blocks, doc_id) do
-        nil ->
-          # Fetch new content
-          content = Fetcher.fetch_url!(url)
-          Fetcher.build_doc_block(url, name, inline: true, content: content)
-
-        _existing_content ->
-          # Re-fetch content to ensure it's up to date
-          content = Fetcher.fetch_url!(url)
-          Fetcher.build_doc_block(url, name, inline: true, content: content)
-      end
+      # Automatically create @reference to the cached file instead of URL link
+      build_file_block("@" <> cache_path, name)
     else
-      Fetcher.build_doc_block(url, name)
+      # No caching, use regular URL handling
+      if inline do
+        doc_id = Fetcher.generate_doc_id(url)
+
+        # Check if we already have content for this block
+        case Map.get(existing_blocks, doc_id) do
+          nil ->
+            # Fetch new content
+            content = Fetcher.fetch_url!(url)
+            Fetcher.build_doc_block(url, name, inline: true, content: content)
+
+          _existing_content ->
+            # Re-fetch content to ensure it's up to date
+            content = Fetcher.fetch_url!(url)
+            Fetcher.build_doc_block(url, name, inline: true, content: content)
+        end
+      else
+        Fetcher.build_doc_block(url, name)
+      end
     end
   end
 
