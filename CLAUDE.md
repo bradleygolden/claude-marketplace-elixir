@@ -245,32 +245,32 @@ _A code generation and project patching framework_
 ## Documentation References
 
 <!-- doc-ref:ai-claude-code-hooks-reference-md:start -->
-- [Claude Code Hooks Reference](./ai/claude_code/hooks_reference.md)
+- @./ai/claude_code/hooks_reference.md
 <!-- doc-ref:ai-claude-code-hooks-reference-md:end -->
 
 
 <!-- doc-ref:ai-claude-code-slash-commands-md:start -->
-- [Claude Code Slash Commands](./ai/claude_code/slash_commands.md)
+- @./ai/claude_code/slash_commands.md
 <!-- doc-ref:ai-claude-code-slash-commands-md:end -->
 
 
 <!-- doc-ref:ai-claude-code-sub-agents-md:start -->
-- [Claude Code Subagents](./ai/claude_code/sub-agents.md)
+- @./ai/claude_code/sub-agents.md
 <!-- doc-ref:ai-claude-code-sub-agents-md:end -->
 
 
 <!-- doc-ref:ai-claude-code-hooks-guide-md:start -->
-- [Claude Code Hooks Guide](./ai/claude_code/hooks_guide.md)
+- @./ai/claude_code/hooks_guide.md
 <!-- doc-ref:ai-claude-code-hooks-guide-md:end -->
 
 
 <!-- doc-ref:ai-claude-code-memory-md:start -->
-- [Claude Code Memory Configuration](./ai/claude_code/memory.md)
+- @./ai/claude_code/memory.md
 <!-- doc-ref:ai-claude-code-memory-md:end -->
 
 
 <!-- doc-ref:ai-claude-code-settings-md:start -->
-- [Claude Code Settings Configuration](./ai/claude_code/settings.md)
+- @./ai/claude_code/settings.md
 <!-- doc-ref:ai-claude-code-settings-md:end -->
 
 <!-- documentation-references-end -->

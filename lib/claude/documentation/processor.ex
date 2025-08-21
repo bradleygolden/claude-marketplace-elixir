@@ -31,7 +31,6 @@ defmodule Claude.Documentation.Processor do
   Returns a map where keys are doc IDs and values are the full block content.
   """
   def extract_existing_blocks(content) do
-    # Pattern to match doc-ref blocks: <!-- doc-ref:id:start --> ... <!-- doc-ref:id:end -->
     pattern = ~r/<!-- doc-ref:([^:]+):start -->(.*?)<!-- doc-ref:\1:end -->/s
 
     Regex.scan(pattern, content)
@@ -77,26 +76,20 @@ defmodule Claude.Documentation.Processor do
     inline = Keyword.get(opts, :inline, false)
     cache_path = Keyword.get(opts, :cache)
 
-    # Handle caching if cache path is specified
     if cache_path do
       Cache.cache_url!(url, cache_path)
 
-      # Automatically create @reference to the cached file instead of URL link
       build_file_block("@" <> cache_path, name)
     else
-      # No caching, use regular URL handling
       if inline do
         doc_id = Fetcher.generate_doc_id(url)
 
-        # Check if we already have content for this block
         case Map.get(existing_blocks, doc_id) do
           nil ->
-            # Fetch new content
             content = Fetcher.fetch_url!(url)
             Fetcher.build_doc_block(url, name, inline: true, content: content)
 
           _existing_content ->
-            # Re-fetch content to ensure it's up to date
             content = Fetcher.fetch_url!(url)
             Fetcher.build_doc_block(url, name, inline: true, content: content)
         end
@@ -148,7 +141,6 @@ defmodule Claude.Documentation.Processor do
   end
 
   defp remove_documentation_section(content) do
-    # Remove the entire documentation-references section
     content
     |> String.replace(
       ~r/<!-- documentation-references-start -->.*<!-- documentation-references-end -->/s,
@@ -158,7 +150,6 @@ defmodule Claude.Documentation.Processor do
   end
 
   defp append_documentation_section(content, []) do
-    # No documentation blocks to add
     content
   end
 

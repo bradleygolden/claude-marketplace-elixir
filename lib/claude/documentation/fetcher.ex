@@ -114,14 +114,12 @@ defmodule Claude.Documentation.Fetcher do
   end
 
   defp ensure_initialized! do
-    # Check if we've already initialized in this session
     case Process.get(:claude_pythonx_initialized) do
       true ->
         :ok
 
       _ ->
         try do
-          # Start the Pythonx application if not already started
           case Application.ensure_all_started(:pythonx) do
             {:ok, _} -> :ok
             {:error, reason} -> raise "Failed to start Pythonx application: #{inspect(reason)}"
@@ -147,7 +145,6 @@ defmodule Claude.Documentation.Fetcher do
     md = MarkItDown()
 
     try:
-        # Ensure url is a string, not bytes
         url_str = url.decode('utf-8') if isinstance(url, bytes) else str(url)
         result = md.convert(url_str)
         if result and hasattr(result, 'text_content'):
