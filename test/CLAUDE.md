@@ -91,3 +91,10 @@ usage rules to understand the correct patterns, conventions, and best practices.
 
 <!-- usage_rules:otp-end -->
 <!-- usage-rules-end -->
+
+<!-- documentation-references-start -->
+## Documentation References
+
+- [ExUnit Documentation](https://hexdocs.pm/ex_unit/ExUnit.html)
+- [Mimic Mocking Library](https://github.com/edgurgel/mimic)
+<!-- documentation-references-end -->

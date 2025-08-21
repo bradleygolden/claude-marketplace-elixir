@@ -147,7 +147,20 @@
     }
   ],
   nested_memories: %{
-    "test" => ["usage_rules:elixir", "usage_rules:otp"]
+    "." => [
+      {:url, "https://docs.anthropic.com/en/docs/claude-code/hooks.md",
+       as: "Claude Code Hooks Reference"},
+      {:url, "https://docs.anthropic.com/en/docs/claude-code/slash-commands.md",
+       as: "Claude Code Slash Commands"},
+      {:url, "https://docs.anthropic.com/en/docs/claude-code/sub-agents.md",
+       as: "Claude Code Subagents"},
+      {:url, "https://docs.anthropic.com/en/docs/claude-code/hooks-guide.md",
+       as: "Claude Code Hooks Guide"}
+    ],
+    "test" => [
+      "usage_rules:elixir",
+      "usage_rules:otp"
+    ]
   },
   hooks: %{
     pre_tool_use: [
