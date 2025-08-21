@@ -2,7 +2,19 @@ defmodule Claude.NestedMemoriesIntegrationTest do
   use Claude.ClaudeCodeCase
 
   describe "integration with new @reference and cache functionality" do
-    test "automatically converts cached URLs to @references" do
+    setup do
+      cache_dir =
+        System.tmp_dir!()
+        |> Path.join("nested_memories_test_#{System.unique_integer([:positive])}")
+
+      File.mkdir_p!(cache_dir)
+
+      on_exit(fn -> File.rm_rf!(cache_dir) end)
+
+      %{cache_dir: cache_dir}
+    end
+
+    test "automatically converts cached URLs to @references", %{cache_dir: cache_dir} do
       igniter =
         test_project(
           files: %{
@@ -10,7 +22,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
             %{
               nested_memories: %{
                 "." => [
-                  {:url, "https://example.com/docs.md", as: "Example Docs", cache: ".claude/docs/example.md"},
+                  {:url, "https://example.com/docs.md", as: "Example Docs", cache: "#{cache_dir}/.claude/docs/example.md"},
                   {:file, "@docs/architecture.md", as: "Architecture Guide"}
                 ],
                 "lib" => [
@@ -55,7 +67,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       assert root_content =~ "- @docs/architecture.md"
 
       # Should have cached URL converted to @reference (now points to local file)
-      assert root_content =~ "- @.claude/docs/example.md"
+      assert root_content =~ "- @#{cache_dir}/.claude/docs/example.md"
 
       # Test @references processing separately with sample content
       arch_content = """
@@ -85,7 +97,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       assert lib_content =~ "- @docs/implementation.md"
     end
 
-    test "handles mixed usage rules and file references" do
+    test "handles mixed usage rules and file references", %{cache_dir: _cache_dir} do
       igniter =
         test_project(
           files: %{
@@ -159,7 +171,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       File.rm_rf!(temp_dir)
     end
 
-    test "URL with cache automatically becomes @reference" do
+    test "URL with cache automatically becomes @reference", %{cache_dir: cache_dir} do
       igniter =
         test_project(
           files: %{
@@ -167,7 +179,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
             %{
               nested_memories: %{
                 "." => [
-                  {:url, "https://example.com/guide.md", cache: ".claude/docs/guide.md", as: "User Guide"}
+                  {:url, "https://example.com/guide.md", cache: "#{cache_dir}/.claude/docs/guide.md", as: "User Guide"}
                 ]
               }
             }
@@ -193,19 +205,21 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       assert root_content =~ "## Documentation References"
 
       # Should reference the cached file (not the original URL) because cache was specified
-      assert root_content =~ "- @.claude/docs/guide.md"
+      assert root_content =~ "- @#{cache_dir}/.claude/docs/guide.md"
       # Should NOT contain the original URL
       refute root_content =~ "https://example.com/guide.md"
 
       # Verify the cache file was created
-      assert File.exists?(".claude/docs/guide.md")
-      cached_content = File.read!(".claude/docs/guide.md")
+      assert File.exists?("#{cache_dir}/.claude/docs/guide.md")
+      cached_content = File.read!("#{cache_dir}/.claude/docs/guide.md")
       assert cached_content =~ "# User Guide"
       # Source URL in metadata
       assert cached_content =~ "https://example.com/guide.md"
     end
 
-    test "cache without 'as' clause automatically becomes @reference with auto-generated name" do
+    test "cache without 'as' clause automatically becomes @reference with auto-generated name", %{
+      cache_dir: cache_dir
+    } do
       igniter =
         test_project(
           files: %{
@@ -213,7 +227,7 @@ defmodule Claude.NestedMemoriesIntegrationTest do
             %{
               nested_memories: %{
                 "." => [
-                  {:url, "https://example.com/api-reference.md", cache: ".claude/docs/api.md"}
+                  {:url, "https://example.com/api-reference.md", cache: "#{cache_dir}/.claude/docs/api.md"}
                 ]
               }
             }
@@ -235,12 +249,12 @@ defmodule Claude.NestedMemoriesIntegrationTest do
       root_content = Rewrite.Source.get(root_source, :content)
 
       # Should reference the cached file with auto-generated name from URL
-      assert root_content =~ "- @.claude/docs/api.md"
+      assert root_content =~ "- @#{cache_dir}/.claude/docs/api.md"
       # Should NOT contain the original URL
       refute root_content =~ "https://example.com/api-reference.md"
 
       # Verify the cache file was created
-      assert File.exists?(".claude/docs/api.md")
+      assert File.exists?("#{cache_dir}/.claude/docs/api.md")
     end
   end
 end
