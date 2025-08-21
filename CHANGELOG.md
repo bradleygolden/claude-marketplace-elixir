@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- @reference system with URL caching for documentation references in nested memories
+
 ## [0.5.0] - 2025-08-19
 
 ### Changed
@@ -133,7 +136,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/bradleygolden/claude/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bradleygolden/claude/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/bradleygolden/claude/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/bradleygolden/claude/compare/v0.3.2...v0.3.3
