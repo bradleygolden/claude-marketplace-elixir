@@ -76,9 +76,9 @@ mix igniter.install claude
 
 Before working with any concepts related to settings, hooks or sub agents, ALWAYS read which ever documentation is relevant to your needs below:
 
-To reference claude code settings, please see @ai/anthropic/claude_code/configuration/setting.md
-To reference claude code hooks, please see @ai/anthropic/claude_code/reference/hooks.md and @ai/anthropic/claude_code/guides/hooks.md
-To reference claude code sub agents, please see @ai/anthropic/claude_code/build_with/sub_agents.md
+To reference claude code settings, please see [Setting](ai/anthropic/claude_code/configuration/setting.md)
+To reference claude code hooks, please see [Hooks](ai/anthropic/claude_code/reference/hooks.md) and [Hooks](ai/anthropic/claude_code/guides/hooks.md)
+To reference claude code sub agents, please see [Sub Agents](ai/anthropic/claude_code/build_with/sub_agents.md)
 
 ## Architecture Overview
 
@@ -240,3 +240,37 @@ _A code generation and project patching framework_
 [igniter usage rules](deps/igniter/usage-rules.md)
 <!-- igniter-end -->
 <!-- usage-rules-end -->
+
+<!-- documentation-references-start -->
+## Documentation References
+
+<!-- doc-ref:ai-claude-code-hooks-reference-md:start -->
+- @./ai/claude_code/hooks_reference.md
+<!-- doc-ref:ai-claude-code-hooks-reference-md:end -->
+
+
+<!-- doc-ref:ai-claude-code-slash-commands-md:start -->
+- @./ai/claude_code/slash_commands.md
+<!-- doc-ref:ai-claude-code-slash-commands-md:end -->
+
+
+<!-- doc-ref:ai-claude-code-sub-agents-md:start -->
+- @./ai/claude_code/sub-agents.md
+<!-- doc-ref:ai-claude-code-sub-agents-md:end -->
+
+
+<!-- doc-ref:ai-claude-code-hooks-guide-md:start -->
+- @./ai/claude_code/hooks_guide.md
+<!-- doc-ref:ai-claude-code-hooks-guide-md:end -->
+
+
+<!-- doc-ref:ai-claude-code-memory-md:start -->
+- @./ai/claude_code/memory.md
+<!-- doc-ref:ai-claude-code-memory-md:end -->
+
+
+<!-- doc-ref:ai-claude-code-settings-md:start -->
+- @./ai/claude_code/settings.md
+<!-- doc-ref:ai-claude-code-settings-md:end -->
+
+<!-- documentation-references-end -->
