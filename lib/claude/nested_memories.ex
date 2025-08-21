@@ -59,6 +59,8 @@ defmodule Claude.NestedMemories do
     Enum.split_with(items, fn
       {:url, _} -> false
       {:url, _, _} -> false
+      {:file, _} -> false
+      {:file, _, _} -> false
       # Atoms and strings are rules
       item when is_atom(item) or is_binary(item) -> true
       # Unknown items default to false (not rules)

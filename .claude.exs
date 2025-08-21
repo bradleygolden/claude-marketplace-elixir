@@ -155,7 +155,11 @@
       {:url, "https://docs.anthropic.com/en/docs/claude-code/sub-agents.md",
        as: "Claude Code Subagents"},
       {:url, "https://docs.anthropic.com/en/docs/claude-code/hooks-guide.md",
-       as: "Claude Code Hooks Guide"}
+       as: "Claude Code Hooks Guide"},
+      {:url, "https://docs.anthropic.com/en/docs/claude-code/memory.md",
+       as: "Claude Code Memory Configuration"},
+      {:url, "https://docs.anthropic.com/en/docs/claude-code/settings.md",
+       as: "Claude Code Settings Configuration"}
     ],
     "test" => [
       "usage_rules:elixir",

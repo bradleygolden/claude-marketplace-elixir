@@ -6,22 +6,27 @@ defmodule Claude.Documentation.Processor do
   and removing orphaned blocks when configuration changes.
   """
 
-  alias Claude.Documentation.Fetcher
+  alias Claude.Documentation.{Fetcher, Cache, References}
 
   @doc """
   Processes documentation references and updates the content accordingly.
 
   Extracts existing doc-ref blocks, updates them based on the new configuration,
-  removes orphaned blocks, and rebuilds the documentation section.
+  removes orphaned blocks, and rebuilds the documentation section. Also processes
+  any @references found in the content.
   """
   def process_documentation_references(content, doc_refs) do
     existing_blocks = extract_existing_blocks(content)
     updated_blocks = update_blocks(existing_blocks, doc_refs)
     _orphaned_blocks = find_orphaned_blocks(existing_blocks, doc_refs)
 
-    content
-    |> remove_documentation_section()
-    |> append_documentation_section(updated_blocks)
+    updated_content =
+      content
+      |> remove_documentation_section()
+      |> append_documentation_section(updated_blocks)
+
+    # Process @references in the final content
+    process_at_references(updated_content)
   end
 
   @doc """
@@ -74,6 +79,12 @@ defmodule Claude.Documentation.Processor do
   defp build_block_for_ref({:url, url, opts}, existing_blocks) do
     name = Keyword.get(opts, :as, extract_name_from_url(url))
     inline = Keyword.get(opts, :inline, false)
+    cache_path = Keyword.get(opts, :cache)
+
+    # Handle caching if cache path is specified
+    if cache_path do
+      Cache.cache_url!(url, cache_path)
+    end
 
     if inline do
       doc_id = Fetcher.generate_doc_id(url)
@@ -95,8 +106,20 @@ defmodule Claude.Documentation.Processor do
     end
   end
 
+  defp build_block_for_ref({:file, path}, _existing_blocks) do
+    name = extract_name_from_path(path)
+    build_file_block(path, name)
+  end
+
+  defp build_block_for_ref({:file, path, opts}, _existing_blocks) do
+    name = Keyword.get(opts, :as, extract_name_from_path(path))
+    build_file_block(path, name)
+  end
+
   defp get_doc_id_from_ref({:url, url}), do: Fetcher.generate_doc_id(url)
   defp get_doc_id_from_ref({:url, url, _opts}), do: Fetcher.generate_doc_id(url)
+  defp get_doc_id_from_ref({:file, path}), do: generate_file_doc_id(path)
+  defp get_doc_id_from_ref({:file, path, _opts}), do: generate_file_doc_id(path)
 
   defp extract_name_from_url(url) do
     uri = URI.parse(url)
@@ -159,5 +182,51 @@ defmodule Claude.Documentation.Processor do
     #{references}
     <!-- documentation-references-end -->
     """
+  end
+
+  defp process_at_references(content) do
+    try do
+      References.process_references(content, mode: :link)
+    rescue
+      _ ->
+        # If reference processing fails, return content unchanged
+        # This ensures the system is robust even if some references are broken
+        content
+    end
+  end
+
+  defp build_file_block(path, name) do
+    doc_id = generate_file_doc_id(path)
+
+    """
+    <!-- doc-ref:#{doc_id}:start -->
+    - [#{name}](#{Cache.resolve_reference(path)})
+    <!-- doc-ref:#{doc_id}:end -->
+    """
+  end
+
+  defp extract_name_from_path(path) do
+    cleaned_path = String.replace_leading(path, "@", "")
+
+    case Path.basename(cleaned_path) do
+      "" ->
+        "Documentation"
+
+      filename ->
+        filename
+        |> Path.rootname()
+        |> String.replace(~r/[-_]/, " ")
+        |> String.split()
+        |> Enum.map(&String.capitalize/1)
+        |> Enum.join(" ")
+    end
+  end
+
+  defp generate_file_doc_id(path) do
+    path
+    |> String.replace_leading("@", "")
+    |> String.replace(~r/[^a-z0-9]+/i, "-")
+    |> String.trim("-")
+    |> String.downcase()
   end
 end
