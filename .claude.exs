@@ -180,12 +180,12 @@
     stop: [
       :compile,
       :format,
-      "test --warnings-as-errors --stale"
+      {"test --warnings-as-errors --stale", blocking?: false}
     ],
     subagent_stop: [
       :compile,
       :format,
-      "test --warnings-as-errors --stale"
+      {"test --warnings-as-errors --stale", blocking?: false}
     ]
   }
 }
