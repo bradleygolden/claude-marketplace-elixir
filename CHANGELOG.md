@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - @reference system with URL caching for documentation references in nested memories
 
+## [0.5.1] - 2025-08-22
+
 ### Changed
 - Stop and subagent_stop hooks now use `blocking?: false` by default to prevent infinite loops
 - When compilation or formatting fails in stop hooks, they now provide informational feedback without blocking Claude
