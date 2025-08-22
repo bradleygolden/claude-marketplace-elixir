@@ -44,7 +44,9 @@ Claude supports all Claude Code hook events:
 ### Available Hook Atoms
 
 - `:compile` - Runs `mix compile --warnings-as-errors` with `halt_pipeline?: true`
+  - For `stop`/`subagent_stop`: Uses `blocking?: false` to prevent infinite loops
 - `:format` - Runs `mix format --check-formatted` (checks only, doesn't auto-format)
+  - For `stop`/`subagent_stop`: Uses `blocking?: false` to prevent infinite loops
 - `:unused_deps` - Runs `mix deps.unlock --check-unused` (pre_tool_use on git commits only)
 
 ### Default Hook Configuration

@@ -148,13 +148,24 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
       )
 
       Enum.each(failed_hooks, fn {hook, exit_code} ->
-        task_name =
+        {task_name, opts} =
           case hook do
-            {task, _opts} -> task
-            task when is_binary(task) -> task
+            {task, opts} -> {task, opts}
+            task when is_binary(task) -> {task, []}
           end
 
-        IO.puts(:stderr, "  • #{task_name} (exit code: #{exit_code})")
+        is_non_blocking_stop =
+          Keyword.get(opts, :blocking?, true) == false and
+            event_atom in [:stop, :subagent_stop]
+
+        if is_non_blocking_stop do
+          IO.puts(
+            :stderr,
+            "  • #{task_name} (informational only - non-blocking to prevent loops)"
+          )
+        else
+          IO.puts(:stderr, "  • #{task_name} (exit code: #{exit_code})")
+        end
       end)
 
       IO.puts(:stderr, "\nRun the failed commands directly to see details.")

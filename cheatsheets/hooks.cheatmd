@@ -1,5 +1,11 @@
 # Hook Configuration
 
+## ⚠️ Stop Hook Loop Prevention
+
+Stop and subagent_stop hooks use `blocking?: false` by default to prevent infinite loops. When these hooks fail, they provide informational feedback without blocking Claude, preventing situations where Claude gets stuck trying to fix compilation errors repeatedly.
+
+If you need blocking behavior for stop hooks, explicitly set `blocking?: true` but be aware of the loop risk.
+
 ## Quick Start
 
 ```elixir
