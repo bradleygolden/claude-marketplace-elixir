@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-08-22
+
+### Added
+- @reference system with URL caching for documentation references in nested memories
+
+### Changed
+- Stop and subagent_stop hooks now use `blocking?: false` by default to prevent infinite loops
+- When compilation or formatting fails in stop hooks, they now provide informational feedback without blocking Claude
+- This prevents situations where Claude gets stuck trying to fix issues repeatedly
+
+### Why This Change
+Stop hooks with blocking errors (exit code 2) could cause Claude to loop infinitely when trying to fix compilation errors. The new defaults keep users informed while preventing loops. Users can still override with `blocking?: true` if needed, but should be aware of the loop risk.
+
 ## [0.5.0] - 2025-08-19
 
 ### Changed

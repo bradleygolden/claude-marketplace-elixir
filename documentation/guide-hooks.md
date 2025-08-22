@@ -39,7 +39,9 @@ Claude provides these atom shortcuts that expand to full hook configurations:
 
 ### Available Hooks
 - **`:compile`** - Runs `mix compile --warnings-as-errors` with `halt_pipeline?: true` (stops on failure)
+  - For `stop`/`subagent_stop`: Uses `blocking?: false` to prevent infinite loops
 - **`:format`** - Runs `mix format --check-formatted` (checks only, doesn't auto-format)
+  - For `stop`/`subagent_stop`: Uses `blocking?: false` to prevent infinite loops
 - **`:unused_deps`** - Runs `mix deps.unlock --check-unused` (pre_tool_use on git commits only)
 
 ## Hook Events
@@ -54,6 +56,16 @@ Different hook events run at different times:
 - **`subagent_stop`** - When a sub-agent finishes responding
 - **`pre_compact`** - Before context compaction (manual or automatic)
 - **`session_start`** - When Claude Code starts or resumes a session
+
+### ⚠️ Stop Hook Loop Prevention
+
+Stop and subagent_stop hooks use `blocking?: false` by default to prevent infinite loops:
+
+1. When a stop hook fails with `blocking?: true`, it sends error feedback to Claude
+2. Claude tries to fix the issue and finishes responding again
+3. This triggers the stop hook again, creating an infinite loop
+
+The default `blocking?: false` setting keeps you informed about issues without causing Claude to get stuck. If you need blocking behavior, explicitly set `blocking?: true` but be aware of the loop risk.
 
 ## Advanced Configuration
 
