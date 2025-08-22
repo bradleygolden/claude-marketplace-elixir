@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2025-08-27
+
+### Fixed
+- Updated Tidewave MCP configuration to use HTTP streaming transport ("http") instead of SSE for compatibility with Tidewave 0.4+ (#106)
+- Updated Tidewave dependency requirement from "~> 0.2" to "~> 0.4" to ensure compatibility with HTTP streaming transport
+
+## [0.5.1] - 2025-08-22
+
 ### Added
 - @reference system with URL caching for documentation references in nested memories
 - Plugin system for extending .claude.exs configuration with reusable modules
@@ -15,8 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Webhook reporters now correctly receive hook events during execution
 - Stop hooks with all non-blocking failures now exit with code 0 to prevent infinite loops in CI
-
-## [0.5.1] - 2025-08-22
 
 ### Changed
 - Stop and subagent_stop hooks now use `blocking?: false` by default to prevent infinite loops
