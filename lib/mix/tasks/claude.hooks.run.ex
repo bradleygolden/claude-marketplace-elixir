@@ -137,6 +137,8 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
 
     {results, _halted?} = execute_hooks_with_halt(matching_hooks, event_data, task_runner)
 
+    Claude.Hooks.Reporter.dispatch(event_data, config, async: false)
+
     failed_hooks = Enum.filter(results, fn {_hook, exit_code} -> exit_code != 0 end)
 
     if length(failed_hooks) > 0 do
