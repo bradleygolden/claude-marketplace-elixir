@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - @reference system with URL caching for documentation references in nested memories
 
+### Fixed
+- Webhook reporters now correctly receive hook events during execution
+
 ## [0.5.1] - 2025-08-22
 
 ### Changed
