@@ -339,10 +339,6 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp parse_hook_spec(_, _, _), do: nil
 
-  defp format_meta_agent_for_template do
-    inspect(@meta_agent_config, pretty: true, limit: :infinity, printable_limit: :infinity)
-  end
-
   defp format_meta_agent_for_notice do
     name = inspect(@meta_agent_config.name)
     description = inspect(@meta_agent_config.description)
@@ -358,22 +354,9 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp claude_exs_template do
-    meta_agent_str = format_meta_agent_for_template()
-
     """
-
     %{
-      hooks: %{
-        stop: [:compile, :format],
-        subagent_stop: [:compile, :format],
-        post_tool_use: [:compile, :format],
-        pre_tool_use: [:compile, :format, :unused_deps]
-      },
-
-
-      subagents: [
-        #{meta_agent_str}
-      ]
+      plugins: [Claude.Plugins.Base]
     }
     """
   end
