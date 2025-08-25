@@ -1,0 +1,113 @@
+defmodule TestPlugins do
+  defmodule Simple do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      %{
+        hooks: %{
+          stop: [:compile]
+        },
+        test_value: :simple
+      }
+    end
+  end
+
+  defmodule WithOptions do
+    @behaviour Claude.Plugin
+
+    def config(opts) do
+      mode = Keyword.get(opts, :mode, :default)
+
+      %{
+        mode: mode,
+        hooks: %{
+          stop:
+            case mode do
+              :strict -> [:compile, :format, :test]
+              :minimal -> [:compile]
+              _ -> [:compile, :format]
+            end
+        }
+      }
+    end
+  end
+
+  defmodule Hooks do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      %{
+        hooks: %{
+          stop: [:format],
+          post_tool_use: [:compile],
+          pre_tool_use: [:unused_deps]
+        }
+      }
+    end
+  end
+
+  defmodule Subagents do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      %{
+        subagents: [
+          %{
+            name: "test-runner",
+            description: "Runs tests automatically",
+            prompt: "You run tests",
+            tools: [:bash, :read]
+          },
+          %{
+            name: "code-reviewer",
+            description: "Reviews code quality",
+            prompt: "You review code",
+            tools: [:read, :grep]
+          }
+        ]
+      }
+    end
+  end
+
+  defmodule Complex do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      %{
+        hooks: %{
+          stop: [:compile, :format],
+          post_tool_use: [:format]
+        },
+        subagents: [
+          %{
+            name: "complex-agent",
+            description: "Complex test agent",
+            prompt: "Complex prompt",
+            tools: [:read, :write, :edit]
+          }
+        ],
+        mcp_servers: [:tidewave],
+        auto_install_deps?: true,
+        nested_value: %{
+          inner: %{
+            deep: [:value1, :value2]
+          }
+        }
+      }
+    end
+  end
+
+  defmodule Invalid do
+    def config(_opts) do
+      %{test: :invalid}
+    end
+  end
+
+  defmodule Failing do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      raise "Intentional failure for testing"
+    end
+  end
+end

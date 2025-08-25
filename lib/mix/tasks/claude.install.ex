@@ -287,7 +287,7 @@ defmodule Mix.Tasks.Claude.Install do
     claude_exs_path = igniter.assigns[:claude_exs_path]
 
     if Igniter.exists?(igniter, claude_exs_path) do
-      case read_and_eval_claude_exs(igniter, claude_exs_path) do
+      case read_config_with_plugins(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           hooks = Map.get(config, :hooks, [])
 
@@ -349,7 +349,6 @@ defmodule Mix.Tasks.Claude.Install do
     tools = inspect(@meta_agent_config.tools)
     prompt = @meta_agent_config.prompt
 
-    # Manually build the string to preserve formatting
     "    %{\n" <>
       "      name: #{name},\n" <>
       "      description: #{description},\n" <>
@@ -362,38 +361,16 @@ defmodule Mix.Tasks.Claude.Install do
     meta_agent_str = format_meta_agent_for_template()
 
     """
-    # .claude.exs - Claude configuration for this project
-    # This file is evaluated when Claude reads your project settings
-    # and merged with .claude/settings.json (this file takes precedence)
-
-    # Hooks use atom shortcuts that expand to sensible defaults:
-    # - :compile - Runs compilation with warnings as errors
-    # - :format - Checks formatting (includes file path for edits)
-    # - :unused_deps - Checks for unused dependencies (pre_tool_use only)
 
     %{
       hooks: %{
         stop: [:compile, :format],
         subagent_stop: [:compile, :format],
         post_tool_use: [:compile, :format],
-        # These only run on git commit commands
         pre_tool_use: [:compile, :format, :unused_deps]
       },
 
-      # MCP servers (Tidewave is automatically configured for Phoenix projects)
-      # mcp_servers: [:tidewave],
-      #
-      # You can also specify custom configuration like port:
-      # mcp_servers: [
-      #   {:tidewave, [port: 5000]}
-      # ],
-      #
-      # To disable a server without removing it:
-      # mcp_servers: [
-      #   {:tidewave, [port: 4000, enabled?: false]}
-      # ],
 
-      # Subagents provide specialized expertise with their own context
       subagents: [
         #{meta_agent_str}
       ]
@@ -506,10 +483,8 @@ defmodule Mix.Tasks.Claude.Install do
     all_hooks = igniter.assigns[:claude_exs_hooks] || []
 
     if all_hooks == [] do
-      # No hooks configured, return cleaned settings
       cleaned_settings
     else
-      # Get unique event types
       event_types =
         all_hooks
         |> Enum.map(fn {_type, _task, event, _matchers, _desc, _opts} ->
@@ -517,15 +492,12 @@ defmodule Mix.Tasks.Claude.Install do
         end)
         |> Enum.uniq()
 
-      # For each event type, create a single hook entry that delegates to our dispatcher
       new_hooks =
         event_types
         |> Enum.map(fn event_type ->
-          # Single entry per event type that will read .claude.exs and execute appropriate hooks
           {event_type,
            [
              %{
-               # Universal matcher - the actual filtering happens in the mix task
                "matcher" => "*",
                "hooks" => [
                  %{
@@ -740,7 +712,7 @@ defmodule Mix.Tasks.Claude.Install do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
-      case read_and_eval_claude_exs(igniter, claude_exs_path) do
+      case read_config_with_plugins(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           mcp_servers = Map.get(config, :mcp_servers, [])
 
@@ -840,7 +812,7 @@ defmodule Mix.Tasks.Claude.Install do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
-      case read_and_eval_claude_exs(igniter, claude_exs_path) do
+      case read_config_with_plugins(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           subagents = Map.get(config, :subagents, [])
 
@@ -917,7 +889,6 @@ defmodule Mix.Tasks.Claude.Install do
     missing_keys = required_keys -- Map.keys(config)
 
     if missing_keys == [] do
-      # Validate tools if present
       case config[:tools] do
         nil ->
           :ok
@@ -1143,7 +1114,6 @@ defmodule Mix.Tasks.Claude.Install do
         |> add_mcp_notices(servers)
 
       _ ->
-        # No MCP servers configured or disabled
         igniter
     end
   end
@@ -1152,7 +1122,7 @@ defmodule Mix.Tasks.Claude.Install do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
-      case read_and_eval_claude_exs(igniter, claude_exs_path) do
+      case read_config_with_plugins(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           case Map.get(config, :mcp_servers, []) do
             servers when is_list(servers) ->
@@ -1195,6 +1165,42 @@ defmodule Mix.Tasks.Claude.Install do
     end)
   end
 
+  # Helper function to read config with plugin support
+  defp read_config_with_plugins(igniter, path) do
+    case read_and_eval_claude_exs(igniter, path) do
+      {:ok, base_config} when is_map(base_config) ->
+        apply_plugins_to_config(base_config)
+
+      error ->
+        error
+    end
+  end
+
+  # Apply plugins to a config map (similar to Claude.Config but works with any config)
+  defp apply_plugins_to_config(base_config) do
+    case Map.get(base_config, :plugins, []) do
+      [] ->
+        {:ok, Map.delete(base_config, :plugins)}
+
+      plugins when is_list(plugins) ->
+        case Claude.Plugin.load_plugins(plugins) do
+          {:ok, plugin_configs} ->
+            final_config =
+              (plugin_configs ++ [base_config])
+              |> Claude.Plugin.merge_configs()
+              |> Map.delete(:plugins)
+
+            {:ok, final_config}
+
+          {:error, _errors} ->
+            {:ok, Map.delete(base_config, :plugins)}
+        end
+
+      _plugins ->
+        {:ok, Map.delete(base_config, :plugins)}
+    end
+  end
+
   defp read_and_eval_claude_exs(igniter, path) do
     try do
       source =
@@ -1209,9 +1215,6 @@ defmodule Mix.Tasks.Claude.Install do
 
       content = Rewrite.Source.get(source, :content)
 
-      # Security Note: Code.eval_string evaluates arbitrary Elixir code from user files.
-      # This is acceptable for development tooling where users control their own files.
-      # The evaluated code runs with the same permissions as the mix task.
       {result, _binding} = Code.eval_string(content, [], file: path)
       {:ok, result}
     rescue
@@ -1223,18 +1226,11 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-  # Removed - no longer needed since MCP config goes in .mcp.json
-
-  # Removed - no longer needed since MCP config goes in .mcp.json
-
-  # Removed - no longer needed since MCP config goes in .mcp.json
-
-  defp check_meta_agent_and_notify(igniter, path) do
-    # Skip in test environment
+  defp check_meta_agent_and_notify(igniter, _path) do
     if igniter.assigns[:test_mode] || Mix.env() == :test do
       igniter
     else
-      case read_and_eval_claude_exs(igniter, path) do
+      case read_config_with_plugins(igniter, ".claude.exs") do
         {:ok, config} when is_map(config) ->
           subagents = Map.get(config, :subagents, [])
 
@@ -1246,7 +1242,6 @@ defmodule Mix.Tasks.Claude.Install do
           if has_meta_agent do
             igniter
           else
-            # Show notice about how to add Meta Agent
             igniter
             |> Igniter.add_notice("""
 
@@ -1262,7 +1257,6 @@ defmodule Mix.Tasks.Claude.Install do
           end
 
         _ ->
-          # If we can't read the file, just return the igniter unchanged
           igniter
       end
     end
