@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Webhook reporters now correctly receive hook events during execution
+- Stop hooks with all non-blocking failures now exit with code 0 to prevent infinite loops in CI
 
 ## [0.5.1] - 2025-08-22
 

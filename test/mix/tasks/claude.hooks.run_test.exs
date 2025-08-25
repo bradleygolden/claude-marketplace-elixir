@@ -859,7 +859,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       assert_received {:system_halt, 2}
     end
 
-    test "respects blocking? false to preserve exit codes", _context do
+    test "exits with 0 when all failed stop hooks have blocking?: false", _context do
       config = %{
         hooks: %{
           stop: [
@@ -890,7 +890,45 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       )
 
       assert_received {:mix_task_run, "check", []}
-      assert_received {:system_halt, 1}
+      assert_received {:system_halt, 0}
+    end
+
+    test "preserves exit codes when mixed blocking and non-blocking hooks fail", _context do
+      config = %{
+        hooks: %{
+          stop: [
+            {"check1", blocking?: true},
+            {"check2", blocking?: false}
+          ]
+        }
+      }
+
+      event_data = %{
+        "hook_event_name" => "stop",
+        "stop_hook_active" => false
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, _args, _env_vars, _output_mode ->
+        send(test_pid, {:mix_task_run, task})
+
+        cond do
+          task == "check1" -> exit({:shutdown, 1})
+          task == "check2" -> exit({:shutdown, 3})
+          true -> :ok
+        end
+      end
+
+      Run.run(["stop"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "check1"}
+      assert_received {:mix_task_run, "check2"}
+      assert_received {:system_halt, 3}
     end
 
     test "converts all non-zero exit codes to 2 when blocking? is true", _context do
@@ -925,6 +963,57 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
 
       assert_received {:mix_task_run, "check", []}
       assert_received {:system_halt, 2}
+    end
+
+    test "exits with 0 when all stop hooks have blocking?: false and fail", _context do
+      config = %{
+        hooks: %{
+          stop: [
+            {"test.check1", blocking?: false},
+            {"test.check2", blocking?: false},
+            {"test.check3", blocking?: false}
+          ]
+        }
+      }
+
+      event_data = %{
+        "hook_event_name" => "stop",
+        "stop_hook_active" => false
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, _args, _env_vars, _output_mode ->
+        send(test_pid, {:mix_task_run, task})
+        # All tasks fail with exit code 1
+        exit({:shutdown, 1})
+      end
+
+      Run.run(["stop"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      # Should receive all task runs
+      assert_received {:mix_task_run, "test.check1"}
+      assert_received {:mix_task_run, "test.check2"}
+      assert_received {:mix_task_run, "test.check3"}
+
+      assert_received {:system_halt, 0}
+
+      informational_messages =
+        Stream.repeatedly(fn ->
+          receive do
+            {:stderr_output, msg} -> msg
+          after
+            50 -> nil
+          end
+        end)
+        |> Enum.take_while(&(&1 != nil))
+        |> Enum.join(" ")
+
+      assert informational_messages =~ "informational only - non-blocking"
     end
 
     test "aggregates multiple hook failures", _context do
