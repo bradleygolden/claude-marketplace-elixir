@@ -97,7 +97,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       |> assert_unchanged(".claude.exs")
     end
 
-    test "generates .claude.exs with atom shortcuts for hooks" do
+    test "generates .claude.exs with Base plugin" do
       igniter =
         test_project()
         |> Igniter.compose_task("claude.install")
@@ -107,10 +107,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       source = igniter.rewrite |> Rewrite.source!(".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ "stop: [:compile, :format]"
-      assert content =~ "subagent_stop: [:compile, :format]"
-      assert content =~ "post_tool_use: [:compile, :format]"
-      assert content =~ "pre_tool_use: [:compile, :format, :unused_deps]"
+      assert content =~ "plugins: [Claude.Plugins.Base]"
     end
 
     test "errors on old list-based hook format" do
@@ -383,13 +380,17 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       claude_exs_source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       claude_exs_content = Rewrite.Source.get(claude_exs_source, :content)
-      assert String.contains?(claude_exs_content, "Meta Agent")
-      assert String.contains?(claude_exs_content, "Generates new, complete Claude Code subagent")
+      assert String.contains?(claude_exs_content, "Claude.Plugins.Base")
 
-      {config, _} = Code.eval_string(claude_exs_content)
-      assert is_map(config)
-      assert Map.has_key?(config, :subagents)
-      subagents = Map.get(config, :subagents, [])
+      {base_config, _} = Code.eval_string(claude_exs_content)
+      assert is_map(base_config)
+      assert Map.has_key?(base_config, :plugins)
+
+      {:ok, plugin_configs} = Claude.Plugin.load_plugins(base_config.plugins)
+      merged_config = Claude.Plugin.merge_configs(plugin_configs ++ [base_config])
+
+      assert Map.has_key?(merged_config, :subagents)
+      subagents = Map.get(merged_config, :subagents, [])
       assert is_list(subagents)
       assert length(subagents) > 0
 
@@ -682,9 +683,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       source = igniter.rewrite |> Rewrite.source!(".claude.exs")
       content = Rewrite.Source.get(source, :content)
-      {config, _} = Code.eval_string(content)
 
-      assert :tidewave in (config[:mcp_servers] || [])
+      assert String.contains?(content, "mcp_servers:")
+      assert String.contains?(content, ":tidewave")
     end
 
     test "creates .mcp.json automatically for Phoenix projects" do
