@@ -172,12 +172,28 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
 
       IO.puts(:stderr, "\nRun the failed commands directly to see details.")
 
-      max_exit_code =
-        failed_hooks
-        |> Enum.map(fn {_hook, exit_code} -> exit_code end)
-        |> Enum.max()
+      all_failed_are_non_blocking_stop_hooks? =
+        event_atom in [:stop, :subagent_stop] and
+          Enum.all?(failed_hooks, fn {hook, _exit_code} ->
+            case hook do
+              {_task, opts} when is_list(opts) ->
+                Keyword.get(opts, :blocking?, true) == false
 
-      System.halt(max_exit_code)
+              _ ->
+                false
+            end
+          end)
+
+      if all_failed_are_non_blocking_stop_hooks? do
+        System.halt(0)
+      else
+        max_exit_code =
+          failed_hooks
+          |> Enum.map(fn {_hook, exit_code} -> exit_code end)
+          |> Enum.max()
+
+        System.halt(max_exit_code)
+      end
     end
   end
 
