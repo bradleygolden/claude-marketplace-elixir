@@ -64,7 +64,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
 
       assert_received {:reported, received_event, opts}
       assert received_event == event_data
@@ -83,7 +83,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
 
       assert_received {:reported, ^event_data, opts1}
       assert opts1[:tag] == "first"
@@ -106,7 +106,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
 
       assert_received {:reported, ^event_data, opts1}
       assert opts1[:tag] == "enabled"
@@ -153,7 +153,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
       assert_received {:reported, ^event_data, _}
     end
   end
@@ -176,7 +176,7 @@ defmodule Claude.Hooks.ReporterTest do
 
       log =
         capture_log([level: :debug], fn ->
-          Reporter.dispatch(event_data, config, async: false)
+          Reporter.dispatch(event_data, config)
         end)
 
       assert log != ""
@@ -209,7 +209,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
 
       assert_received {:reported, ^event_data, opts}
       assert opts[:from] == "direct"
@@ -224,7 +224,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
 
       assert_received {:reported, ^event_data, opts}
       assert opts[:test_pid] == self()
@@ -242,7 +242,7 @@ defmodule Claude.Hooks.ReporterTest do
 
       log =
         capture_log(fn ->
-          Reporter.dispatch(%{}, config, async: false)
+          Reporter.dispatch(%{}, config)
         end)
 
       assert log =~ "Invalid reporter configuration: \"invalid_string_reporter\""
@@ -265,7 +265,7 @@ defmodule Claude.Hooks.ReporterTest do
 
       log =
         capture_log(fn ->
-          Reporter.dispatch(event_data, config, async: false)
+          Reporter.dispatch(event_data, config)
         end)
 
       assert log =~ "Reporter Claude.Hooks.ReporterTest.FailingReporter failed"
@@ -287,7 +287,7 @@ defmodule Claude.Hooks.ReporterTest do
 
       log =
         capture_log(fn ->
-          Reporter.dispatch(event_data, config, async: false)
+          Reporter.dispatch(event_data, config)
         end)
 
       assert log =~ "Reporter Claude.Hooks.ReporterTest.CrashingReporter crashed"
@@ -309,7 +309,7 @@ defmodule Claude.Hooks.ReporterTest do
 
       log =
         capture_log(fn ->
-          Reporter.dispatch(event_data, config, async: false)
+          Reporter.dispatch(event_data, config)
         end)
 
       assert log =~
@@ -333,7 +333,7 @@ defmodule Claude.Hooks.ReporterTest do
 
       log =
         capture_log(fn ->
-          Reporter.dispatch(event_data, config, async: false)
+          Reporter.dispatch(event_data, config)
         end)
 
       assert log =~
@@ -356,7 +356,7 @@ defmodule Claude.Hooks.ReporterTest do
 
       log =
         capture_log(fn ->
-          Reporter.dispatch(event_data, config, async: false)
+          Reporter.dispatch(event_data, config)
         end)
 
       assert log =~ "error 1"
@@ -389,7 +389,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
 
       assert_received {:reported, received_data, _}
       assert received_data == event_data
@@ -403,7 +403,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(nil, config, async: false)
+      Reporter.dispatch(nil, config)
 
       assert_received {:reported, nil, _}
     end
@@ -418,7 +418,7 @@ defmodule Claude.Hooks.ReporterTest do
         ]
       }
 
-      Reporter.dispatch(event_data, config, async: false)
+      Reporter.dispatch(event_data, config)
 
       assert_received {:reported, _, opts1}
       assert opts1[:unique] == 1
@@ -431,8 +431,8 @@ defmodule Claude.Hooks.ReporterTest do
     end
   end
 
-  describe "async execution" do
-    test "async errors don't affect main process" do
+  describe "execution behavior" do
+    test "reporter errors don't affect main process" do
       defmodule AsyncCrashReporter do
         @behaviour Claude.Hooks.Reporter
 
@@ -456,7 +456,7 @@ defmodule Claude.Hooks.ReporterTest do
       }
 
       capture_log(fn ->
-        assert Reporter.dispatch(%{}, config, async: false) == :ok
+        assert Reporter.dispatch(%{}, config) == :ok
         assert_receive :task_started, 100
         refute_receive :any_other_message, 100
       end)
@@ -464,8 +464,8 @@ defmodule Claude.Hooks.ReporterTest do
       assert Process.alive?(self())
     end
 
-    test "async reporters run concurrently" do
-      defmodule ConcurrentReporter do
+    test "reporters run synchronously in order" do
+      defmodule SequentialReporter do
         @behaviour Claude.Hooks.Reporter
 
         @impl true
@@ -479,24 +479,24 @@ defmodule Claude.Hooks.ReporterTest do
 
       config = %{
         reporters: [
-          {ConcurrentReporter, test_pid: self(), id: 1},
-          {ConcurrentReporter, test_pid: self(), id: 2},
-          {ConcurrentReporter, test_pid: self(), id: 3}
+          {SequentialReporter, test_pid: self(), id: 1},
+          {SequentialReporter, test_pid: self(), id: 2},
+          {SequentialReporter, test_pid: self(), id: 3}
         ]
       }
 
-      Reporter.dispatch(%{}, config, async: true)
+      Reporter.dispatch(%{}, config)
 
-      assert_receive {:started, 1, start1}, 100
+      assert_receive {:started, 1, _start1}, 100
+      assert_receive {:completed, 1, complete1}, 100
       assert_receive {:started, 2, start2}, 100
+      assert_receive {:completed, 2, complete2}, 100
       assert_receive {:started, 3, start3}, 100
+      assert_receive {:completed, 3, _complete3}, 100
 
-      assert abs(start1 - start2) < 10
-      assert abs(start2 - start3) < 10
-
-      assert_receive {:completed, 1, _}, 100
-      assert_receive {:completed, 2, _}, 100
-      assert_receive {:completed, 3, _}, 100
+      # Verify sequential execution: each reporter completes before the next starts
+      assert complete1 <= start2
+      assert complete2 <= start3
     end
   end
 end

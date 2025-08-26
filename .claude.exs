@@ -1,5 +1,5 @@
 %{
-  plugins: [Claude.Plugins.Base],
+  plugins: [Claude.Plugins.Base, Claude.Plugins.Logging],
   auto_install_deps?: true,
   nested_memories: %{
     "." => [

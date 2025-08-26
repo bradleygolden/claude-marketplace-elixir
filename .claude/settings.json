@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs notification",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
     "PostToolUse": [
       {
         "hooks": [
@@ -11,11 +22,33 @@
         "matcher": "*"
       }
     ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs pre_compact",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
     "PreToolUse": [
       {
         "hooks": [
           {
             "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs pre_tool_use",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs session_start",
             "type": "command"
           }
         ],
@@ -38,6 +71,17 @@
         "hooks": [
           {
             "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs subagent_stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs user_prompt_submit",
             "type": "command"
           }
         ],
