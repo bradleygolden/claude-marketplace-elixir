@@ -18,17 +18,13 @@ defmodule ClaudeHookWrapper do
   end
 
   defp load_claude_config() do
-    config_path = ".claude.exs"
-
-    if File.exists?(config_path) do
-      try do
-        {config, _} = Code.eval_file(config_path)
-        config
-      rescue
-        _ -> %{}
+    try do
+      case Claude.Config.read() do
+        {:ok, config} -> config
+        {:error, _reason} -> %{}
       end
-    else
-      %{}
+    rescue
+      _ -> %{}
     end
   end
 
