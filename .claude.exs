@@ -1,5 +1,6 @@
 %{
-  plugins: [Claude.Plugins.Base, Claude.Plugins.Worktrees],
+  plugins: [Claude.Plugins.Base],
+  auto_install_deps?: true,
   nested_memories: %{
     "." => [
       {:url, "https://docs.anthropic.com/en/docs/claude-code/hooks.md",

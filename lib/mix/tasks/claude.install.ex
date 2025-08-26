@@ -356,7 +356,8 @@ defmodule Mix.Tasks.Claude.Install do
   defp claude_exs_template do
     """
     %{
-      plugins: [Claude.Plugins.Base]
+      plugins: [Claude.Plugins.Base],
+      auto_install_deps?: true
     }
     """
   end
