@@ -1,3 +1,4 @@
+# Git helper functions for webhook headers
 git_cmd = fn args ->
   case System.cmd("git", args, cd: System.get_env("CLAUDE_PROJECT_DIR", ".")) do
     {output, 0} -> String.trim(output)
@@ -11,7 +12,18 @@ get_git_repo_root = fn -> git_cmd.(["rev-parse", "--show-toplevel"]) end
 get_project_dir = fn -> System.get_env("CLAUDE_PROJECT_DIR", File.cwd!()) end
 
 %{
-  plugins: [Claude.Plugins.Base, Claude.Plugins.Logging],
+  plugins: [
+    Claude.Plugins.Base,
+    Claude.Plugins.Logging,
+    {Claude.Plugins.Webhook,
+     headers: %{
+       "Content-Type" => "application/json",
+       "X-Git-Branch" => get_git_branch.(),
+       "X-Git-Commit" => get_git_commit.(),
+       "X-Git-Repo-Root" => get_git_repo_root.(),
+       "X-Project-Dir" => get_project_dir.()
+     }}
+  ],
   auto_install_deps?: true,
   nested_memories: %{
     "." => [
@@ -43,18 +55,5 @@ get_project_dir = fn -> System.get_env("CLAUDE_PROJECT_DIR", File.cwd!()) end
     subagent_stop: [
       {"test --warnings-as-errors --stale", blocking?: false}
     ]
-  },
-  reporters: [
-    {:webhook,
-     url: System.get_env("CLAUDE_WEBHOOK_URL"),
-     headers: %{
-       "Content-Type" => "application/json",
-       "X-Git-Branch" => get_git_branch.(),
-       "X-Git-Commit" => get_git_commit.(),
-       "X-Git-Repo-Root" => get_git_repo_root.(),
-       "X-Project-Dir" => get_project_dir.()
-     },
-     timeout: 5000,
-     retry_count: 3}
-  ]
+  }
 }
