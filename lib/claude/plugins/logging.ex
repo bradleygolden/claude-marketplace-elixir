@@ -8,7 +8,8 @@ defmodule Claude.Plugins.Logging do
   ## Features
 
   - **Automatic Configuration**: Enables JSONL logging with sensible defaults
-  - **All Events Captured**: Logs every hook event type (pre_tool_use, post_tool_use, stop, etc.)
+  - **All Events Captured**: Automatically logs every hook event type including pre_tool_use, post_tool_use, stop, session_start, session_end, etc.
+  - **Future-Proof**: New event types are automatically logged without plugin updates
   - **Daily Rotation**: Creates new log files daily for easy management
   - **Standard Format**: JSONL output works with common log analysis tools
   - **Non-blocking**: Async logging doesn't slow down Claude Code operations
@@ -86,18 +87,6 @@ defmodule Claude.Plugins.Logging do
 
     if enabled? do
       %{
-        # Declare all hook events with empty arrays to ensure registration
-        # This ensures ALL events flow through to reporters even if no actual hooks are configured
-        hooks: %{
-          pre_tool_use: [],
-          post_tool_use: [],
-          stop: [],
-          subagent_stop: [],
-          user_prompt_submit: [],
-          notification: [],
-          pre_compact: [],
-          session_start: []
-        },
         reporters: [
           {:jsonl, build_reporter_config(opts)}
         ]

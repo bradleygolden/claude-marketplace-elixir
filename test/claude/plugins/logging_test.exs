@@ -8,16 +8,6 @@ defmodule Claude.Plugins.LoggingTest do
       config = Logging.config([])
 
       expected_config = %{
-        hooks: %{
-          pre_tool_use: [],
-          post_tool_use: [],
-          stop: [],
-          subagent_stop: [],
-          user_prompt_submit: [],
-          notification: [],
-          pre_compact: [],
-          session_start: []
-        },
         reporters: [
           {:jsonl,
            [
@@ -52,8 +42,6 @@ defmodule Claude.Plugins.LoggingTest do
       ]
 
       assert config.reporters == expected_reporters
-      assert Map.has_key?(config, :hooks)
-      assert map_size(config.hooks) == 8
     end
 
     test "allows custom filename pattern" do
@@ -70,7 +58,6 @@ defmodule Claude.Plugins.LoggingTest do
       ]
 
       assert config.reporters == expected_reporters
-      assert Map.has_key?(config, :hooks)
     end
 
     test "allows disabling directory creation" do
@@ -179,46 +166,20 @@ defmodule Claude.Plugins.LoggingTest do
     end
   end
 
-  describe "comprehensive event coverage" do
-    test "declares all hook events for complete logging coverage" do
+  describe "automatic event coverage" do
+    test "relies on reporter system for automatic event capture" do
       config = Logging.config([])
 
-      assert Map.has_key?(config, :hooks)
-
-      expected_events = [
-        :pre_tool_use,
-        :post_tool_use,
-        :stop,
-        :subagent_stop,
-        :user_prompt_submit,
-        :notification,
-        :pre_compact,
-        :session_start
-      ]
-
-      Enum.each(expected_events, fn event ->
-        assert Map.has_key?(config.hooks, event),
-               "Expected hook event #{inspect(event)} to be declared"
-
-        assert config.hooks[event] == [],
-               "Expected hook event #{inspect(event)} to have empty array"
-      end)
-
-      assert map_size(config.hooks) == length(expected_events)
+      # No hook declarations needed - events are automatically captured by reporters
+      refute Map.has_key?(config, :hooks)
+      assert Map.has_key?(config, :reporters)
     end
 
-    test "empty hook arrays ensure registration without interference" do
-      config = Logging.config([])
-
-      Enum.each(config.hooks, fn {event, hooks} ->
-        assert hooks == [], "Hook event #{inspect(event)} should have empty array"
-      end)
-    end
-
-    test "disabled plugin does not declare hook events" do
+    test "disabled plugin does not configure reporters" do
       config = Logging.config(enabled: false)
 
       refute Map.has_key?(config, :hooks)
+      refute Map.has_key?(config, :reporters)
       assert config == %{}
     end
   end
