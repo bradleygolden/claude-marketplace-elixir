@@ -291,31 +291,42 @@ defmodule Mix.Tasks.Claude.Install do
         {:ok, config} when is_map(config) ->
           hooks = Map.get(config, :hooks, [])
 
-          case hooks do
-            hooks_map when is_map(hooks_map) ->
-              hooks_map
-              |> Enum.flat_map(fn
-                {event_type, event_configs} when is_list(event_configs) ->
-                  event_configs
-                  |> Enum.with_index()
-                  |> Enum.map(fn {hook_spec, index} ->
-                    parse_hook_spec(hook_spec, event_type, index)
-                  end)
+          has_reporters? = Map.has_key?(config, :reporters)
 
-                {_event_type, _non_list} ->
-                  []
-              end)
-              |> Enum.reject(&is_nil/1)
+          parsed_hooks =
+            case hooks do
+              hooks_map when is_map(hooks_map) ->
+                hooks_map
+                |> Enum.flat_map(fn
+                  {event_type, event_configs} when is_list(event_configs) ->
+                    event_configs
+                    |> Enum.with_index()
+                    |> Enum.map(fn {hook_spec, index} ->
+                      parse_hook_spec(hook_spec, event_type, index)
+                    end)
 
-            _ ->
-              []
-          end
+                  {_event_type, _non_list} ->
+                    []
+                end)
+                |> Enum.reject(&is_nil/1)
+
+              _ ->
+                []
+            end
+
+          igniter
+          |> Igniter.assign(claude_exs_hooks: parsed_hooks)
+          |> Igniter.assign(has_reporters: has_reporters?)
 
         _ ->
-          []
+          igniter
+          |> Igniter.assign(claude_exs_hooks: [])
+          |> Igniter.assign(has_reporters: false)
       end
     else
-      []
+      igniter
+      |> Igniter.assign(claude_exs_hooks: [])
+      |> Igniter.assign(has_reporters: false)
     end
   end
 
@@ -366,10 +377,10 @@ defmodule Mix.Tasks.Claude.Install do
     settings_path = Path.join(igniter.assigns.claude_dir_path, "settings.json")
     relative_settings_path = Path.relative_to_cwd(settings_path)
 
-    claude_exs_hooks = read_hooks_from_claude_exs(igniter)
+    igniter_with_hooks = read_hooks_from_claude_exs(igniter)
+    claude_exs_hooks = igniter_with_hooks.assigns[:claude_exs_hooks] || []
 
-    igniter
-    |> Igniter.assign(claude_exs_hooks: claude_exs_hooks)
+    igniter_with_hooks
     |> install_hooks_to_claude_code_settings(relative_settings_path)
     |> add_hooks_notice(relative_settings_path, claude_exs_hooks)
   end
@@ -463,19 +474,32 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp build_hooks_settings(settings_map, igniter) when is_map(settings_map) do
     cleaned_settings = remove_all_hooks(settings_map)
-
     all_hooks = igniter.assigns[:claude_exs_hooks] || []
+    has_reporters? = igniter.assigns[:has_reporters] || false
 
-    if all_hooks == [] do
-      cleaned_settings
-    else
-      event_types =
+    event_types =
+      if has_reporters? do
+        [
+          "PreToolUse",
+          "PostToolUse",
+          "Stop",
+          "SubagentStop",
+          "UserPromptSubmit",
+          "Notification",
+          "PreCompact",
+          "SessionStart"
+        ]
+      else
         all_hooks
         |> Enum.map(fn {_type, _task, event, _matchers, _desc, _opts} ->
           to_event_type_string(event)
         end)
         |> Enum.uniq()
+      end
 
+    if event_types == [] do
+      cleaned_settings
+    else
       new_hooks =
         event_types
         |> Enum.map(fn event_type ->
@@ -495,7 +519,7 @@ defmodule Mix.Tasks.Claude.Install do
         end)
         |> Map.new()
 
-      Map.put(settings_map, "hooks", new_hooks)
+      Map.put(cleaned_settings, "hooks", new_hooks)
     end
   end
 

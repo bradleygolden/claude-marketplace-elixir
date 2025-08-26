@@ -1250,4 +1250,290 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert length(result.issues) == 0
     end
   end
+
+  describe "reporters integration" do
+    test "registers all hook events when reporters are configured" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                stop: [:compile, :format],
+                post_tool_use: [:compile]
+              },
+              reporters: [
+                {:webhook, url: "https://example.com/webhook"}
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      expected_events = [
+        "PreToolUse",
+        "PostToolUse",
+        "Stop",
+        "SubagentStop",
+        "UserPromptSubmit",
+        "Notification",
+        "PreCompact",
+        "SessionStart"
+      ]
+
+      actual_events = Map.keys(settings["hooks"])
+
+      for event <- expected_events do
+        assert event in actual_events,
+               "Expected #{event} to be registered when reporters are present"
+      end
+
+      for event <- expected_events do
+        hooks = settings["hooks"][event]
+        assert is_list(hooks)
+        assert length(hooks) == 1
+
+        [hook_config] = hooks
+        assert hook_config["matcher"] == "*"
+
+        [command_config] = hook_config["hooks"]
+        assert command_config["type"] == "command"
+
+        expected_command =
+          "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs #{Macro.underscore(event)}"
+
+        assert command_config["command"] == expected_command
+      end
+    end
+
+    test "only registers events with hooks when no reporters are configured" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                stop: [:compile, :format],
+                subagent_stop: [:compile],
+                pre_tool_use: [{"deps.unlock --check-unused", when: "Bash(git commit:*)"}]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      expected_events = ["Stop", "SubagentStop", "PreToolUse"]
+      unexpected_events = ["UserPromptSubmit", "Notification", "PreCompact", "SessionStart"]
+
+      actual_events = Map.keys(settings["hooks"])
+
+      for event <- expected_events do
+        assert event in actual_events, "Expected #{event} to be registered (has hooks configured)"
+      end
+
+      for event <- unexpected_events do
+        refute event in actual_events,
+               "Did not expect #{event} to be registered (no hooks configured, no reporters)"
+      end
+    end
+
+    test "empty reporters list still triggers all events registration" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                stop: [:compile]
+              },
+              reporters: []
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      expected_events = [
+        "PreToolUse",
+        "PostToolUse",
+        "Stop",
+        "SubagentStop",
+        "UserPromptSubmit",
+        "Notification",
+        "PreCompact",
+        "SessionStart"
+      ]
+
+      actual_events = Map.keys(settings["hooks"])
+
+      for event <- expected_events do
+        assert event in actual_events,
+               "Expected #{event} to be registered when reporters key exists (even if empty)"
+      end
+    end
+
+    test "complex reporters configuration registers all events" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                post_tool_use: [:format]
+              },
+              reporters: [
+                {:webhook, url: "https://example.com/webhook", enabled: true},
+                {MyCustomReporter, custom_option: "value"}
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      expected_events = [
+        "PreToolUse",
+        "PostToolUse",
+        "Stop",
+        "SubagentStop",
+        "UserPromptSubmit",
+        "Notification",
+        "PreCompact",
+        "SessionStart"
+      ]
+
+      actual_events = Map.keys(settings["hooks"])
+
+      for event <- expected_events do
+        assert event in actual_events,
+               "Expected #{event} to be registered with complex reporters config"
+      end
+    end
+
+    test "no hooks configured but reporters present registers all events" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              reporters: [
+                {:webhook, url: "https://example.com/webhook"}
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      expected_events = [
+        "PreToolUse",
+        "PostToolUse",
+        "Stop",
+        "SubagentStop",
+        "UserPromptSubmit",
+        "Notification",
+        "PreCompact",
+        "SessionStart"
+      ]
+
+      actual_events = Map.keys(settings["hooks"])
+
+      for event <- expected_events do
+        assert event in actual_events,
+               "Expected #{event} to be registered when only reporters are configured"
+      end
+    end
+
+    test "no hooks and no reporters creates empty settings" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              some_other_config: true
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert_creates(igniter, ".claude/settings.json")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      refute Map.has_key?(settings, "hooks")
+    end
+
+    test "backward compatibility: existing configs without reporters unchanged" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              hooks: %{
+                stop: [:compile, :format],
+                post_tool_use: [:compile, :format],
+                pre_tool_use: [:compile, :format, :unused_deps],
+                subagent_stop: [:compile, :format]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      expected_events = ["Stop", "PostToolUse", "PreToolUse", "SubagentStop"]
+      unexpected_events = ["UserPromptSubmit", "Notification", "PreCompact", "SessionStart"]
+
+      actual_events = Map.keys(settings["hooks"])
+
+      for event <- expected_events do
+        assert event in actual_events,
+               "Expected #{event} to be registered (backward compatibility)"
+      end
+
+      for event <- unexpected_events do
+        refute event in actual_events,
+               "Did not expect #{event} to be registered (backward compatibility)"
+      end
+    end
+  end
 end
