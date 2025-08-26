@@ -24,3 +24,6 @@ claude-*.tar
 
 # Database files
 /db/
+
+# Claude Code logs
+.claude/logs/

@@ -73,27 +73,21 @@ defmodule Claude.Hooks.Reporter do
   Dispatches an event to all configured and enabled reporters.
 
   Reads the `:reporters` configuration from the provided config map,
-  filters for enabled reporters, and executes each one asynchronously.
+  filters for enabled reporters, and executes each one synchronously.
 
   Errors from individual reporters are logged but don't affect other reporters.
-
-  ## Options
-
-  - `:async` (boolean) - Whether to run reporters asynchronously. Defaults to `true`.
 
   ## Example
 
       Claude.Hooks.Reporter.dispatch(event_data, config)
   """
-  @spec dispatch(event_data, config :: map(), keyword()) :: :ok
-  def dispatch(event_data, config, opts \\ []) do
-    async? = Keyword.get(opts, :async, true)
-
+  @spec dispatch(event_data, config :: map()) :: :ok
+  def dispatch(event_data, config) do
     config
     |> Map.get(:reporters, [])
     |> Enum.filter(&enabled?/1)
     |> Enum.map(&expand_reporter/1)
-    |> Enum.each(&run_reporter(&1, event_data, async?))
+    |> Enum.each(&run_reporter(&1, event_data))
 
     :ok
   end
@@ -119,6 +113,14 @@ defmodule Claude.Hooks.Reporter do
     {Claude.Hooks.Reporters.Webhook, opts}
   end
 
+  defp expand_reporter(:jsonl) do
+    {Claude.Hooks.Reporters.Jsonl, []}
+  end
+
+  defp expand_reporter({:jsonl, opts}) when is_list(opts) do
+    {Claude.Hooks.Reporters.Jsonl, opts}
+  end
+
   defp expand_reporter({module, opts}) when is_atom(module) and is_list(opts) do
     {module, opts}
   end
@@ -132,21 +134,16 @@ defmodule Claude.Hooks.Reporter do
     nil
   end
 
-  defp run_reporter(nil, _event_data, _async?), do: :ok
+  defp run_reporter(nil, _event_data), do: :ok
 
-  defp run_reporter({module, opts}, event_data, async?) do
-    if async? do
-      Task.start(fn ->
-        safe_report(module, opts, event_data)
-      end)
-    else
-      safe_report(module, opts, event_data)
-    end
-
+  defp run_reporter({module, opts}, event_data) do
+    safe_report(module, opts, event_data)
     :ok
   end
 
   defp safe_report(module, opts, event_data) do
+    Code.ensure_loaded(module)
+
     if function_exported?(module, :report, 2) do
       case module.report(event_data, opts) do
         :ok ->
