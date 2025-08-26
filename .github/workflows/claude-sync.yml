@@ -31,7 +31,17 @@ jobs:
     - name: Sync Claude
       run: mix claude.install --yes
       
+    - name: Check for changes
+      id: changes
+      run: |
+        if git diff --quiet; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+      
     - name: Create Pull Request
+      if: steps.changes.outputs.has_changes == 'true'
       uses: peter-evans/create-pull-request@v5
       with:
         commit-message: "Weekly Claude sync"
