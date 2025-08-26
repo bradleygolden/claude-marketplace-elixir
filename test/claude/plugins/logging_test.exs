@@ -170,7 +170,6 @@ defmodule Claude.Plugins.LoggingTest do
     test "relies on reporter system for automatic event capture" do
       config = Logging.config([])
 
-      # No hook declarations needed - events are automatically captured by reporters
       refute Map.has_key?(config, :hooks)
       assert Map.has_key?(config, :reporters)
     end
