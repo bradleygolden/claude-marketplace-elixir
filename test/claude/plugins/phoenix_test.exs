@@ -122,7 +122,7 @@ defmodule Claude.Plugins.PhoenixTest do
       igniter = Igniter.new()
       mock_phoenix_project(igniter, "1.8.0", [])
 
-      result = Phoenix.config(igniter: igniter, include_daisyui: true)
+      result = Phoenix.config(igniter: igniter, include_daisyui?: true)
 
       web_memories = result.nested_memories["lib/my_app_web"]
 
@@ -137,7 +137,7 @@ defmodule Claude.Plugins.PhoenixTest do
       igniter = Igniter.new()
       mock_phoenix_project(igniter, "1.8.0", [])
 
-      result = Phoenix.config(igniter: igniter, include_daisyui: false)
+      result = Phoenix.config(igniter: igniter, include_daisyui?: false)
 
       web_memories = result.nested_memories["lib/my_app_web"]
 

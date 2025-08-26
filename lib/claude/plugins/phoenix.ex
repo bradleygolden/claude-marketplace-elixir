@@ -20,14 +20,14 @@ defmodule Claude.Plugins.Phoenix do
   Or with options:
 
       %{
-        plugins: [{Claude.Plugins.Phoenix, include_daisyui: false}]
+        plugins: [{Claude.Plugins.Phoenix, include_daisyui?: false}]
       }
 
   The plugin will automatically activate when a `:phoenix` dependency is detected in `mix.exs`.
 
   ## Options
 
-  * `:include_daisyui` - Whether to include DaisyUI component library documentation (default: `true`)
+  * `:include_daisyui?` - Whether to include DaisyUI component library documentation (default: `true`)
 
   ## Phoenix Version Support
 
@@ -46,7 +46,7 @@ defmodule Claude.Plugins.Phoenix do
 
   def config(opts) do
     igniter = Keyword.get(opts, :igniter)
-    include_daisyui? = Keyword.get(opts, :include_daisyui, true)
+    include_daisyui? = Keyword.get(opts, :include_daisyui?, true)
 
     if detect_phoenix_project?(igniter) do
       app_name = get_app_name(igniter)
