@@ -110,4 +110,19 @@ defmodule TestPlugins do
       raise "Intentional failure for testing"
     end
   end
+
+  defmodule WithReporters do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      %{
+        reporters: [
+          {:webhook, url: "https://example.com/plugin-webhook"}
+        ],
+        hooks: %{
+          stop: [:compile]
+        }
+      }
+    end
+  end
 end

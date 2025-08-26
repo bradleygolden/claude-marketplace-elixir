@@ -1535,5 +1535,45 @@ defmodule Mix.Tasks.Claude.InstallTest do
                "Did not expect #{event} to be registered (backward compatibility)"
       end
     end
+
+    test "registers all events when reporters are defined via plugins" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [TestPlugins.WithReporters],
+              hooks: %{
+                post_tool_use: [:format]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.assign(:test_mode, true)
+        |> Igniter.compose_task("claude.install")
+
+      source = igniter.rewrite |> Rewrite.source!(".claude/settings.json")
+      content = Rewrite.Source.get(source, :content)
+      settings = Jason.decode!(content)
+
+      expected_events = [
+        "PreToolUse",
+        "PostToolUse",
+        "Stop",
+        "SubagentStop",
+        "UserPromptSubmit",
+        "Notification",
+        "PreCompact",
+        "SessionStart"
+      ]
+
+      actual_events = Map.keys(settings["hooks"])
+
+      for event <- expected_events do
+        assert event in actual_events,
+               "Expected #{event} to be registered when reporters are defined via plugins"
+      end
+    end
   end
 end
