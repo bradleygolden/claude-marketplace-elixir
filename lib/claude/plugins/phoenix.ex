@@ -75,15 +75,28 @@ defmodule Claude.Plugins.Phoenix do
   end
 
   defp get_phoenix_version do
+    try do
+      # Try to get the version from the loaded application first
+      case Application.spec(:phoenix, :vsn) do
+        vsn when is_list(vsn) -> List.to_string(vsn)
+        _ -> get_phoenix_version_from_lock()
+      end
+    rescue
+      _ -> get_phoenix_version_from_lock()
+    end
+  end
+
+  defp get_phoenix_version_from_lock do
     case File.read("mix.lock") do
       {:ok, content} ->
         case Regex.run(~r/"phoenix":[^}]*"([\d\.]+)"/, content) do
           [_, version] -> version
-          _ -> "0.0.0"
+          # Default to 1.8.0 to enable new features
+          _ -> "1.8.0"
         end
 
       _ ->
-        "0.0.0"
+        "1.8.0"
     end
   end
 
