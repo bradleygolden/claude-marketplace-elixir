@@ -1825,7 +1825,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert String.contains?(content, ":tidewave")
     end
 
-    @tag :skip
     test "Phoenix plugin with custom port option works correctly" do
       igniter =
         phx_test_project(

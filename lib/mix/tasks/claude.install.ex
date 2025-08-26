@@ -736,12 +736,43 @@ defmodule Mix.Tasks.Claude.Install do
             {:ok, processed_config} ->
               mcp_servers = Map.get(processed_config, :mcp_servers, [])
 
-              if tidewave_already_configured?(mcp_servers) do
+              # Check if tidewave is already explicitly configured in the original file
+              original_mcp_servers = Map.get(original_config, :mcp_servers, [])
+              original_has_tidewave = tidewave_already_configured?(original_mcp_servers)
+
+              if original_has_tidewave do
+                # Don't modify if user already has explicit tidewave config
                 igniter
               else
-                # Add Tidewave to the original config (preserving plugins, etc.)
-                original_mcp_servers = Map.get(original_config, :mcp_servers, [])
-                updated_servers = add_tidewave_to_list(original_mcp_servers)
+                # Add tidewave using plugin config if user provided custom port, otherwise simple atom
+                phoenix_has_custom_port =
+                  case Map.get(original_config, :plugins, []) do
+                    plugins when is_list(plugins) ->
+                      Enum.any?(plugins, fn
+                        {Claude.Plugins.Phoenix, opts} when is_list(opts) ->
+                          Keyword.has_key?(opts, :port)
+
+                        _ ->
+                          false
+                      end)
+
+                    _ ->
+                      false
+                  end
+
+                tidewave_config =
+                  if phoenix_has_custom_port and tidewave_already_configured?(mcp_servers) do
+                    # Extract the plugin's tidewave configuration
+                    Enum.find_value(mcp_servers, :tidewave, fn
+                      {:tidewave, opts} -> {:tidewave, opts}
+                      :tidewave -> :tidewave
+                      _ -> nil
+                    end)
+                  else
+                    :tidewave
+                  end
+
+                updated_servers = add_tidewave_to_list(original_mcp_servers, tidewave_config)
                 updated_config = Map.put(original_config, :mcp_servers, updated_servers)
 
                 igniter
@@ -810,6 +841,14 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp tidewave_already_configured?(_), do: false
+
+  defp add_tidewave_to_list(mcp_servers, tidewave_config) when is_list(mcp_servers) do
+    [tidewave_config | mcp_servers]
+  end
+
+  defp add_tidewave_to_list(_, tidewave_config) do
+    [tidewave_config]
+  end
 
   defp add_tidewave_to_list(mcp_servers) when is_list(mcp_servers) do
     [:tidewave | mcp_servers]
@@ -1207,7 +1246,7 @@ defmodule Mix.Tasks.Claude.Install do
   defp read_config_with_plugins(igniter, path) do
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, base_config} when is_map(base_config) ->
-        apply_plugins_to_config(base_config)
+        apply_plugins_to_config(igniter, base_config)
 
       error ->
         error
@@ -1215,13 +1254,20 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   # Apply plugins to a config map (similar to Claude.Config but works with any config)
-  defp apply_plugins_to_config(base_config) do
+  defp apply_plugins_to_config(igniter, base_config) do
     case Map.get(base_config, :plugins, []) do
       [] ->
         {:ok, Map.delete(base_config, :plugins)}
 
       plugins when is_list(plugins) ->
-        case Claude.Plugin.load_plugins(plugins) do
+        # Add igniter context to each plugin's options
+        plugins_with_igniter =
+          Enum.map(plugins, fn
+            {module, opts} when is_list(opts) -> {module, Keyword.put(opts, :igniter, igniter)}
+            module when is_atom(module) -> {module, [igniter: igniter]}
+          end)
+
+        case Claude.Plugin.load_plugins(plugins_with_igniter) do
           {:ok, plugin_configs} ->
             final_config =
               (plugin_configs ++ [base_config])
