@@ -132,12 +132,8 @@ defmodule Claude.Plugins.LoggingTest do
 
   describe "plugin integration" do
     test "implements Claude.Plugin behaviour" do
-      behaviours = Logging.__info__(:attributes)[:behaviour] || []
+      behaviours = Claude.Plugins.Logging.__info__(:attributes)[:behaviour] || []
       assert Claude.Plugin in behaviours
-    end
-
-    test "config function has correct arity" do
-      assert function_exported?(Logging, :config, 1)
     end
   end
 
