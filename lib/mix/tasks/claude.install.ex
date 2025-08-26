@@ -343,7 +343,12 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp parse_hook_spec({task, opts}, event_type, index) when is_binary(task) and is_list(opts) do
     id = :"#{event_type}_#{index}"
-    matcher = if event_type == :session_start, do: "*", else: format_matcher(opts[:when] || "*")
+
+    matcher =
+      if event_type in [:session_start, :session_end],
+        do: "*",
+        else: format_matcher(opts[:when] || "*")
+
     description = "Mix task: #{task}"
     {:mix_task, task, event_type, matcher, description, [id: id]}
   end
@@ -487,7 +492,8 @@ defmodule Mix.Tasks.Claude.Install do
           "UserPromptSubmit",
           "Notification",
           "PreCompact",
-          "SessionStart"
+          "SessionStart",
+          "SessionEnd"
         ]
       else
         all_hooks
@@ -596,6 +602,7 @@ defmodule Mix.Tasks.Claude.Install do
       :subagent_stop -> "SubagentStop"
       :pre_compact -> "PreCompact"
       :session_start -> "SessionStart"
+      :session_end -> "SessionEnd"
       _ -> Atom.to_string(event_atom)
     end
   end
@@ -679,6 +686,7 @@ defmodule Mix.Tasks.Claude.Install do
       :notification -> "Notification"
       :pre_compact -> "PreCompact"
       :session_start -> "SessionStart"
+      :session_end -> "SessionEnd"
       other -> other |> Atom.to_string() |> Macro.camelize()
     end
   end
