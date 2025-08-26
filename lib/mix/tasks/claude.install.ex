@@ -728,25 +728,47 @@ defmodule Mix.Tasks.Claude.Install do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
-      case read_config_with_plugins(igniter, claude_exs_path) do
-        {:ok, config} when is_map(config) ->
-          mcp_servers = Map.get(config, :mcp_servers, [])
+      # Read the original config without plugin processing to preserve the original structure
+      case read_and_eval_claude_exs(igniter, claude_exs_path) do
+        {:ok, original_config} when is_map(original_config) ->
+          # Check if Tidewave is already configured using the plugin-processed config
+          case read_config_with_plugins(igniter, claude_exs_path) do
+            {:ok, processed_config} ->
+              mcp_servers = Map.get(processed_config, :mcp_servers, [])
 
-          if tidewave_already_configured?(mcp_servers) do
-            igniter
-          else
-            updated_servers = add_tidewave_to_list(mcp_servers)
-            updated_config = Map.put(config, :mcp_servers, updated_servers)
+              if tidewave_already_configured?(mcp_servers) do
+                igniter
+              else
+                # Add Tidewave to the original config (preserving plugins, etc.)
+                original_mcp_servers = Map.get(original_config, :mcp_servers, [])
+                updated_servers = add_tidewave_to_list(original_mcp_servers)
+                updated_config = Map.put(original_config, :mcp_servers, updated_servers)
 
-            igniter
-            |> Igniter.update_file(claude_exs_path, fn source ->
-              Rewrite.Source.update(
-                source,
-                :content,
-                inspect(updated_config, pretty: true, limit: :infinity)
-              )
-            end)
-            |> Config.write_mcp_config(updated_servers)
+                igniter
+                |> Igniter.update_file(claude_exs_path, fn source ->
+                  Rewrite.Source.update(
+                    source,
+                    :content,
+                    inspect(updated_config, pretty: true, limit: :infinity)
+                  )
+                end)
+                |> Config.write_mcp_config(updated_servers)
+              end
+
+            _ ->
+              # Fallback: just add to original config
+              updated_servers = add_tidewave_to_list(Map.get(original_config, :mcp_servers, []))
+              updated_config = Map.put(original_config, :mcp_servers, updated_servers)
+
+              igniter
+              |> Igniter.update_file(claude_exs_path, fn source ->
+                Rewrite.Source.update(
+                  source,
+                  :content,
+                  inspect(updated_config, pretty: true, limit: :infinity)
+                )
+              end)
+              |> Config.write_mcp_config(updated_servers)
           end
 
         _ ->

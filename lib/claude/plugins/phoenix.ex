@@ -20,7 +20,7 @@ defmodule Claude.Plugins.Phoenix do
   Or with options:
 
       %{
-        plugins: [{Claude.Plugins.Phoenix, include_daisyui?: false}]
+        plugins: [{Claude.Plugins.Phoenix, include_daisyui?: false, port: 4001}]
       }
 
   The plugin will automatically activate when a `:phoenix` dependency is detected in `mix.exs`.
@@ -28,6 +28,7 @@ defmodule Claude.Plugins.Phoenix do
   ## Options
 
   * `:include_daisyui?` - Whether to include DaisyUI component library documentation (default: `true`)
+  * `:port` - Default port for Tidewave MCP server (default: `4000`). Environment variable `PORT` will still override this.
 
   ## Phoenix Version Support
 
@@ -39,7 +40,7 @@ defmodule Claude.Plugins.Phoenix do
   * `test/` directory gets Elixir and OTP usage rules (all versions)
   * `lib/app_name/` directory gets business logic rules plus Ecto rules (if detected)
   * `lib/app_name_web/` directory gets Phoenix web rules, DaisyUI docs (if enabled), plus LiveView rules (if detected)
-  * Tidewave MCP server configured on port 4000 (or PORT environment variable)
+  * Tidewave MCP server configured on specified port (default 4000, overrideable via PORT environment variable)
   """
 
   @behaviour Claude.Plugin
@@ -47,13 +48,14 @@ defmodule Claude.Plugins.Phoenix do
   def config(opts) do
     igniter = Keyword.get(opts, :igniter)
     include_daisyui? = Keyword.get(opts, :include_daisyui?, true)
+    port = Keyword.get(opts, :port, 4000)
 
     if detect_phoenix_project?(igniter) do
       app_name = get_app_name(igniter)
       phoenix_version = get_phoenix_version()
 
       %{
-        mcp_servers: [tidewave: [port: "${PORT:-4000}"]],
+        mcp_servers: [tidewave: [port: "${PORT:-#{port}}"]],
         nested_memories:
           build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?)
       }

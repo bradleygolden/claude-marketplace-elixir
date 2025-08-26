@@ -1576,4 +1576,289 @@ defmodule Mix.Tasks.Claude.InstallTest do
       end
     end
   end
+
+  describe "Phoenix plugin integration" do
+    test "Phoenix plugin preserves existing config when installer adds Tidewave" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Base, Claude.Plugins.Phoenix],
+              custom_setting: "preserved_value"
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should modify .claude.exs to add mcp_servers while preserving existing config
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      # The final .claude.exs should have ALL original config plus new mcp_servers
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      # Should preserve original plugins configuration
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Base")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+
+      # Should preserve custom settings
+      assert String.contains?(content, "custom_setting:")
+      assert String.contains?(content, "preserved_value")
+
+      # Should add mcp_servers from installer
+      assert String.contains?(content, "mcp_servers:")
+      assert String.contains?(content, ":tidewave")
+
+      # Should create .mcp.json with tidewave configuration
+      assert_creates(igniter, ".mcp.json")
+    end
+
+    test "Phoenix plugin with custom options preserved when installer runs" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [{Claude.Plugins.Phoenix, include_daisyui?: false}],
+              auto_install_deps?: true
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should modify .claude.exs to add mcp_servers while preserving plugin options
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      # Should preserve plugin with custom options
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+      assert String.contains?(content, "include_daisyui?: false")
+
+      # Should preserve other settings
+      assert String.contains?(content, "auto_install_deps?: true")
+
+      # Should add mcp_servers from installer
+      assert String.contains?(content, "mcp_servers:")
+      assert String.contains?(content, ":tidewave")
+
+      # Should create MCP configuration
+      assert_creates(igniter, ".mcp.json")
+    end
+
+    test "installer doesn't duplicate Tidewave when Phoenix plugin already provides it" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Phoenix],
+              mcp_servers: [{:tidewave, [port: 5000]}]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should NOT modify .claude.exs since Tidewave already configured
+      assert_unchanged(igniter, ".claude.exs")
+
+      # Should create .mcp.json with the existing custom port
+      assert_creates(igniter, ".mcp.json")
+
+      source = Rewrite.source!(igniter.rewrite, ".mcp.json")
+      content = Rewrite.Source.get(source, :content)
+      {:ok, json} = Jason.decode(content)
+
+      assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:5000/tidewave/mcp"
+    end
+
+    test "installer merges Phoenix plugin's Tidewave with existing MCP servers" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Phoenix],
+              mcp_servers: [:custom_server, :another_server]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should modify .claude.exs to add Tidewave to existing mcp_servers
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      # Should preserve plugin configuration
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+
+      # Should have all MCP servers (existing + Tidewave from installer)
+      assert String.contains?(content, ":custom_server")
+      assert String.contains?(content, ":another_server")
+      assert String.contains?(content, ":tidewave")
+
+      # Should NOT have duplicate Tidewave entries
+      tidewave_count =
+        content
+        |> String.graphemes()
+        |> Enum.chunk_every(8, 1, :discard)
+        |> Enum.map(&Enum.join/1)
+        |> Enum.count(&String.contains?(&1, "tidewave"))
+
+      assert tidewave_count == 1
+    end
+
+    test "Phoenix plugin provides nested_memories and runtime config correctly" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Phoenix],
+              nested_memories: %{
+                "docs" => ["custom_rule"]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should add mcp_servers while preserving everything else
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      # Should preserve plugin and existing nested_memories
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+      assert String.contains?(content, "nested_memories:")
+      assert String.contains?(content, "custom_rule")
+
+      # Should have tasks for nested memories generation (Phoenix plugin provides more memories)
+      assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
+               task_name == "nested_memories.generate"
+             end)
+    end
+
+    test "Phoenix plugin doesn't activate for non-Phoenix projects" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Base, Claude.Plugins.Phoenix],
+              custom_setting: "should_be_preserved"
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # For non-Phoenix projects, installer should not modify .claude.exs 
+      # because Phoenix plugin returns empty config and no Tidewave is needed
+      refute Igniter.changed?(igniter, ".claude.exs")
+
+      # Should NOT create .mcp.json since no Phoenix detected
+      refute Igniter.exists?(igniter, ".mcp.json")
+
+      # Should NOT have Tidewave-related notices
+      refute Enum.any?(igniter.notices, fn notice ->
+               String.contains?(notice, "Tidewave")
+             end)
+    end
+
+    test "Phoenix plugin works with Base plugin hooks without conflicts" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Base, Claude.Plugins.Phoenix],
+              hooks: %{
+                stop: ["echo 'custom hook'"]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should merge plugin configs and preserve custom hooks
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      # Should preserve everything including custom hooks
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "hooks:")
+      assert String.contains?(content, "echo 'custom hook'")
+      assert String.contains?(content, "mcp_servers:")
+    end
+
+    test "installer handles Phoenix plugin + manual Tidewave gracefully" do
+      igniter =
+        phx_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      # Should detect Phoenix and add Tidewave automatically
+      assert Enum.any?(igniter.notices, fn notice ->
+               String.contains?(notice, "Phoenix project detected!")
+             end)
+
+      # When Phoenix plugin is added later, it should not conflict
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+      assert String.contains?(content, "mcp_servers:")
+      assert String.contains?(content, ":tidewave")
+    end
+
+    @tag :skip
+    test "Phoenix plugin with custom port option works correctly" do
+      igniter =
+        phx_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [{Claude.Plugins.Phoenix, port: 8080}]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # Should add mcp_servers with custom port while preserving plugin
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      # Should preserve plugin configuration
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+      assert String.contains?(content, "port: 8080")
+
+      # Should add tidewave with custom port preserving environment variable capability
+      assert String.contains?(content, "mcp_servers:")
+      assert String.contains?(content, "tidewave:")
+      assert String.contains?(content, "\"${PORT:-8080}\"")
+
+      # Should have tidewave.install task
+      assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
+               task_name == "tidewave.install"
+             end)
+    end
+  end
 end

@@ -116,4 +116,46 @@ defmodule Claude.Plugins.PhoenixTest do
       assert map_size(result.nested_memories) > 0
     end
   end
+
+  describe "config/1 - port customization" do
+    test "uses default port 4000 when no port specified" do
+      igniter = phx_test_project()
+      result = Phoenix.config(igniter: igniter)
+
+      assert result.mcp_servers == [tidewave: [port: "${PORT:-4000}"]]
+    end
+
+    test "uses custom port when specified" do
+      igniter = phx_test_project()
+      result = Phoenix.config(igniter: igniter, port: 4001)
+
+      assert result.mcp_servers == [tidewave: [port: "${PORT:-4001}"]]
+    end
+
+    test "custom port preserves environment variable override capability" do
+      igniter = phx_test_project()
+      result = Phoenix.config(igniter: igniter, port: 3000)
+
+      # Environment variable PORT should still override the custom port
+      assert result.mcp_servers == [tidewave: [port: "${PORT:-3000}"]]
+    end
+
+    test "port option works with other options" do
+      igniter = phx_test_project()
+      result = Phoenix.config(igniter: igniter, port: 8080, include_daisyui?: false)
+
+      assert result.mcp_servers == [tidewave: [port: "${PORT:-8080}"]]
+
+      web_memories =
+        result.nested_memories
+        |> Enum.find(fn {path, _} -> String.contains?(path, "_web") end)
+        |> elem(1)
+
+      daisyui_entry =
+        {:url, "https://daisyui.com/llms.txt",
+         as: "DaisyUI Component Library", cache: "./ai/daisyui/llms.md"}
+
+      refute daisyui_entry in web_memories
+    end
+  end
 end

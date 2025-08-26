@@ -7,12 +7,14 @@ defmodule Claude.NestedMemories do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
-      case read_and_eval_claude_exs(igniter, claude_exs_path) do
+      case read_config_with_plugins(igniter, claude_exs_path) do
         {:ok, config} when is_map(config) ->
           nested_memories = Map.get(config, :nested_memories, %{})
 
           if is_map(nested_memories) and nested_memories != %{} do
-            process_nested_memories(igniter, nested_memories)
+            igniter
+            |> process_nested_memories(nested_memories)
+            |> Igniter.add_task("nested_memories.generate")
           else
             igniter
           end
@@ -199,6 +201,41 @@ defmodule Claude.NestedMemories do
       end
     rescue
       _ -> {:error, :eval_error}
+    end
+  end
+
+  defp read_config_with_plugins(igniter, path) do
+    case read_and_eval_claude_exs(igniter, path) do
+      {:ok, base_config} when is_map(base_config) ->
+        apply_plugins_to_config(base_config)
+
+      error ->
+        error
+    end
+  end
+
+  # Apply plugins to a config map (similar to Claude.Config but works with any config)
+  defp apply_plugins_to_config(base_config) do
+    case Map.get(base_config, :plugins, []) do
+      [] ->
+        {:ok, Map.delete(base_config, :plugins)}
+
+      plugins when is_list(plugins) ->
+        case Claude.Plugin.load_plugins(plugins) do
+          {:ok, plugin_configs} ->
+            final_config =
+              (plugin_configs ++ [base_config])
+              |> Claude.Plugin.merge_configs()
+              |> Map.delete(:plugins)
+
+            {:ok, final_config}
+
+          {:error, _errors} ->
+            {:ok, Map.delete(base_config, :plugins)}
+        end
+
+      _plugins ->
+        {:ok, Map.delete(base_config, :plugins)}
     end
   end
 end
