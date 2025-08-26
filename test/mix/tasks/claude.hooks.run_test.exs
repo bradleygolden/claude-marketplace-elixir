@@ -1867,4 +1867,76 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       assert_received {:system_halt, 2}
     end
   end
+
+  describe "session_end hooks" do
+    test "runs session_end hooks with reason" do
+      config = %{
+        hooks: %{
+          session_end: [
+            "cleanup_task",
+            {"log_session_stats", when: "logout"}
+          ]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionEnd",
+        "reason" => "logout"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args, _env_vars, _output_mode ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_end"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      # cleanup_task should run (no matcher)
+      assert_received {:mix_task_run, "cleanup_task", []}
+      # log_session_stats should run (matches "logout" reason)
+      assert_received {:mix_task_run, "log_session_stats", []}
+    end
+
+    test "session_end hooks respect reason matching" do
+      config = %{
+        hooks: %{
+          session_end: [
+            {"clear_cache", when: "clear"},
+            {"save_session", when: ["logout", "exit"]},
+            "always_run"
+          ]
+        }
+      }
+
+      event_data = %{
+        "session_id" => "test123",
+        "hook_event_name" => "SessionEnd",
+        "reason" => "clear"
+      }
+
+      test_pid = self()
+
+      task_runner = fn task, args, _env_vars, _output_mode ->
+        send(test_pid, {:mix_task_run, task, args})
+        :ok
+      end
+
+      Run.run(["session_end"],
+        io_reader: fn :stdio, :eof -> Jason.encode!(event_data) end,
+        config_reader: fn -> {:ok, config} end,
+        task_runner: task_runner
+      )
+
+      assert_received {:mix_task_run, "clear_cache", []}
+      assert_received {:mix_task_run, "always_run", []}
+      refute_received {:mix_task_run, "save_session", _}
+    end
+  end
 end

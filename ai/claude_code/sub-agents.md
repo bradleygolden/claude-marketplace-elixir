@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/sub-agents.md
-cached_at: 2025-08-21T19:04:24.119737Z
+cached_at: 2025-08-26T18:58:05.854610Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
