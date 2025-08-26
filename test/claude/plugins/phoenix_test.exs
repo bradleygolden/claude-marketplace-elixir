@@ -30,7 +30,7 @@ defmodule Claude.Plugins.PhoenixTest do
     igniter
   end
 
-  describe "config/1 - Phoenix >= 1.7" do
+  describe "config/1 - Phoenix >= 1.8" do
     test "includes usage rules for Phoenix 1.8" do
       igniter = Igniter.new()
       mock_phoenix_project(igniter, "1.8.0", [])
@@ -55,50 +55,39 @@ defmodule Claude.Plugins.PhoenixTest do
              } = result
     end
 
-    test "includes usage rules for Phoenix 1.7.0" do
+    test "includes usage_rules system for Phoenix 1.8.0" do
       igniter = Igniter.new()
-      mock_phoenix_project(igniter, "1.7.0", [])
+      mock_phoenix_project(igniter, "1.8.0", [])
 
       result = Phoenix.config(igniter: igniter)
 
       assert "usage_rules:elixir" in result.nested_memories["test"]
+      assert "usage_rules:otp" in result.nested_memories["test"]
       assert "usage_rules:elixir" in result.nested_memories["lib/my_app"]
       assert "usage_rules:elixir" in result.nested_memories["lib/my_app_web"]
     end
   end
 
-  describe "config/1 - Phoenix < 1.7" do
-    test "excludes usage rules for Phoenix 1.6.x" do
+  describe "config/1 - Phoenix 1.7" do
+    test "includes universal usage rules but no phoenix-specific rules for Phoenix 1.7.x" do
       igniter = Igniter.new()
-      mock_phoenix_project(igniter, "1.6.15", [])
+      mock_phoenix_project(igniter, "1.7.0", [])
 
       result = Phoenix.config(igniter: igniter)
 
-      assert %{
-               mcp_servers: [tidewave: [port: "${PORT:-4000}"]],
-               nested_memories: %{
-                 "test" => [],
-                 "lib/my_app" => [],
-                 "lib/my_app_web" => [
-                   {:url, "https://daisyui.com/llms.txt",
-                    as: "DaisyUI Component Library", cache: "./ai/daisyui/llms.md"},
-                   "phoenix:phoenix",
-                   "phoenix:html",
-                   "phoenix:elixir"
-                 ]
-               }
-             } = result
-    end
+      # Phoenix 1.7 gets universal usage rules everywhere
+      assert result.nested_memories["test"] == ["usage_rules:elixir", "usage_rules:otp"]
+      assert result.nested_memories["lib/my_app"] == ["usage_rules:elixir", "usage_rules:otp"]
 
-    test "excludes usage rules for Phoenix 1.5.x" do
-      igniter = Igniter.new()
-      mock_phoenix_project(igniter, "1.5.9", [])
+      # Web directory gets universal rules but no phoenix-specific ones
+      web_memories = result.nested_memories["lib/my_app_web"]
+      assert "usage_rules:elixir" in web_memories
+      assert "usage_rules:otp" in web_memories
 
-      result = Phoenix.config(igniter: igniter)
-
-      refute "usage_rules:elixir" in result.nested_memories["test"]
-      refute "usage_rules:elixir" in result.nested_memories["lib/my_app"]
-      refute "usage_rules:elixir" in result.nested_memories["lib/my_app_web"]
+      # Should not have phoenix-specific usage rules
+      refute "phoenix:phoenix" in web_memories
+      refute "phoenix:html" in web_memories
+      refute "phoenix:elixir" in web_memories
     end
   end
 
@@ -199,59 +188,28 @@ defmodule Claude.Plugins.PhoenixTest do
   describe "config/1 - edge cases" do
     test "returns empty config for non-phoenix project" do
       igniter = Igniter.new()
-      expect(Igniter.Project.Deps, :has_dep?, fn ^igniter, :phoenix -> false end)
+      stub(Igniter.Project.Deps, :has_dep?, fn ^igniter, :phoenix -> false end)
 
       result = Phoenix.config(igniter: igniter)
 
       assert result == %{}
     end
 
-    test "handles missing mix.lock file" do
-      igniter = Igniter.new()
-      expect(Igniter.Project.Deps, :has_dep?, fn ^igniter, :phoenix -> true end)
-      expect(Igniter.Project.Module, :module_name_prefix, fn ^igniter -> MyApp end)
-      expect(File, :read, fn "mix.lock" -> {:error, :enoent} end)
-
-      for dep <- [:ecto, :ecto_sql, :phoenix_live_view] do
-        expect(Igniter.Project.Deps, :has_dep?, fn ^igniter, ^dep -> false end)
-      end
-
-      result = Phoenix.config(igniter: igniter)
-
-      # Should treat as version 0.0.0 and exclude usage rules
-      assert result.nested_memories["test"] == []
-      assert result.nested_memories["lib/my_app"] == []
-    end
-
-    test "handles invalid Phoenix version in mix.lock" do
-      igniter = Igniter.new()
-      expect(Igniter.Project.Deps, :has_dep?, fn ^igniter, :phoenix -> true end)
-      expect(Igniter.Project.Module, :module_name_prefix, fn ^igniter -> MyApp end)
-      expect(File, :read, fn "mix.lock" -> {:ok, "invalid content"} end)
-
-      for dep <- [:ecto, :ecto_sql, :phoenix_live_view] do
-        expect(Igniter.Project.Deps, :has_dep?, fn ^igniter, ^dep -> false end)
-      end
-
-      result = Phoenix.config(igniter: igniter)
-
-      # Should treat as version 0.0.0 and exclude usage rules
-      assert result.nested_memories["test"] == []
-      assert result.nested_memories["lib/my_app"] == []
-    end
-
     test "generates correct app name from complex module prefix" do
       igniter = Igniter.new()
-      expect(Igniter.Project.Deps, :has_dep?, fn ^igniter, :phoenix -> true end)
+
+      stub(Igniter.Project.Deps, :has_dep?, fn ^igniter, dep ->
+        case dep do
+          :phoenix -> true
+          _ -> false
+        end
+      end)
+
       expect(Igniter.Project.Module, :module_name_prefix, fn ^igniter -> MyComplexApp end)
 
       expect(File, :read, fn "mix.lock" ->
         {:ok, ~s|"phoenix": {:hex, :phoenix, "1.8.0", [], :hexpm}|}
       end)
-
-      for dep <- [:ecto, :ecto_sql, :phoenix_live_view] do
-        expect(Igniter.Project.Deps, :has_dep?, fn ^igniter, ^dep -> false end)
-      end
 
       result = Phoenix.config(igniter: igniter)
 

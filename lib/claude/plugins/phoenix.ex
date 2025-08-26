@@ -31,12 +31,12 @@ defmodule Claude.Plugins.Phoenix do
 
   ## Phoenix Version Support
 
-  * Phoenix >= 1.7: Full support with usage rules and modern Phoenix patterns
-  * Phoenix < 1.7: Basic support without usage rules (which weren't available in older versions)
+  * Phoenix >= 1.8: Full support with phoenix-specific usage rules and modern Phoenix patterns
+  * Phoenix <= 1.7: Basic support with universal Elixir/OTP usage rules only
 
   ## Configuration Generated
 
-  * `test/` directory gets Elixir and OTP usage rules (Phoenix >= 1.7 only)
+  * `test/` directory gets Elixir and OTP usage rules (all versions)
   * `lib/app_name/` directory gets business logic rules plus Ecto rules (if detected)
   * `lib/app_name_web/` directory gets Phoenix web rules, DaisyUI docs (if enabled), plus LiveView rules (if detected)
   * Tidewave MCP server configured on port 4000 (or PORT environment variable)
@@ -87,8 +87,8 @@ defmodule Claude.Plugins.Phoenix do
     end
   end
 
-  defp phoenix_supports_usage_rules?(version) do
-    Version.match?(version, ">= 1.7.0")
+  defp phoenix_supports_phoenix_usage_rules?(version) do
+    Version.match?(version, ">= 1.8.0")
   end
 
   defp build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?) do
@@ -99,36 +99,25 @@ defmodule Claude.Plugins.Phoenix do
     }
   end
 
-  defp build_test_memories(phoenix_version) do
-    if phoenix_supports_usage_rules?(phoenix_version) do
-      ["usage_rules:elixir", "usage_rules:otp"]
-    else
-      []
-    end
+  defp build_test_memories(_phoenix_version) do
+    ["usage_rules:elixir", "usage_rules:otp"]
   end
 
-  defp build_app_memories(igniter, phoenix_version) do
-    base_rules =
-      if phoenix_supports_usage_rules?(phoenix_version) do
-        ["usage_rules:elixir", "usage_rules:otp"]
-      else
-        []
-      end
-
+  defp build_app_memories(igniter, _phoenix_version) do
+    base_rules = ["usage_rules:elixir", "usage_rules:otp"]
     base_rules ++ maybe_ecto_rules(igniter)
   end
 
   defp build_web_memories(igniter, phoenix_version, include_daisyui?) do
     daisyui_docs = maybe_daisyui_docs(include_daisyui?)
+    base_rules = ["usage_rules:elixir", "usage_rules:otp"]
 
-    base_rules =
-      if phoenix_supports_usage_rules?(phoenix_version) do
-        ["usage_rules:elixir", "usage_rules:otp"]
+    phoenix_rules =
+      if phoenix_supports_phoenix_usage_rules?(phoenix_version) do
+        ["phoenix:phoenix", "phoenix:html", "phoenix:elixir"]
       else
         []
       end
-
-    phoenix_rules = ["phoenix:phoenix", "phoenix:html", "phoenix:elixir"]
 
     daisyui_docs ++
       base_rules ++ phoenix_rules ++ maybe_liveview_rules(igniter) ++ maybe_ecto_rules(igniter)
