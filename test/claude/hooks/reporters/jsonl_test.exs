@@ -57,10 +57,8 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
         log_path = Path.join(temp_dir, "logs")
         opts = [path: log_path, filename_pattern: "append-test.jsonl"]
 
-        # Write first event
         assert Jsonl.report(@sample_event_data, opts) == :ok
 
-        # Write second event
         second_event = Map.put(@sample_event_data, "tool_name", "Edit")
         assert Jsonl.report(second_event, opts) == :ok
 
@@ -104,12 +102,10 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
     test "uses default options when not provided" do
       with_temp_dir(fn temp_dir ->
         File.cd!(temp_dir, fn ->
-          # Create .claude/logs in the current directory
           File.mkdir_p!(".claude/logs")
 
           assert Jsonl.report(@sample_event_data, []) == :ok
 
-          # Should create file with default pattern
           today = Date.utc_today() |> Date.to_iso8601()
           expected_file = ".claude/logs/events-#{today}.jsonl"
           assert File.exists?(expected_file)
@@ -165,7 +161,6 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
     end
 
     test "handles JSON encoding failures gracefully" do
-      # Create event data that can't be JSON encoded
       invalid_data = %{
         "hook_event_name" => "test",
         "circular" => :this_will_fail_json_encoding
@@ -174,7 +169,6 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
       with_temp_dir(fn temp_dir ->
         opts = [path: temp_dir, filename_pattern: "json-error.jsonl"]
 
-        # Mock Jason.encode to simulate failure
         stub(Jason, :encode, fn _ -> {:error, "encoding failed"} end)
 
         log =
@@ -189,7 +183,6 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
     end
 
     test "logs warnings on directory creation failure" do
-      # Try to write to an invalid path
       opts = [path: "/invalid/path/that/cannot/be/created", filename_pattern: "test.jsonl"]
 
       log =
@@ -214,14 +207,12 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
         [line] = String.split(content, "\n", trim: true)
         parsed = Jason.decode!(line)
 
-        # Check required fields
         assert Map.has_key?(parsed, "timestamp")
         assert Map.has_key?(parsed, "session_id")
         assert Map.has_key?(parsed, "event")
         assert Map.has_key?(parsed, "tool")
         assert Map.has_key?(parsed, "data")
 
-        # Verify data contains original event
         assert parsed["data"] == @sample_event_data
       end)
     end

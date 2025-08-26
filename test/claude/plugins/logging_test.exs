@@ -52,7 +52,6 @@ defmodule Claude.Plugins.LoggingTest do
       ]
 
       assert config.reporters == expected_reporters
-      # Should still declare all hooks
       assert Map.has_key?(config, :hooks)
       assert map_size(config.hooks) == 8
     end
@@ -71,7 +70,6 @@ defmodule Claude.Plugins.LoggingTest do
       ]
 
       assert config.reporters == expected_reporters
-      # Should still declare all hooks
       assert Map.has_key?(config, :hooks)
     end
 
@@ -115,7 +113,6 @@ defmodule Claude.Plugins.LoggingTest do
     end
 
     test "respects enabled flag in options" do
-      # When enabled is explicitly set to true
       config_enabled = Logging.config(enabled: true, path: "/test/path")
 
       assert config_enabled.reporters == [
@@ -128,7 +125,6 @@ defmodule Claude.Plugins.LoggingTest do
                 ]}
              ]
 
-      # When enabled is explicitly set to false
       config_disabled = Logging.config(enabled: false, path: "/test/path")
       assert config_disabled == %{}
     end
@@ -136,7 +132,6 @@ defmodule Claude.Plugins.LoggingTest do
 
   describe "plugin integration" do
     test "implements Claude.Plugin behaviour" do
-      # Verify the behaviour is implemented
       behaviours = Logging.__info__(:attributes)[:behaviour] || []
       assert Claude.Plugin in behaviours
     end
@@ -158,16 +153,12 @@ defmodule Claude.Plugins.LoggingTest do
     end
 
     test "preserves unknown options" do
-      # Test that unknown options are still passed through
       config = Logging.config(custom_option: "value")
       [{:jsonl, reporter_opts}] = config.reporters
 
-      # Should include the standard options
       assert reporter_opts[:path] == ".claude/logs"
       assert reporter_opts[:enabled] == true
 
-      # Custom options won't be in the reporter config since build_reporter_config
-      # only includes known options, which is correct behavior
       refute Keyword.has_key?(reporter_opts, :custom_option)
     end
   end
@@ -198,7 +189,6 @@ defmodule Claude.Plugins.LoggingTest do
 
       assert Map.has_key?(config, :hooks)
 
-      # Verify all Claude Code hook events are declared
       expected_events = [
         :pre_tool_use,
         :post_tool_use,
@@ -218,15 +208,12 @@ defmodule Claude.Plugins.LoggingTest do
                "Expected hook event #{inspect(event)} to have empty array"
       end)
 
-      # Verify we have the expected number of events (no more, no less)
       assert map_size(config.hooks) == length(expected_events)
     end
 
     test "empty hook arrays ensure registration without interference" do
       config = Logging.config([])
 
-      # All hook events should be empty arrays to ensure they get registered
-      # in settings.json but don't interfere with actual hook execution
       Enum.each(config.hooks, fn {event, hooks} ->
         assert hooks == [], "Hook event #{inspect(event)} should have empty array"
       end)
@@ -235,7 +222,6 @@ defmodule Claude.Plugins.LoggingTest do
     test "disabled plugin does not declare hook events" do
       config = Logging.config(enabled: false)
 
-      # When disabled, no hooks should be declared
       refute Map.has_key?(config, :hooks)
       assert config == %{}
     end
