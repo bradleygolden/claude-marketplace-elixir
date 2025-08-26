@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/settings.md
-cached_at: 2025-08-21T19:04:24.527064Z
+cached_at: 2025-08-26T19:44:42.955813Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -64,6 +64,7 @@ Code through hierarchical settings:
 | `model`                      | Override the default model to use for Claude Code                                                                                                                     | `"claude-3-5-sonnet-20241022"`                              |
 | `statusLine`                 | Configure a custom status line to display context. See [statusLine documentation](statusline)                                                                         | `{"type": "command", "command": "~/.claude/statusline.sh"}` |
 | `forceLoginMethod`           | Use `claudeai` to restrict login to Claude.ai accounts, `console` to restrict login to Anthropic Console (API usage billing) accounts                                 | `claudeai`                                                  |
+| `forceLoginOrgUUID`          | Specify the UUID of an organization to automatically select it during login, bypassing the organization selection step. Requires `forceLoginMethod` to be set         | `"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`                    |
 | `enableAllProjectMcpServers` | Automatically approve all MCP servers defined in project `.mcp.json` files                                                                                            | `true`                                                      |
 | `enabledMcpjsonServers`      | List of specific MCP servers from `.mcp.json` files to approve                                                                                                        | `["memory", "github"]`                                      |
 | `disabledMcpjsonServers`     | List of specific MCP servers from `.mcp.json` files to reject                                                                                                         | `["filesystem"]`                                            |
@@ -115,15 +116,6 @@ This hierarchy ensures that enterprise security policies are always enforced whi
 ### System prompt availability
 
 <Note>
-  Unlike for claude.ai, we do not publish Claude Code's internal system prompt on this website. Use CLAUDE.md files or `--append-system-prompt` to add custom instructions to Claude Code's behavior.
-</Note>
-
-### Excluding sensitive files
-
-To prevent Claude Code from accessing files containing sensitive information (e.g., API keys, secrets, environment files), use the `permissions.deny` setting in your `.claude/settings.json` file:
-
-```json
-{
-  "permissions
+  Unlike for claude.ai, we do not publish Claude Code's internal system prompt on this website. Use CLAUDE.md files or `--append-system-prompt` to add custom instructions to Claude Code's behavior
 
 [Content truncated due to length]

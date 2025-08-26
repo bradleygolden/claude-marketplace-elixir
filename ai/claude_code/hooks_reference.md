@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/hooks.md
-cached_at: 2025-08-21T19:04:23.873059Z
+cached_at: 2025-08-26T19:44:42.309825Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -147,6 +147,18 @@ the stoppage occurred due to a user interrupt.
 
 Runs when a Claude Code subagent (Task tool call) has finished responding.
 
+### SessionEnd
+
+Runs when a Claude Code session ends. Useful for cleanup tasks, logging session
+statistics, or saving session state.
+
+The `reason` field in the hook input will be one of:
+
+* `clear` - Session cleared with /clear command
+* `logout` - User logged out
+* `prompt_input_exit` - User exited while prompt input was visible
+* `other` - Other exit reasons
+
 ### PreCompact
 
 Runs before Claude Code is about to run a compact operation.
@@ -291,6 +303,18 @@ For `manual`, `custom_instructions` comes from what the user passes into
 }
 ```
 
+### SessionEnd Input
+
+```json
+{
+  "session_id": "abc123",
+  "transcript_path": "~/.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
+  "cwd": "/Users/...",
+  "hook_event_name": "SessionEnd",
+  "reason": "exit"
+}
+```
+
 ## Hook Output
 
 There are two ways for hooks to return output back to Claude Code. The output
@@ -326,6 +350,7 @@ Hooks communicate status through exit codes, stdout, and stderr:
 | `SubagentStop`     | Blocks stoppage, shows stderr to Claude subagent                   |
 | `PreCompact`       | N/A, shows stderr to user only                                     |
 | `SessionStart`     | N/A, shows stderr to user only                                     |
+| `SessionEnd`       | N/A, shows stderr to user only                                     |
 
 ### Advanced: JSON Output
 
@@ -338,23 +363,8 @@ All hook types can include these optional fields:
 ```json
 {
   "continue": true, // Whether Claude should continue after hook execution (default: true)
-  "stopReason": "string" // Message shown when continue is false
-  "suppressOutput": true, // Hide stdout from transcript mode (default: false)
-}
-```
+  "stopReason": "string", // Message shown when continue is false
 
-If `continue` is false, Claude stops processing after the hooks run.
-
-* For `PreToolUse`, this is different from `"permissionDecision": "deny"`, which
-  only blocks a specific tool call and provides automatic feedback to Claude.
-* For `PostToolUse`, this is different from `"decision": "block"`, which
-  provides automated feedback to Claude.
-* For `UserPromptSubmit`, this prevents the prompt from being processed.
-* For `Stop` and `SubagentStop`, this takes precedence over any
-  `"decision": "block"` output.
-* In all cases, `"continue" = false` takes precedence over any
-  `"decision": "block"` output.
-
-`stopReaso
+  "suppressOut
 
 [Content truncated due to length]

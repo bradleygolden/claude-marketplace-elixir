@@ -44,6 +44,17 @@
         "matcher": "*"
       }
     ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs session_end",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

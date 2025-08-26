@@ -16,6 +16,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   - notification
   - pre_compact
   - session_start
+  - session_end
 
   The task reads the event data from stdin by default, or from a file when
   --json-file is provided, and executes matching hooks sequentially.
@@ -206,6 +207,7 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
   defp filter_hooks_by_matcher(hooks, event_data) do
     tool_name = Map.get(event_data, "tool_name")
     source = Map.get(event_data, "source")
+    reason = Map.get(event_data, "reason")
     event_type = Map.get(event_data, "hook_event_name")
 
     Enum.filter(hooks, fn hook ->
@@ -216,10 +218,15 @@ defmodule Mix.Tasks.Claude.Hooks.Run do
             command_pattern = opts[:command]
 
             tool_matches =
-              if event_type == "SessionStart" do
-                matches_source?(matcher, source, event_data)
-              else
-                matches_tool?(matcher, tool_name, event_data)
+              cond do
+                event_type == "SessionStart" ->
+                  matches_source?(matcher, source, event_data)
+
+                event_type == "SessionEnd" ->
+                  matches_source?(matcher, reason, event_data)
+
+                true ->
+                  matches_tool?(matcher, tool_name, event_data)
               end
 
             if tool_matches && command_pattern do
