@@ -173,7 +173,6 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp ensure_phoenix_plugin(igniter, path) do
-    # Only add Phoenix plugin if Phoenix is a dependency and plugin isn't already present
     if Igniter.Project.Deps.has_dep?(igniter, :phoenix) do
       case read_and_eval_claude_exs(igniter, path) do
         {:ok, config} when is_map(config) ->
@@ -187,7 +186,6 @@ defmodule Mix.Tasks.Claude.Install do
               _ -> false
             end)
 
-          # Check if Tidewave is already explicitly configured
           has_explicit_tidewave =
             Enum.any?(mcp_servers, fn
               :tidewave -> true
