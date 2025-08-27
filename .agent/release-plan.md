@@ -21,6 +21,6 @@ CHANGELOG.md - Already complete ✓
 5. [ ] Other guides and cheatsheets as needed
 6. [ ] mix.exs - Update ExDoc config
 
-## Next Steps
+## Progress Log
 
-Starting with README.md update to highlight the new plugin system architecture.
+Starting work on README.md to highlight the new plugin system architecture...
