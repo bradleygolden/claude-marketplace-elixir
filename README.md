@@ -53,12 +53,23 @@ end
 
 ## Features
 
+### 🔌 **Plugin System**
+Extensible configuration system that automatically adapts to your project setup.
+
+- **Auto-Detection**: Phoenix projects automatically get Tidewave MCP server and Phoenix-specific rules
+- **Built-in Plugins**: Base hooks, Claude Code documentation, Phoenix integration, webhook reporting
+- **Custom Plugins**: Create your own plugins to extend `.claude.exs` configuration
+- **Smart Merging**: Multiple plugins compose together seamlessly
+
+→ See [Plugins Documentation](documentation/guide-plugins.md) for plugin development and usage.
+
 ### 🎯 **Smart Hooks**
 Automatically check formatting, catch compilation errors, validate commits, and more - with smart output handling that prevents context overflow.
 
 - **Output Control**: Choose between `:none` mode (summary only) or `:full` mode for detailed output
-- **Webhook Reporting (Experimental)**: Send hook events to external endpoints for monitoring and integration
+- **Event Reporting**: Send hook events to webhooks or log files for monitoring and integration
 - **Automatic Dependency Management**: Auto-install missing dependencies during hook execution
+- **SessionEnd Event**: New hook for cleanup tasks when Claude sessions end
 
 → See [Hooks Documentation](documentation/guide-hooks.md) for details and configuration.
 
@@ -119,12 +130,26 @@ All Claude settings are managed through `.claude.exs`:
 
 ```elixir
 %{
+  # Plugin system automatically configures your project
+  plugins: [
+    Claude.Plugins.Base,        # Standard hooks
+    Claude.Plugins.ClaudeCode,  # Documentation  
+    Claude.Plugins.Phoenix,     # Auto-detected for Phoenix
+    Claude.Plugins.Webhook      # Event reporting
+  ],
+  
+  # Or configure directly (plugins take precedence)
   hooks: %{
     stop: [:compile, :format],
-    post_tool_use: [:compile, :format]
+    post_tool_use: [:compile, :format],
+    session_end: [:cleanup]      # New in 0.6.0
   },
-  mcp_servers: [:tidewave],  # For Phoenix projects
-  subagents: [...]            # Specialized AI assistants
+  mcp_servers: [:tidewave],      # Auto-configured by plugins
+  subagents: [...],              # Specialized AI assistants
+  reporters: [                   # Event reporting (new in 0.6.0)
+    {:webhook, url: "https://example.com/hooks"},
+    {:jsonl, file: "claude-events.jsonl"}
+  ]
 }
 ```
 
@@ -144,6 +169,7 @@ This happens automatically, without interrupting Claude's workflow.
 ## Documentation
 
 - [Quickstart Guide](documentation/guide-quickstart.md) - Get started quickly with examples
+- [Plugin System Guide](documentation/guide-plugins.md) - Plugin development and configuration  
 - [Hooks Reference](documentation/guide-hooks.md) - Available hooks and configuration
 - [Sub-Agents Reference](documentation/guide-subagents.md) - Creating specialized AI assistants
 - [MCP Servers Guide](documentation/guide-mcp.md) - Model Context Protocol integration
@@ -173,26 +199,24 @@ mix compile --warnings-as-errors
 
 ## Roadmap
 
-### ✅ Recently Added
+### ✅ Recently Added (v0.6.0)
 
-**Mix Task Generator**
-- `mix claude.gen.subagent` - Interactive generator for new sub-agents with:
-  - Name validation and formatting
-  - Tool selection with warnings
-  - Multi-line prompt support
-  - Automatic `.claude.exs` integration
+**Plugin System**
+- Extensible configuration architecture with auto-detection capabilities
+- Built-in plugins for Base hooks, Claude Code docs, Phoenix projects, and webhook reporting
+- Smart configuration merging and conflict resolution
+- Create custom plugins for specialized project setups
 
-**Nested Memories**
-- Directory-specific CLAUDE.md files (e.g., `lib/my_app_web/CLAUDE.md` for Phoenix)
-- Configure via `nested_memories` in `.claude.exs`
-- Distribute context-specific usage rules across your codebase
+**Event Reporting System**
+- Webhook reporters for real-time hook event monitoring
+- JSONL file reporters for structured event logging  
+- SessionEnd hook event for cleanup tasks when Claude sessions end
+- Custom reporter behavior for integration with external systems
 
-**Bundled Slash Commands**
-- `/claude:*` commands for library management (install, uninstall, config, status)
-- `/elixir:*` commands for version management and compatibility checks
-- `/memory:*` commands for nested memories management
-- `/mix:*` commands for dependency management
-- Auto-installed in `.claude/commands/` during `mix claude.install`
+**URL Documentation References**
+- `@reference` system with automatic local caching for offline access
+- Integration with nested memories for context-specific documentation
+- Improved performance with cached documentation files
 
 ### 🚀 Coming Soon
 
