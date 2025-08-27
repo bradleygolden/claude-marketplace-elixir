@@ -57,7 +57,7 @@ end
 Extensible configuration system that automatically adapts to your project setup.
 
 - **Auto-Detection**: Phoenix projects automatically get Tidewave MCP server and Phoenix-specific rules
-- **Built-in Plugins**: Base hooks, Claude Code documentation, Phoenix integration, webhook reporting
+- **Built-in Plugins**: Base hooks, Claude Code documentation, Phoenix integration, webhook reporting, JSONL event logging
 - **Custom Plugins**: Create your own plugins to extend `.claude.exs` configuration
 - **Smart Merging**: Multiple plugins compose together seamlessly
 
@@ -135,7 +135,8 @@ All Claude settings are managed through `.claude.exs`:
     Claude.Plugins.Base,        # Standard hooks
     Claude.Plugins.ClaudeCode,  # Documentation  
     Claude.Plugins.Phoenix,     # Auto-detected for Phoenix
-    Claude.Plugins.Webhook      # Event reporting
+    Claude.Plugins.Webhook,     # Event reporting
+    Claude.Plugins.Logging      # JSONL event logging
   ],
   
   # Or configure directly (plugins take precedence)
