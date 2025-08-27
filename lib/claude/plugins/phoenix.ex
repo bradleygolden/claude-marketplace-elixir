@@ -20,7 +20,7 @@ defmodule Claude.Plugins.Phoenix do
   Or with options:
 
       %{
-        plugins: [{Claude.Plugins.Phoenix, include_daisyui?: false, port: 4001}]
+        plugins: [{Claude.Plugins.Phoenix, include_daisyui?: false, port: 4001, tidewave_enabled?: false}]
       }
 
   The plugin will automatically activate when a `:phoenix` dependency is detected in `mix.exs`.
@@ -29,6 +29,7 @@ defmodule Claude.Plugins.Phoenix do
 
   * `:include_daisyui?` - Whether to include DaisyUI component library documentation (default: `true`)
   * `:port` - Default port for Tidewave MCP server (default: `4000`). Environment variable `PORT` will still override this.
+  * `:tidewave_enabled?` - Whether to enable Tidewave MCP server configuration (default: `true`)
 
   ## Phoenix Version Support
 
@@ -49,8 +50,9 @@ defmodule Claude.Plugins.Phoenix do
     igniter = Keyword.get(opts, :igniter)
     include_daisyui? = Keyword.get(opts, :include_daisyui?, true)
     port = Keyword.get(opts, :port, 4000)
+    tidewave_enabled? = Keyword.get(opts, :tidewave_enabled?, true)
 
-    if detect_phoenix_project?(igniter) do
+    if detect_phoenix_project?(igniter) and tidewave_enabled? do
       app_name = get_app_name(igniter)
       phoenix_version = get_phoenix_version()
 

@@ -192,8 +192,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
         |> Igniter.compose_task("claude.install")
 
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Phoenix project detected!") &&
-                 String.contains?(notice, "Tidewave")
+               String.contains?(notice, "Tidewave MCP server has been configured")
              end)
     end
 
@@ -274,7 +273,18 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      assert_unchanged(igniter, ".claude.exs")
+      # Phoenix plugin should be added but with tidewave_enabled?: false
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+      assert String.contains?(content, "tidewave_enabled?: false")
+      assert String.contains?(content, "mcp_servers:")
+      assert String.contains?(content, ":tidewave")
+      assert String.contains?(content, ":custom_server")
     end
 
     test "installation is idempotent" do
@@ -665,12 +675,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         |> Igniter.compose_task("claude.install")
 
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Phoenix project detected!") &&
-                 String.contains?(notice, "Automatically adding Tidewave")
+               String.contains?(notice, "Tidewave MCP server has been configured")
              end)
     end
 
-    test "automatically adds tidewave to .claude.exs mcp_servers for Phoenix projects" do
+    test "automatically adds Phoenix plugin for Phoenix projects" do
       igniter =
         phx_test_project()
         |> Igniter.compose_task("claude.install")
@@ -680,8 +689,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
       source = igniter.rewrite |> Rewrite.source!(".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      assert String.contains?(content, "mcp_servers:")
-      assert String.contains?(content, ":tidewave")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+      refute String.contains?(content, "mcp_servers:")
     end
 
     test "creates .mcp.json automatically for Phoenix projects" do
@@ -696,7 +705,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
       {:ok, json} = Jason.decode(content)
 
       assert json["mcpServers"]["tidewave"]["type"] == "sse"
-      assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:4000/tidewave/mcp"
+
+      assert json["mcpServers"]["tidewave"]["url"] ==
+               "http://localhost:${PORT:-4000}/tidewave/mcp"
     end
 
     test "does not install tidewave for non-Phoenix projects" do
@@ -823,7 +834,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
           files: %{
             ".claude.exs" => """
             %{
-              mcp_servers: [{:tidewave, [enabled?: false]}]
+              plugins: [{Claude.Plugins.Phoenix, tidewave_enabled?: false}]
             }
             """
           }
@@ -1569,7 +1580,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
   end
 
   describe "Phoenix plugin integration" do
-    test "Phoenix plugin preserves existing config when installer adds Tidewave" do
+    test "Phoenix plugin preserves existing config when Phoenix plugin already present" do
       igniter =
         phx_test_project(
           files: %{
@@ -1583,11 +1594,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should modify .claude.exs to add mcp_servers while preserving existing config
-      assert Igniter.changed?(igniter, ".claude.exs")
+      refute Igniter.changed?(igniter, ".claude.exs")
 
-      # The final .claude.exs should have ALL original config plus new mcp_servers
-      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      # Include the existing file to read it from the test project
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "plugins:")
@@ -1597,8 +1608,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert String.contains?(content, "custom_setting:")
       assert String.contains?(content, "preserved_value")
 
-      assert String.contains?(content, "mcp_servers:")
-      assert String.contains?(content, ":tidewave")
+      refute String.contains?(content, "mcp_servers:")
 
       assert_creates(igniter, ".mcp.json")
     end
@@ -1617,9 +1627,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      assert Igniter.changed?(igniter, ".claude.exs")
+      refute Igniter.changed?(igniter, ".claude.exs")
 
-      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      # Include the existing file to read it from the test project
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "Claude.Plugins.Phoenix")
@@ -1627,8 +1639,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       assert String.contains?(content, "auto_install_deps?: true")
 
-      assert String.contains?(content, "mcp_servers:")
-      assert String.contains?(content, ":tidewave")
+      # Phoenix plugin provides MCP servers at runtime, not in file
+      refute String.contains?(content, "mcp_servers:")
+      refute String.contains?(content, ":tidewave")
 
       assert_creates(igniter, ".mcp.json")
     end
@@ -1672,9 +1685,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      assert Igniter.changed?(igniter, ".claude.exs")
+      refute Igniter.changed?(igniter, ".claude.exs")
 
-      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      # Include the existing file to read it from the test project  
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "plugins:")
@@ -1682,16 +1697,13 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       assert String.contains?(content, ":custom_server")
       assert String.contains?(content, ":another_server")
-      assert String.contains?(content, ":tidewave")
 
-      tidewave_count =
-        content
-        |> String.graphemes()
-        |> Enum.chunk_every(8, 1, :discard)
-        |> Enum.map(&Enum.join/1)
-        |> Enum.count(&String.contains?(&1, "tidewave"))
+      # Explicit mcp_servers takes precedence over Phoenix plugin
+      # Tidewave should NOT be added to the file
+      refute String.contains?(content, ":tidewave")
 
-      assert tidewave_count == 1
+      # But MCP JSON should still be created with all servers merged
+      assert_creates(igniter, ".mcp.json")
     end
 
     test "Phoenix plugin provides nested_memories and runtime config correctly" do
@@ -1710,9 +1722,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      assert Igniter.changed?(igniter, ".claude.exs")
+      refute Igniter.changed?(igniter, ".claude.exs")
 
-      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      # Include the existing file to read it from the test project
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "plugins:")
@@ -1761,15 +1775,22 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      assert Igniter.changed?(igniter, ".claude.exs")
+      refute Igniter.changed?(igniter, ".claude.exs")
 
-      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      # Include the existing file to read it from the test project
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "plugins:")
       assert String.contains?(content, "hooks:")
       assert String.contains?(content, "echo 'custom hook'")
-      assert String.contains?(content, "mcp_servers:")
+
+      # Phoenix plugin provides MCP servers at runtime, not in .claude.exs
+      refute String.contains?(content, "mcp_servers:")
+
+      # But MCP .json should still be created
+      assert_creates(igniter, ".mcp.json")
     end
 
     test "installer handles Phoenix plugin + manual Tidewave gracefully" do
@@ -1778,13 +1799,20 @@ defmodule Mix.Tasks.Claude.InstallTest do
         |> Igniter.compose_task("claude.install")
 
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Phoenix project detected!")
+               String.contains?(notice, "Tidewave MCP server has been configured")
              end)
 
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
-      assert String.contains?(content, "mcp_servers:")
-      assert String.contains?(content, ":tidewave")
+
+      # Phoenix plugin provides MCP servers at runtime, not in file
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+      refute String.contains?(content, "mcp_servers:")
+      refute String.contains?(content, ":tidewave")
+
+      # But MCP configuration should be created
+      assert_creates(igniter, ".mcp.json")
     end
 
     test "Phoenix plugin with custom port option works correctly" do
@@ -1800,22 +1828,31 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      assert Igniter.changed?(igniter, ".claude.exs")
+      refute Igniter.changed?(igniter, ".claude.exs")
 
-      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      # Include the existing file to read it from the test project
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "plugins:")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "port: 8080")
 
-      assert String.contains?(content, "mcp_servers:")
-      assert String.contains?(content, "tidewave:")
-      assert String.contains?(content, "\"${PORT:-8080}\"")
+      # Phoenix plugin provides MCP servers at runtime, not in file
+      refute String.contains?(content, "mcp_servers:")
+      refute String.contains?(content, "tidewave:")
 
-      assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
-               task_name == "tidewave.install"
-             end)
+      # But MCP configuration should be created with custom port
+      assert_creates(igniter, ".mcp.json")
+
+      # Verify the custom port is used in the MCP configuration
+      json_source = Rewrite.source!(igniter.rewrite, ".mcp.json")
+      json_content = Rewrite.Source.get(json_source, :content)
+      {:ok, json} = Jason.decode(json_content)
+
+      assert json["mcpServers"]["tidewave"]["url"] ==
+               "http://localhost:${PORT:-8080}/tidewave/mcp"
     end
   end
 end
