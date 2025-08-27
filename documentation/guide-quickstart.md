@@ -31,11 +31,12 @@ When prompted:
 
 This automatically:
 - ✅ Adds Claude to your dependencies
-- ✅ Creates `.claude.exs` configuration
-- ✅ Installs formatting and compilation hooks
+- ✅ Creates `.claude.exs` configuration with plugin system
+- ✅ Installs formatting and compilation hooks via Base plugin
 - ✅ Sets up `.claude/` directory structure
 - ✅ Installs bundled slash commands in `.claude/commands/`
 - ✅ Syncs usage rules from dependencies to `CLAUDE.md`
+- ✅ Configures Phoenix-specific features if Phoenix is detected
 
 ## Step 2: Test Format Checking
 
@@ -100,25 +101,29 @@ This will check your dependency status using the bundled command. Other useful c
 - `/mix:deps-add` - Add new dependencies
 - `/memory:nested-add` - Configure nested memories for directories
 
+→ See the complete [Slash Commands Guide](guide-slash-commands.md) for all available commands.
+
 ## What Just Happened?
 
 You've just experienced Claude's core features:
 
-1. **Format Checking** - Every `.ex` and `.exs` file is checked for proper formatting
-2. **Instant Compilation Checks** - Warnings and errors caught immediately
-3. **Pre-Commit Validation** - Only clean code gets committed
-4. **Intelligent Feedback** - Claude sees and can fix issues automatically
-5. **Bundled Commands** - Pre-configured slash commands for common tasks
-6. **Best Practices** - Claude follows usage rules from your dependencies (see [Usage Rules Guide](guide-usage-rules.md))
+1. **Plugin System** - Automatic configuration that adapts to your project (Phoenix detection, etc.)
+2. **Format Checking** - Every `.ex` and `.exs` file is checked for proper formatting
+3. **Instant Compilation Checks** - Warnings and errors caught immediately
+4. **Pre-Commit Validation** - Only clean code gets committed
+5. **Intelligent Feedback** - Claude sees and can fix issues automatically
+6. **Bundled Commands** - Pre-configured slash commands for common tasks
+7. **Best Practices** - Claude follows usage rules from your dependencies (see [Usage Rules Guide](guide-usage-rules.md))
 
 ## Next Steps
 
 ### Enable More Features
 
+- **[Plugin System](guide-plugins.md)** - Create custom plugins or configure existing ones (Webhook reporting, JSONL logging, etc.)
 - **[Create Sub-Agents](guide-subagents.md)** - Use `mix claude.gen.subagent` to build specialized AI assistants
-- **[Plugin System](guide-plugins.md)** - Extensible configuration system that auto-adapts to your project setup
-- **[Configure Additional Hooks](guide-hooks.md)** - Customize hook behavior and add custom checks
-- **[Setup MCP Servers](guide-mcp.md)** - Configure Tidewave for Phoenix development (auto-configured for Phoenix projects)
+- **[Advanced Hooks](guide-hooks.md)** - Add SessionEnd hooks for cleanup tasks and customize hook behavior
+- **[Slash Commands](guide-slash-commands.md)** - Complete reference for all bundled development commands
+- **[Setup MCP Servers](guide-mcp.md)** - Configure additional MCP servers beyond auto-detected ones
 
 ## Troubleshooting
 
