@@ -25,7 +25,7 @@
 
 ## Current Documentation Status
 - ✅ README.md - Already has comprehensive plugin system documentation
-- ✅ CHANGELOG.md - Already has complete 0.6.0 release section  
+- ❓ CHANGELOG.md - Need to check/verify 0.6.0 release section  
 - ❓ Missing comprehensive plugin guide
 - ❓ Hook guide needs SessionEnd and reporters documentation
 - ❓ Missing plugin cheatsheet
