@@ -53,7 +53,7 @@ Quick reference for Claude's plugin system configuration and development.
   
   # Direct config adds to plugins
   hooks: %{
-    session_end: [:cleanup]        # Merged with Base plugin hooks
+    session_end: ["mix myapp.cleanup"]  # New in 0.6.0 - runs when sessions end
   }
 }
 ```
@@ -147,9 +147,10 @@ defmodule MyApp.CustomReporter do
   
   defp process_event(event_data, opts) do
     # Handle event_data map with keys:
-    # - "hook_event_name"
+    # - "hook_event_name" (e.g., "SessionEnd", "PostToolUse")
     # - "session_id" 
-    # - "tool_name", "tool_input", "tool_response"
+    # - "tool_name", "tool_input", "tool_response" (for tool events)
+    # - "reason" (for SessionEnd: "clear", "logout", "prompt_input_exit", "other")
     # - "cwd", "timestamp"
     :ok
   end
