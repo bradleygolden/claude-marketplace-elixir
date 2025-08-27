@@ -8,11 +8,9 @@
 
 Claude, not to be confused with _the_ Claude (probably should have picked a better name 😅), is an elixir library, batteries-included integration that helps ensure every line of code Claude writes is checked for proper formatting, compiles without warnings, and follows your project's conventions—automatically.
 
-## 🚀 [Quickstart](documentation/guide-quickstart.md)
+## 🚀 Quick Start
 
 New to Claude? Our [quickstart guide](documentation/guide-quickstart.md) walks you through a complete setup with real examples.
-
-## Installation
 
 ```bash
 # Install Claude
@@ -24,159 +22,50 @@ mix igniter.install claude
 # ✓ Validates code before commits
 ```
 
-## The Problem
-
-When Claude Code writes Elixir, you often need to:
-- Run `mix format` manually or prompt Claude to format the file
-- Discover compilation errors only when you run the code or tests
-
-## The Solution
-
-This project hooks directly into Claude Code's workflow:
-
-```elixir
-# When Claude writes this code with formatting and compilation issues:
-defmodule MyModule do
-  def process_user_data(user, _options) do
-    {:ok, %{id: user.id, name: user.name, email: user.email, created_at: user.created_at, updated_at: user.updated_at, status: user.status, role: user.role}} # Line too long!
-  end
-
-  def calculate_total(items) do # Unused function!
-    Enum.reduce(items, 0, fn item, acc -> acc + item.price * item.quantity end)
-  end
-end
-
-# Claude immediately sees:
-# ⚠️ File needs formatting (line too long)
-# ❌ Compilation error: unused function `calculate_total/1`
-```
-
 ## Features
 
-### 🔌 **Plugin System**
-Extensible configuration system that automatically adapts to your project setup.
-
-- **Auto-Detection**: Phoenix projects automatically get Tidewave MCP server and Phoenix-specific rules
-- **Built-in Plugins**: Base hooks, Claude Code documentation, Phoenix integration, webhook reporting, JSONL event logging
-- **Custom Plugins**: Create your own plugins to extend `.claude.exs` configuration
-- **Smart Merging**: Multiple plugins compose together seamlessly
-
-→ See [Plugins Documentation](documentation/guide-plugins.md) for plugin development and usage.
-
-### 🎯 **Smart Hooks**
-Automatically check formatting, catch compilation errors, validate commits, and more - with smart output handling that prevents context overflow.
-
-- **Output Control**: Choose between `:none` mode (summary only) or `:full` mode for detailed output
-- **Event Reporting**: Send hook events to webhooks or log files for monitoring and integration
-- **Automatic Dependency Management**: Auto-install missing dependencies during hook execution
-- **SessionEnd Event**: New hook for cleanup tasks when Claude sessions end
-
-→ See [Hooks Documentation](documentation/guide-hooks.md) for details and configuration.
-
-### 🤖 **Sub-agents**
-Create specialized AI assistants with built-in best practices from your dependencies.
-
-→ See [Sub-Agents Documentation](documentation/guide-subagents.md) for details and examples.
-
-### 🔌 **MCP Server Support**
-Integrate with Phoenix development tools via Tidewave. MCP servers are configured in `.claude.exs` and synced to `.mcp.json` when you run `mix claude.install`.
-
-→ See [MCP Servers Guide](documentation/guide-mcp.md) for details and configuration.
-
-### 📚 **Best Practices**
-
-[Usage rules](https://hexdocs.pm/usage_rules) from your dependencies are automatically synced to `CLAUDE.md`, ensuring Claude follows library-specific best practices.
-
-- **Nested Memories**: Distribute CLAUDE.md files across different directories for context-specific guidance
-- **Embedded Documentation**: Usage rules are now embedded directly in CLAUDE.md for better visibility
-
-→ See [Usage Rules Guide](documentation/guide-usage-rules.md) for how Claude integrates with usage rules.
-
-### 🛠️ **Bundled Commands**
-
-Pre-configured slash commands for common Elixir development tasks, automatically installed in `.claude/commands/`.
-
-- **Library Management**: `/claude:install`, `/claude:uninstall`, `/claude:config`
-- **Dependency Management**: `/mix:deps`, `/mix:deps-add`, `/mix:deps-upgrade`
-- **Nested Memories**: `/memory:nested-add`, `/memory:nested-sync`, `/memory:check`
-
-→ Type `/` in Claude Code to see all available commands.
+| Feature | Description | Learn More |
+|---------|-------------|------------|
+| 🎯 **Smart Hooks** | Automatic formatting, compilation checks, and code validation | [Hooks Guide](documentation/guide-hooks.md) |
+| 🔌 **Plugin System** | Extensible configuration that auto-adapts to your project | [Plugin Guide](documentation/guide-plugins.md) |
+| 🤖 **Sub-agents** | Specialized AI assistants with built-in best practices | [Sub-agents Guide](documentation/guide-subagents.md) |
+| 📚 **Usage Rules** | Automatically syncs best practices from your dependencies | [Usage Rules Guide](documentation/guide-usage-rules.md) |
+| 🔗 **MCP Servers** | Phoenix development tools integration via Tidewave | [MCP Guide](documentation/guide-mcp.md) |
+| 🛠️ **Slash Commands** | Pre-configured commands for common Elixir tasks | Type `/` in Claude Code |
 
 ## Installation
 
-### Requirements
-- Elixir 1.18 or later
-- Claude Code CLI ([installation guide](https://docs.anthropic.com/en/docs/claude-code/quickstart))
-- Mix project
-
-### Install via Igniter
+**Requirements:** Elixir 1.18+, [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/quickstart), Mix project
 
 ```bash
 mix igniter.install claude
 ```
 
-This will:
-1. Add `claude` to your dependencies
-2. Generate `.claude.exs` configuration file
-3. Configure hooks in `.claude/settings.json`
-4. Generate sub-agents in `.claude/agents/`
-5. Install bundled slash commands in `.claude/commands/`
-6. Sync usage rules to `CLAUDE.md`
-7. Create `.mcp.json` for MCP servers (if configured)
+This sets up hooks, configuration, sub-agents, and syncs usage rules automatically.
 
-## Configuration File
+## Configuration
 
-All Claude settings are managed through `.claude.exs`:
+All settings are managed through `.claude.exs`:
 
 ```elixir
 %{
-  # Plugin system automatically configures your project
   plugins: [
-    Claude.Plugins.Base,        # Standard hooks
-    Claude.Plugins.ClaudeCode,  # Documentation  
-    Claude.Plugins.Phoenix,     # Auto-detected for Phoenix
-    Claude.Plugins.Webhook,     # Event reporting
-    Claude.Plugins.Logging      # JSONL event logging
-  ],
-  
-  # Or configure directly (plugins take precedence)
-  hooks: %{
-    stop: [:compile, :format],
-    post_tool_use: [:compile, :format],
-    session_end: [:cleanup]      # New in 0.6.0
-  },
-  mcp_servers: [:tidewave],      # Auto-configured by plugins
-  subagents: [...],              # Specialized AI assistants
-  reporters: [                   # Event reporting (new in 0.6.0)
-    {:webhook, url: "https://example.com/hooks"},
-    {:jsonl, file: "claude-events.jsonl"}
+    Claude.Plugins.Base,     # Standard hooks
+    Claude.Plugins.Phoenix   # Auto-configured for Phoenix projects
   ]
 }
 ```
 
 Run `mix claude.install` after updating to apply changes.
 
-## How It Works
-
-This library leverages [Claude Code's hook system](https://docs.anthropic.com/en/docs/claude-code/hooks) to intercept file operations:
-
-1. **Claude edits a file** → PostToolUse hook triggered
-2. **Hook runs Mix tasks** → `mix format --check-formatted`, `mix compile --warnings-as-errors`
-3. **Feedback provided** → Claude sees any issues and can fix them
-4. **Process repeats** → Until the code is production-ready
-
-This happens automatically, without interrupting Claude's workflow.
-
 ## Documentation
 
-- [Quickstart Guide](documentation/guide-quickstart.md) - Get started quickly with examples
-- [Plugin System Guide](documentation/guide-plugins.md) - Plugin development and configuration  
-- [Hooks Reference](documentation/guide-hooks.md) - Available hooks and configuration
-- [Sub-Agents Reference](documentation/guide-subagents.md) - Creating specialized AI assistants
-- [MCP Servers Guide](documentation/guide-mcp.md) - Model Context Protocol integration
+- [**Quickstart Guide**](documentation/guide-quickstart.md) - Get started with examples
+- [Plugin System Guide](documentation/guide-plugins.md) - Create and configure plugins
+- [Hooks Reference](documentation/guide-hooks.md) - Available hooks and events
+- [Sub-Agents Guide](documentation/guide-subagents.md) - Specialized AI assistants
+- [MCP Servers Guide](documentation/guide-mcp.md) - Phoenix development tools
 - [Usage Rules Guide](documentation/guide-usage-rules.md) - Best practices integration
-- [Anthropic's Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks)
-- [Anthropic's Subagents Guide](https://docs.anthropic.com/en/docs/claude-code/sub-agents)
 
 ## Contributing
 
@@ -198,39 +87,6 @@ mix compile --warnings-as-errors
 - 💬 [Discussions](https://github.com/bradleygolden/claude/discussions)
 - 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
 
-## Roadmap
-
-### ✅ Recently Added (v0.6.0)
-
-**Plugin System**
-- Extensible configuration architecture with auto-detection capabilities
-- Built-in plugins for Base hooks, Claude Code docs, Phoenix projects, and webhook reporting
-- Smart configuration merging and conflict resolution
-- Create custom plugins for specialized project setups
-
-**Event Reporting System**
-- Webhook reporters for real-time hook event monitoring
-- JSONL file reporters for structured event logging  
-- SessionEnd hook event for cleanup tasks when Claude sessions end
-- Custom reporter behavior for integration with external systems
-
-**URL Documentation References**
-- `@reference` system with automatic local caching for offline access
-- Integration with nested memories for context-specific documentation
-- Improved performance with cached documentation files
-
-### 🚀 Coming Soon
-
-**More MCP Servers**
-- Database tools (PostgreSQL, MySQL, Redis)
-- Testing and documentation servers
-- Auto-configuration based on project dependencies
-
-**Dynamic Sub-agents**
-- Generate sub-agents for each dependency with context automatically
-- Common workflow templates (LiveView, GraphQL, Testing)
-
-Want to contribute? Open an issue on [GitHub](https://github.com/bradleygolden/claude/issues)!
 
 ## License
 
