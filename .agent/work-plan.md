@@ -1,68 +1,29 @@
-# 0.6.0 Documentation Update Work Plan
+# Claude 0.6.0 Release Documentation Work Plan
 
-## Current Status Assessment
+## Key Features Added Since 0.5.1
+- **Plugin System** - New architecture with Base, ClaudeCode, Phoenix, Webhook, Logging plugins
+- **Reporter System** - Webhook and JSONL event logging  
+- **SessionEnd Hook** - New hook event for cleanup
+- **URL Documentation References** - @reference system with caching
 
-After reviewing the codebase, I can see that 0.6.0 is already well-documented! Here's what I found:
+## Work Order
+1. ✅ Set up .agent directory as scratchpad
+2. [ ] Update README.md with plugin system features
+3. [ ] Create CHANGELOG.md 0.6.0 release section
+4. [ ] Create comprehensive documentation/guide-plugins.md
+5. [ ] Update documentation/guide-hooks.md with SessionEnd + reporters
+6. [ ] Create cheatsheets/plugins.cheatmd quick reference
+7. [ ] Review and update other guides and cheatsheets as needed
+8. [ ] Update mix.exs ExDoc config if needed
 
-### ✅ Already Complete
+## Notes
+- Need to explore the codebase to understand the new plugin architecture
+- Must commit and push after every file edit
+- Document any bugs or issues in .agent/noted-issues.md
+✅ README.md already updated with 0.6.0 features including:
+- Plugin system with Base, ClaudeCode, Phoenix, Webhook, Logging plugins
+- Reporter system for webhook and JSONL event logging
+- SessionEnd hook event
+- URL documentation references
 
-1. **CHANGELOG.md** - Has complete 0.6.0 section with all key features:
-   - Plugin System architecture 
-   - Reporter System for event logging
-   - SessionEnd Hook Event
-   - URL Documentation References
-
-2. **README.md** - Already includes:
-   - Plugin System section (lines 56-64)
-   - Event Reporting mentioned in hooks section (lines 70-74) 
-   - Updated configuration example with reporters
-   - Recently Added section highlighting all 0.6.0 features (lines 202-220)
-
-3. **Documentation Files Present**:
-   - `documentation/guide-plugins.md` - Already exists
-   - `documentation/guide-hooks.md` - Already exists
-   - `cheatsheets/plugins.cheatmd` - Already exists
-
-## Remaining Work
-
-Need to verify and potentially enhance:
-
-### 1. README.md
-- Check if plugin system description is comprehensive
-- Ensure new SessionEnd hook is mentioned
-- Verify reporter system coverage
-
-### 2. Documentation Guides
-- Review `documentation/guide-plugins.md` for completeness
-- Check `documentation/guide-hooks.md` for SessionEnd and reporters
-- Verify `cheatsheets/plugins.cheatmd` accuracy
-
-### 3. Final Tasks
-- Check mix.exs for any needed ExDoc updates
-- Review other guides/cheatsheets for consistency
-
-## Key 0.6.0 Features to Validate Coverage
-
-1. **Plugin System**
-   - `Claude.Plugins.Base` - Standard hooks
-   - `Claude.Plugins.ClaudeCode` - Documentation
-   - `Claude.Plugins.Phoenix` - Auto-detection with Tidewave
-   - `Claude.Plugins.Webhook` - Event reporting
-   - `Claude.Plugins.Logging` - Structured logging
-
-2. **Reporter System** 
-   - `Claude.Hooks.Reporter` behaviour
-   - `Claude.Hooks.Reporters.Webhook` 
-   - `Claude.Hooks.Reporters.Jsonl`
-
-3. **SessionEnd Hook Event**
-   - New hook for cleanup tasks
-   - Session end monitoring
-
-4. **URL Documentation References**
-   - `@reference` system with caching
-   - Offline access support
-
-## Next Steps
-
-Start by examining existing documentation to see what needs updates vs what's already complete.
+No additional updates needed to README.md.
