@@ -1,0 +1,273 @@
+# Plugin System Cheatsheet
+
+Quick reference for Claude's plugin system configuration and development.
+
+## Basic Usage
+
+```elixir
+# .claude.exs
+%{
+  plugins: [
+    Claude.Plugins.Base,        # Standard hooks
+    Claude.Plugins.ClaudeCode,  # Documentation
+    Claude.Plugins.Phoenix,     # Auto-detected for Phoenix
+    Claude.Plugins.Webhook      # Event reporting
+  ]
+}
+```
+
+## Built-in Plugins
+
+| Plugin | Purpose | Auto-Activates |
+|--------|---------|----------------|
+| `Claude.Plugins.Base` | Standard compile/format hooks | Always |
+| `Claude.Plugins.ClaudeCode` | Claude Code docs + Meta Agent | Always |
+| `Claude.Plugins.Phoenix` | Phoenix/Tidewave/usage rules | When `:phoenix` dependency |
+| `Claude.Plugins.Webhook` | Webhook event reporting | Manual |
+| `Claude.Plugins.Logging` | File-based event logging | Manual |
+
+## Plugin Options
+
+```elixir
+%{
+  plugins: [
+    # Basic plugin
+    Claude.Plugins.Base,
+    
+    # Plugin with options  
+    {Claude.Plugins.Phoenix, [
+      include_daisyui?: false,
+      port: 4001,
+      tidewave_enabled?: false
+    ]}
+  ]
+}
+```
+
+## Configuration Merging
+
+```elixir
+# Plugins provide base config
+%{
+  plugins: [Claude.Plugins.Base],  # hooks: %{stop: [:compile, :format]}
+  
+  # Direct config adds to plugins
+  hooks: %{
+    session_end: [:cleanup]        # Merged with Base plugin hooks
+  }
+}
+```
+
+**Merge Priority:** Plugin config > Direct config
+
+## Custom Plugin Template
+
+```elixir
+defmodule MyApp.CustomPlugin do
+  @behaviour Claude.Plugin
+  
+  def config(opts) do
+    if should_activate?(opts) do
+      %{
+        hooks: %{
+          stop: ["mix myapp.validate"]
+        },
+        mcp_servers: [myserver: []],
+        nested_memories: %{
+          "lib/myapp" => ["myapp:usage_rules"]
+        },
+        reporters: [
+          {:webhook, url: webhook_url(opts)}
+        ]
+      }
+    else
+      %{}  # No config when not applicable
+    end
+  end
+  
+  defp should_activate?(opts) do
+    igniter = Keyword.get(opts, :igniter)
+    Igniter.Project.Deps.has_dep?(igniter, :myapp_core)
+  end
+  
+  defp webhook_url(opts), do: Keyword.get(opts, :webhook_url)
+end
+```
+
+## URL Documentation References
+
+```elixir
+%{
+  nested_memories: %{
+    "." => [
+      {:url, "https://docs.example.com/guide.md", 
+       as: "Example Guide", 
+       cache: "./ai/example/guide.md"}
+    ]
+  }
+}
+```
+
+**Cache Options:**
+- `as` - Human readable name
+- `cache` - Local file path for caching
+- `headers` - HTTP headers (optional)
+
+## Event Reporters
+
+```elixir
+%{
+  reporters: [
+    # Built-in reporters
+    {:webhook, url: "https://api.example.com/hooks"},
+    {:jsonl, file: "claude-events.jsonl"},
+    
+    # Environment-based
+    :webhook,  # Uses CLAUDE_WEBHOOK_URL
+    
+    # Custom reporter
+    {MyApp.CustomReporter, api_key: "secret"}
+  ]
+}
+```
+
+## Custom Reporter Template
+
+```elixir
+defmodule MyApp.CustomReporter do
+  @behaviour Claude.Hooks.Reporter
+  
+  @impl true
+  def report(event_data, opts) do
+    case process_event(event_data, opts) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+  
+  defp process_event(event_data, opts) do
+    # Handle event_data map with keys:
+    # - "hook_event_name"
+    # - "session_id" 
+    # - "tool_name", "tool_input", "tool_response"
+    # - "cwd", "timestamp"
+    :ok
+  end
+end
+```
+
+## Conditional Activation Patterns
+
+```elixir
+def config(opts) do
+  igniter = Keyword.get(opts, :igniter)
+  
+  base = %{hooks: %{stop: [:compile]}}
+  
+  # Add Ecto support
+  config_with_ecto = 
+    if Igniter.Project.Deps.has_dep?(igniter, :ecto) do
+      put_in(config, [:nested_memories, "lib"], ["ecto:usage_rules"])
+    else
+      config
+    end
+  
+  # Add LiveView support  
+  if Igniter.Project.Deps.has_dep?(igniter, :phoenix_live_view) do
+    update_in(config_with_ecto, [:nested_memories, "lib"], &(&1 ++ ["liveview:usage_rules"]))
+  else
+    config_with_ecto
+  end
+end
+```
+
+## Environment-Based Configuration
+
+```elixir
+def config(_opts) do
+  case Mix.env() do
+    :prod -> 
+      %{reporters: [{:webhook, url: prod_url()}]}
+    :dev ->
+      %{reporters: [{:jsonl, file: "dev-events.jsonl"}]}
+    :test ->
+      %{}  # No reporting in tests
+  end
+end
+```
+
+## Common Patterns
+
+**Modular Config Building:**
+```elixir
+def config(opts) do
+  %{}
+  |> add_hooks()
+  |> add_mcp_servers(opts)  
+  |> add_memories(opts)
+  |> add_reporters(opts)
+end
+```
+
+**Smart Defaults:**
+```elixir
+def config(opts) do
+  port = Keyword.get(opts, :port, 4000)
+  enabled? = Keyword.get(opts, :enabled, true)
+  
+  if enabled? do
+    %{mcp_servers: [myserver: [port: port]]}
+  else
+    %{}
+  end
+end
+```
+
+## Debugging
+
+**Load Single Plugin:**
+```elixir
+{:ok, config} = Claude.Plugin.load_plugin(Claude.Plugins.Base)
+IO.inspect(config)
+```
+
+**Test Multiple Plugins:**
+```elixir
+{:ok, configs} = Claude.Plugin.load_plugins([
+  Claude.Plugins.Base,
+  Claude.Plugins.Phoenix
+])
+merged = Claude.Plugin.merge_configs(configs)
+IO.inspect(merged, label: "Final Config")
+```
+
+**Inspect in .claude.exs:**
+```elixir
+# Add temporarily for debugging
+config = %{plugins: [Claude.Plugins.Base]}
+{:ok, plugin_configs} = Claude.Plugin.load_plugins(config[:plugins]) 
+IO.inspect(Claude.Plugin.merge_configs(plugin_configs))
+config
+```
+
+## Migration from Direct Config
+
+**Before:**
+```elixir
+%{
+  hooks: %{
+    stop: [{"mix compile --warnings-as-errors", halt_pipeline?: true, blocking?: false}]
+  },
+  mcp_servers: [tidewave: [port: 4000]]
+}
+```
+
+**After:**
+```elixir  
+%{
+  plugins: [
+    Claude.Plugins.Base,    # Handles hooks
+    Claude.Plugins.Phoenix  # Handles mcp_servers
+  ]
+}
+```
