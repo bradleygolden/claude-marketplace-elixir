@@ -17,6 +17,13 @@
 8. Update other guides and cheatsheets as needed
 9. Update mix.exs - ExDoc config
 
+## Discovery Notes
+
+- `documentation/guide-plugins.md` already exists with comprehensive plugin system documentation ✅
+- `cheatsheets/plugins.cheatmd` already exists - need to check if it's current ❓
+- Project seems to already have 0.6.0 features documented partially
+- Need to check what's missing vs what exists
+
 ## Status
 - Started: 2025-08-27
-- Current: Setting up and analyzing codebase
+- Current: Analyzing existing documentation
