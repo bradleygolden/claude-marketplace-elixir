@@ -7,14 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-08-27
+
 ### Added
-- @reference system with URL caching for documentation references in nested memories
-- Plugin system for extending .claude.exs configuration with reusable modules
-- Register all hook events when reporters are configured for complete observability
+- **Plugin System**: Extensible configuration architecture for `.claude.exs`
+  - `Claude.Plugins.Base` - Standard hook configuration with compile/format shortcuts
+  - `Claude.Plugins.ClaudeCode` - Comprehensive Claude Code documentation and Meta Agent
+  - `Claude.Plugins.Phoenix` - Auto-detection and configuration for Phoenix projects with Tidewave MCP
+  - `Claude.Plugins.Webhook` - Webhook event reporting configuration
+  - `Claude.Plugins.Logging` - Structured event logging to files
+  - Smart configuration merging and conflict resolution between plugins
+- **Reporter System**: Event reporting infrastructure for hook monitoring
+  - `Claude.Hooks.Reporter` behaviour for creating custom reporters
+  - `Claude.Hooks.Reporters.Webhook` for HTTP endpoint event reporting
+  - `Claude.Hooks.Reporters.Jsonl` for file-based structured logging
+  - Register all hook events when reporters are configured for complete observability
+- **SessionEnd Hook Event**: New hook event that runs when Claude Code sessions end
+  - Useful for cleanup tasks, logging session statistics, or saving session state
+  - Supports same configuration patterns as other hook events
+- **URL Documentation References**: `@reference` system with automatic local caching
+  - URL-based documentation that caches locally for offline access
+  - Integration with nested memories for context-specific documentation
+  - Improved performance with cached documentation files
+
+### Changed
+- Phoenix plugin now auto-detects Phoenix projects and configures Tidewave MCP server automatically
+- Hook event registration now includes all events when reporters are configured
+- Plugin configurations take precedence over direct `.claude.exs` settings for better composability
 
 ### Fixed
 - Webhook reporters now correctly receive hook events during execution
 - Stop hooks with all non-blocking failures now exit with code 0 to prevent infinite loops in CI
+- Plugin system properly handles module loading and configuration merging
 
 ## [0.5.2] - 2025-08-27
 
@@ -158,7 +182,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bradleygolden/claude/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/bradleygolden/claude/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/bradleygolden/claude/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bradleygolden/claude/compare/v0.4.0...v0.5.0
