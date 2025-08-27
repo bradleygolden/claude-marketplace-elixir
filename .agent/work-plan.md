@@ -19,8 +19,8 @@ The project appears to have solid existing documentation structure:
 ## Work Order & Status
 
 ### Phase 1: Core Documentation Updates
-- [ ] README.md - Add plugin system features
-- [ ] CHANGELOG.md - Create 0.6.0 release section
+- [X] README.md - Already has comprehensive plugin system documentation 
+- [X] CHANGELOG.md - 0.6.0 release section is complete and comprehensive
 - [ ] documentation/guide-plugins.md - Update/expand with new features
 - [ ] documentation/guide-hooks.md - Add SessionEnd + reporters
 
