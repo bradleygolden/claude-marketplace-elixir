@@ -309,9 +309,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
   end
 
-  # The "hooks with IDs" feature has been removed in favor of simpler atom-based hooks
-  # These tests have been removed as they test functionality that no longer exists
-
   describe "subagent generation" do
     test "generates subagents from .claude.exs configuration" do
       igniter =
@@ -354,7 +351,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
             %{
               subagents: [
                 %{
-                  # Missing required fields
                   name: "Invalid Agent"
                 }
               ]
@@ -1086,7 +1082,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         test_project(
           files: %{
             ".claude.exs" => """
-            # This is a valid Elixir file that returns invalid data
             nil
             """
           }
@@ -1121,13 +1116,10 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       settings = File.read!(".claude/settings.json") |> Jason.decode!()
 
-      # The hook system creates dispatcher commands for each event type that has hooks
-      # Hooks with when: conditions are still processed but filtered at runtime
       assert settings["hooks"]["PreToolUse"]
       assert settings["hooks"]["Stop"]
       assert settings["hooks"]["SubagentStop"]
 
-      # Each event type should have its corresponding dispatcher command
       pre_hooks = settings["hooks"]["PreToolUse"]
       assert is_list(pre_hooks)
 
@@ -1240,7 +1232,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
             ---
             description: Existing command
             ---
-            # Deps
             """
           }
         )
@@ -1599,20 +1590,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      # Should preserve original plugins configuration
       assert String.contains?(content, "plugins:")
       assert String.contains?(content, "Claude.Plugins.Base")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
 
-      # Should preserve custom settings
       assert String.contains?(content, "custom_setting:")
       assert String.contains?(content, "preserved_value")
 
-      # Should add mcp_servers from installer
       assert String.contains?(content, "mcp_servers:")
       assert String.contains?(content, ":tidewave")
 
-      # Should create .mcp.json with tidewave configuration
       assert_creates(igniter, ".mcp.json")
     end
 
@@ -1630,24 +1617,19 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should modify .claude.exs to add mcp_servers while preserving plugin options
       assert Igniter.changed?(igniter, ".claude.exs")
 
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      # Should preserve plugin with custom options
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "include_daisyui?: false")
 
-      # Should preserve other settings
       assert String.contains?(content, "auto_install_deps?: true")
 
-      # Should add mcp_servers from installer
       assert String.contains?(content, "mcp_servers:")
       assert String.contains?(content, ":tidewave")
 
-      # Should create MCP configuration
       assert_creates(igniter, ".mcp.json")
     end
 
@@ -1665,10 +1647,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should NOT modify .claude.exs since Tidewave already configured
       assert_unchanged(igniter, ".claude.exs")
 
-      # Should create .mcp.json with the existing custom port
       assert_creates(igniter, ".mcp.json")
 
       source = Rewrite.source!(igniter.rewrite, ".mcp.json")
@@ -1692,22 +1672,18 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should modify .claude.exs to add Tidewave to existing mcp_servers
       assert Igniter.changed?(igniter, ".claude.exs")
 
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      # Should preserve plugin configuration
       assert String.contains?(content, "plugins:")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
 
-      # Should have all MCP servers (existing + Tidewave from installer)
       assert String.contains?(content, ":custom_server")
       assert String.contains?(content, ":another_server")
       assert String.contains?(content, ":tidewave")
 
-      # Should NOT have duplicate Tidewave entries
       tidewave_count =
         content
         |> String.graphemes()
@@ -1734,19 +1710,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should add mcp_servers while preserving everything else
       assert Igniter.changed?(igniter, ".claude.exs")
 
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      # Should preserve plugin and existing nested_memories
       assert String.contains?(content, "plugins:")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "nested_memories:")
       assert String.contains?(content, "custom_rule")
 
-      # Should have tasks for nested memories generation (Phoenix plugin provides more memories)
       assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
                task_name == "nested_memories.generate"
              end)
@@ -1766,14 +1739,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # For non-Phoenix projects, installer should not modify .claude.exs 
       # because Phoenix plugin returns empty config and no Tidewave is needed
       refute Igniter.changed?(igniter, ".claude.exs")
 
-      # Should NOT create .mcp.json since no Phoenix detected
       refute Igniter.exists?(igniter, ".mcp.json")
 
-      # Should NOT have Tidewave-related notices
       refute Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "Tidewave")
              end)
@@ -1795,13 +1765,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should merge plugin configs and preserve custom hooks
       assert Igniter.changed?(igniter, ".claude.exs")
 
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      # Should preserve everything including custom hooks
       assert String.contains?(content, "plugins:")
       assert String.contains?(content, "hooks:")
       assert String.contains?(content, "echo 'custom hook'")
@@ -1813,12 +1781,10 @@ defmodule Mix.Tasks.Claude.InstallTest do
         phx_test_project()
         |> Igniter.compose_task("claude.install")
 
-      # Should detect Phoenix and add Tidewave automatically
       assert Enum.any?(igniter.notices, fn notice ->
                String.contains?(notice, "Phoenix project detected!")
              end)
 
-      # When Phoenix plugin is added later, it should not conflict
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
       assert String.contains?(content, "mcp_servers:")
@@ -1838,23 +1804,19 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      # Should add mcp_servers with custom port while preserving plugin
       assert Igniter.changed?(igniter, ".claude.exs")
 
       source = Rewrite.source!(igniter.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
-      # Should preserve plugin configuration
       assert String.contains?(content, "plugins:")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "port: 8080")
 
-      # Should add tidewave with custom port preserving environment variable capability
       assert String.contains?(content, "mcp_servers:")
       assert String.contains?(content, "tidewave:")
       assert String.contains?(content, "\"${PORT:-8080}\"")
 
-      # Should have tidewave.install task
       assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
                task_name == "tidewave.install"
              end)
