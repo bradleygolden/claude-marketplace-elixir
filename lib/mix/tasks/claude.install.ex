@@ -30,116 +30,6 @@ defmodule Mix.Tasks.Claude.Install do
   alias Claude.MCP.Config
 
   @usage_rules_version "~> 0.1"
-  @tidewave_version "~> 0.2"
-
-  @meta_agent_config %{
-    name: "Meta Agent",
-    description:
-      "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect.",
-    prompt: """
-    # Purpose
-
-    Your sole purpose is to act as an expert agent architect. You will take a user's prompt describing a new subagent and generate a complete, ready-to-use subagent configuration for Elixir projects.
-
-    ## Important Documentation
-
-    You MUST reference these official Claude Code documentation pages to ensure accurate subagent generation:
-    - **Subagents Guide**: https://docs.anthropic.com/en/docs/claude-code/sub-agents
-    - **Settings Reference**: https://docs.anthropic.com/en/docs/claude-code/settings
-    - **Hooks System**: https://docs.anthropic.com/en/docs/claude-code/hooks
-
-    Use the WebSearch tool to look up specific details from these docs when needed, especially for:
-    - Tool naming conventions and available tools
-    - Subagent YAML frontmatter format
-    - Best practices for descriptions and delegation
-    - Settings.json structure and configuration options
-
-    ## Instructions
-
-    When invoked, you must follow these steps:
-
-    1. **Analyze Input:** Carefully analyze the user's request to understand the new agent's purpose, primary tasks, and domain
-       - Use WebSearch to consult the subagents documentation if you need clarification on best practices
-
-    2. **Devise a Name:** Create a descriptive name (e.g., "Database Migration Agent", "API Integration Agent")
-
-    3. **Write Delegation Description:** Craft a clear, action-oriented description. This is CRITICAL for automatic delegation:
-       - Use phrases like "MUST BE USED for...", "Use PROACTIVELY when...", "Expert in..."
-       - Be specific about WHEN to invoke
-       - Avoid overlap with existing agents
-
-    4. **Infer Necessary Tools:** Based on tasks, determine MINIMAL tools required:
-       - Code reviewer: `[:read, :grep, :glob]`
-       - Refactorer: `[:read, :edit, :multi_edit, :grep]`
-       - Test runner: `[:read, :edit, :bash, :grep]`
-       - Remember: No `:task` prevents delegation loops
-
-    5. **Construct System Prompt:** Design the prompt considering:
-       - **Clean Slate**: Agent has NO memory between invocations
-       - **Context Discovery**: Specify exact files/patterns to check first
-       - **Performance**: Avoid reading entire directories
-       - **Self-Contained**: Never assume main chat context
-
-    6. **Check for Issues:**
-       - Read current `.claude.exs` to avoid description conflicts
-       - Ensure tools match actual needs (no extras)
-
-    7. **Generate Configuration:** Add the new subagent to `.claude.exs`:
-
-        %{
-          name: "Generated Name",
-          description: "Generated action-oriented description",
-          prompt: \\\"""
-          # Purpose
-          You are [role definition].
-
-          ## Instructions
-          When invoked, follow these steps:
-          1. [Specific startup sequence]
-          2. [Core task execution]
-          3. [Validation/verification]
-
-          ## Context Discovery
-          Since you start fresh each time:
-          - Check: [specific files first]
-          - Pattern: [efficient search patterns]
-          - Limit: [what NOT to read]
-
-          ## Best Practices
-          - [Domain-specific guidelines]
-          - [Performance considerations]
-          - [Common pitfalls to avoid]
-          \\\""",
-          tools: [inferred tools]
-        }
-
-    8. **Final Actions:**
-       - Update `.claude.exs` with the new configuration
-       - Instruct user to run `mix claude.install`
-
-    ## Key Principles
-
-    **Avoid Common Pitfalls:**
-    - Context overflow: "Read all files in lib/" → "Read only specific module"
-    - Ambiguous delegation: "Database expert" → "MUST BE USED for Ecto migrations"
-    - Hidden dependencies: "Continue refactoring" → "Refactor to [explicit patterns]"
-    - Tool bloat: Only include tools actually needed
-
-    **Performance Patterns:**
-    - Targeted reads over directory scans
-    - Specific grep patterns over broad searches
-    - Limited context gathering on startup
-
-    ## Output Format
-
-    Your response should:
-    1. Show the complete subagent configuration to add
-    2. Explain key design decisions
-    3. Warn about any potential conflicts
-    4. Remind to run `mix claude.install`
-    """,
-    tools: [:write, :read, :edit, :multi_edit, :bash, :web_search]
-  }
 
   @tool_atom_to_string %{
     bash: "Bash",
@@ -176,7 +66,6 @@ defmodule Mix.Tasks.Claude.Install do
     |> add_usage_rules_dependency()
     |> install_hooks()
     |> copy_wrapper_script()
-    |> setup_phoenix_mcp()
     |> sync_usage_rules()
     |> generate_nested_memories()
     |> generate_subagents()
@@ -191,12 +80,13 @@ defmodule Mix.Tasks.Claude.Install do
     if Igniter.exists?(igniter, path) do
       igniter
       |> ensure_default_hooks(path)
+      |> ensure_phoenix_plugin(path)
       |> check_meta_agent_and_notify(path)
     else
       Igniter.create_new_file(
         igniter,
         path,
-        claude_exs_template()
+        claude_exs_template(igniter)
       )
     end
   end
@@ -211,7 +101,6 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp add_claude_exs_to_formatter(igniter) do
     default_formatter = """
-    # Used by "mix format"
     [
       inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
     ]
@@ -280,6 +169,57 @@ defmodule Mix.Tasks.Claude.Install do
 
       _ ->
         igniter
+    end
+  end
+
+  defp ensure_phoenix_plugin(igniter, path) do
+    if Igniter.Project.Deps.has_dep?(igniter, :phoenix) do
+      case read_and_eval_claude_exs(igniter, path) do
+        {:ok, config} when is_map(config) ->
+          plugins = Map.get(config, :plugins, [])
+          mcp_servers = Map.get(config, :mcp_servers, [])
+
+          has_phoenix_plugin =
+            Enum.any?(plugins, fn
+              Claude.Plugins.Phoenix -> true
+              {Claude.Plugins.Phoenix, _} -> true
+              _ -> false
+            end)
+
+          has_explicit_tidewave =
+            Enum.any?(mcp_servers, fn
+              :tidewave -> true
+              {:tidewave, _} -> true
+              _ -> false
+            end)
+
+          if not has_phoenix_plugin do
+            phoenix_plugin =
+              if has_explicit_tidewave do
+                {Claude.Plugins.Phoenix, [tidewave_enabled?: false]}
+              else
+                Claude.Plugins.Phoenix
+              end
+
+            updated_plugins = plugins ++ [phoenix_plugin]
+            updated_config = Map.put(config, :plugins, updated_plugins)
+
+            Igniter.update_file(igniter, path, fn source ->
+              Rewrite.Source.update(
+                source,
+                :content,
+                inspect(updated_config, pretty: true, limit: :infinity)
+              )
+            end)
+          else
+            igniter
+          end
+
+        _ ->
+          igniter
+      end
+    else
+      igniter
     end
   end
 
@@ -355,24 +295,17 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp parse_hook_spec(_, _, _), do: nil
 
-  defp format_meta_agent_for_notice do
-    name = inspect(@meta_agent_config.name)
-    description = inspect(@meta_agent_config.description)
-    tools = inspect(@meta_agent_config.tools)
-    prompt = @meta_agent_config.prompt
+  defp claude_exs_template(igniter) do
+    plugins =
+      if Igniter.Project.Deps.has_dep?(igniter, :phoenix) do
+        "[Claude.Plugins.Base, Claude.Plugins.Phoenix]"
+      else
+        "[Claude.Plugins.Base]"
+      end
 
-    "    %{\n" <>
-      "      name: #{name},\n" <>
-      "      description: #{description},\n" <>
-      "      prompt: \"\"\"\n#{prompt}\"\"\",\n" <>
-      "      tools: #{tools}\n" <>
-      "    }"
-  end
-
-  defp claude_exs_template do
     """
     %{
-      plugins: [Claude.Plugins.Base],
+      plugins: #{plugins},
       auto_install_deps?: true
     }
     """
@@ -691,112 +624,7 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-  defp setup_phoenix_mcp(igniter) do
-    if Igniter.Project.Deps.has_dep?(igniter, :phoenix) do
-      add_tidewave_to_project(igniter)
-    else
-      igniter
-    end
-  end
-
-  defp add_tidewave_to_project(igniter) do
-    igniter =
-      igniter
-      |> Igniter.Project.Deps.add_dep({:tidewave, @tidewave_version, only: [:dev]},
-        on_exists: :skip
-      )
-      |> Igniter.add_task("tidewave.install")
-      |> add_tidewave_to_mcp_servers()
-
-    if Igniter.changed?(igniter, ".claude.exs") || Igniter.changed?(igniter, "mix.exs") do
-      igniter
-      |> Igniter.add_notice("""
-      Phoenix project detected! Automatically adding Tidewave for enhanced Phoenix development.
-
-      Tidewave provides Phoenix-specific MCP tools for Claude Code, including:
-      - Route inspection and generation
-      - LiveView component assistance
-      - Schema and migration tools
-      - Context generation helpers
-      """)
-    else
-      igniter
-    end
-  end
-
-  defp add_tidewave_to_mcp_servers(igniter) do
-    claude_exs_path = ".claude.exs"
-
-    if Igniter.exists?(igniter, claude_exs_path) do
-      case read_config_with_plugins(igniter, claude_exs_path) do
-        {:ok, config} when is_map(config) ->
-          mcp_servers = Map.get(config, :mcp_servers, [])
-
-          if tidewave_already_configured?(mcp_servers) do
-            igniter
-          else
-            updated_servers = add_tidewave_to_list(mcp_servers)
-            updated_config = Map.put(config, :mcp_servers, updated_servers)
-
-            igniter
-            |> Igniter.update_file(claude_exs_path, fn source ->
-              Rewrite.Source.update(
-                source,
-                :content,
-                inspect(updated_config, pretty: true, limit: :infinity)
-              )
-            end)
-            |> Config.write_mcp_config(updated_servers)
-          end
-
-        _ ->
-          updated_config = %{mcp_servers: [:tidewave]}
-
-          igniter
-          |> Igniter.create_or_update_file(
-            claude_exs_path,
-            inspect(updated_config, pretty: true, limit: :infinity),
-            fn source ->
-              Rewrite.Source.update(
-                source,
-                :content,
-                inspect(updated_config, pretty: true, limit: :infinity)
-              )
-            end
-          )
-          |> Config.write_mcp_config([:tidewave])
-      end
-    else
-      config = %{mcp_servers: [:tidewave]}
-
-      igniter
-      |> Igniter.create_or_update_file(
-        claude_exs_path,
-        inspect(config, pretty: true, limit: :infinity),
-        fn _source -> :error end
-      )
-      |> Config.write_mcp_config([:tidewave])
-    end
-  end
-
-  defp tidewave_already_configured?(mcp_servers) when is_list(mcp_servers) do
-    Enum.any?(mcp_servers, fn
-      :tidewave -> true
-      {:tidewave, _} -> true
-      _ -> false
-    end)
-  end
-
-  defp tidewave_already_configured?(_), do: false
-
-  defp add_tidewave_to_list(mcp_servers) when is_list(mcp_servers) do
-    [:tidewave | mcp_servers]
-  end
-
-  defp add_tidewave_to_list(_), do: [:tidewave]
-
   defp sync_usage_rules(igniter) do
-    # Always show notice on first install (when CLAUDE.md doesn't exist)
     show_notice = !Igniter.exists?(igniter, "CLAUDE.md")
 
     igniter
@@ -1032,7 +860,6 @@ defmodule Mix.Tasks.Claude.Install do
       "description: #{subagent.description}"
     ]
 
-    # Add tools line only if tools are specified
     lines =
       if subagent.tools != [] do
         tools_line =
@@ -1181,25 +1008,29 @@ defmodule Mix.Tasks.Claude.Install do
     end)
   end
 
-  # Helper function to read config with plugin support
   defp read_config_with_plugins(igniter, path) do
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, base_config} when is_map(base_config) ->
-        apply_plugins_to_config(base_config)
+        apply_plugins_to_config(igniter, base_config)
 
       error ->
         error
     end
   end
 
-  # Apply plugins to a config map (similar to Claude.Config but works with any config)
-  defp apply_plugins_to_config(base_config) do
+  defp apply_plugins_to_config(igniter, base_config) do
     case Map.get(base_config, :plugins, []) do
       [] ->
         {:ok, Map.delete(base_config, :plugins)}
 
       plugins when is_list(plugins) ->
-        case Claude.Plugin.load_plugins(plugins) do
+        plugins_with_igniter =
+          Enum.map(plugins, fn
+            {module, opts} when is_list(opts) -> {module, Keyword.put(opts, :igniter, igniter)}
+            module when is_atom(module) -> {module, [igniter: igniter]}
+          end)
+
+        case Claude.Plugin.load_plugins(plugins_with_igniter) do
           {:ok, plugin_configs} ->
             final_config =
               (plugin_configs ++ [base_config])
@@ -1243,39 +1074,7 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp check_meta_agent_and_notify(igniter, _path) do
-    if igniter.assigns[:test_mode] || Mix.env() == :test do
-      igniter
-    else
-      case read_config_with_plugins(igniter, ".claude.exs") do
-        {:ok, config} when is_map(config) ->
-          subagents = Map.get(config, :subagents, [])
-
-          has_meta_agent =
-            Enum.any?(subagents, fn agent ->
-              Map.get(agent, :name) == "Meta Agent"
-            end)
-
-          if has_meta_agent do
-            igniter
-          else
-            igniter
-            |> Igniter.add_notice("""
-
-            Your project doesn't have a Meta Agent configured.
-            The Meta Agent helps you create new subagents.
-
-            To add it, copy the following to your .claude.exs subagents list:
-
-            #{format_meta_agent_for_notice()}
-
-            Then run `mix claude.install` again to generate the agent file.
-            """)
-          end
-
-        _ ->
-          igniter
-      end
-    end
+    igniter
   end
 
   defp tool_to_string(tool) when is_atom(tool) do
