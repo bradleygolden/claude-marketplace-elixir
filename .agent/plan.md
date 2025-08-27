@@ -26,3 +26,5 @@
 ## Files Already Current
 - documentation/guide-plugins.md (comprehensive)
 - cheatsheets/plugins.cheatmd (exists)
+- README.md (already has plugin system features prominently)
+- CHANGELOG.md (already has 0.6.0 section with all features)
