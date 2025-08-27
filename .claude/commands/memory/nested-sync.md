@@ -46,10 +46,6 @@ The sync process:
 
 ## Important Reminder
 
-⚠️ **You need to restart Claude Code for the changes to take effect!**
+✅ **Changes take effect immediately!**
 
-The command to restart Claude Code depends on how you launched it:
-- If using the CLI: Exit and run `claude` again
-- If using an IDE integration: Restart the integration
-
-Nested memories are synced! After restarting, Claude will have directory-specific context when working in those areas.
+Nested memories are synced! Claude now has directory-specific context when working in those areas.

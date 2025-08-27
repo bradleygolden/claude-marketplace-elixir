@@ -66,13 +66,9 @@ The installation process configured:
 
 ## Important Next Steps
 
-⚠️ **RESTART REQUIRED**: You must restart Claude Code for these changes to take effect!
+✅ **Changes take effect immediately!**
 
-To restart:
-- If using CLI: Exit (Ctrl+C or Ctrl+D) and run `claude` again
-- If using IDE integration: Restart the integration
-
-After restarting, Claude will have:
+Claude now has:
 - Active hooks for code quality
 - Access to specialized subagents
 - Directory-specific context from nested memories

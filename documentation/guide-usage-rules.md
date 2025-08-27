@@ -1,159 +1,90 @@
-# Usage Rules
+# Usage Rules Guide
 
-Usage rules provide best practices and conventions directly from package authors to improve how Claude Code writes code for your project.
+Your dependencies provide best practices that Claude follows automatically. No more "use idiomatic Elixir" prompts - Claude just knows.
 
-> 📋 **Quick Reference**: See the [Usage Rules Cheatsheet](../cheatsheets/usage-rules.cheatmd) for a concise reference of configuration options and patterns.
+## How It Works
 
-## What are Usage Rules?
-
-Usage rules are markdown files containing library-specific guidelines, patterns, and best practices that help AI assistants write better code. When Claude installs in your project, it automatically:
-
-1. Adds the `usage_rules` dependency (dev only)
-2. Syncs all available usage rules to your `CLAUDE.md` file
-3. Makes these rules available to sub-agents
-
-This ensures Claude Code follows the exact patterns and conventions that library authors recommend.
-
-## How Claude Uses Usage Rules
-
-### Automatic Syncing
-
-When you run `mix claude.install`, Claude automatically runs:
+When you install Claude, it syncs usage rules from your dependencies to `CLAUDE.md`:
 
 ```bash
-mix usage_rules.sync CLAUDE.md --all --link-to-folder deps
+mix claude.install
+# ✅ Found usage rules for: elixir, otp, phoenix, ecto, ash
+# ✅ Synced to CLAUDE.md
 ```
 
-This command:
-- Gathers usage rules from all dependencies that provide them
-- Creates links to the usage rules files in `deps/` instead of inlining content
-- Keeps your root `CLAUDE.md` file lean and reduces context window usage
-- Ensures Claude Code always has access to current best practices when needed
+Claude reads these files and follows the patterns automatically.
 
-### In Your CLAUDE.md
+## What Gets Synced
 
-After installation, your `CLAUDE.md` will contain links to usage rules instead of full content:
+Common packages with usage rules:
+- **Elixir Core** - Pattern matching, error handling, data structures  
+- **OTP** - GenServer, Task, fault tolerance patterns
+- **Phoenix** - Controllers, routers, endpoint best practices
+- **LiveView** - Component, event handling, state management
+- **Ecto** - Schema, changeset, query patterns
+- **Ash** - Resource, action, calculation patterns
 
-```markdown
-## ash usage
-_A declarative, extensible framework for building Elixir applications._
+## Directory-Specific Rules
 
-[ash usage rules](deps/ash/usage-rules.md)
-
-## phoenix usage
-_Productive. Reliable. Fast._
-
-[phoenix usage rules](deps/phoenix/usage-rules.md)
-
-## usage_rules usage
-_A dev tool for Elixir projects to gather LLM usage rules from dependencies_
-
-[usage_rules usage rules](deps/usage_rules/usage-rules.md)
-```
-
-This keeps the root CLAUDE.md file lean while Claude Code can still access the full usage rules when needed. For core Elixir rules and critical guidelines that are frequently referenced, some packages may still be inlined.
-
-## Nested Memories
-
-Claude supports distributing CLAUDE.md files across different directories in your project for context-specific guidance:
+Different parts of your project get different rules:
 
 ```elixir
+# .claude.exs (Phoenix plugin does this automatically)
 %{
   nested_memories: %{
-    "lib/my_app_web" => ["phoenix", "ash_phoenix"],
-    "lib/my_app/accounts" => ["ash"]
+    "test" => ["usage_rules:elixir", "usage_rules:otp"],
+    "lib/my_app" => ["usage_rules:elixir", "usage_rules:otp", "phoenix:ecto"],
+    "lib/my_app_web" => ["usage_rules:elixir", "usage_rules:otp", "phoenix:phoenix", "phoenix:liveview"]
   }
 }
 ```
 
-This creates separate `CLAUDE.md` files in each directory with the relevant usage rules inlined for focused context:
-- `lib/my_app_web/CLAUDE.md` - Phoenix and Ash Phoenix integration rules for web code (inlined)
-- `lib/my_app/accounts/CLAUDE.md` - Ash framework rules for business logic (inlined)
+This creates `CLAUDE.md` files in each directory with relevant rules.
 
-Benefits of nested memories:
-- **Context-aware guidance** - Different rules for different parts of your codebase
-- **Inlined for focus** - Nested memory files have rules inlined since they're context-specific
-- **Reduced noise** - Claude only sees relevant rules for the current context
-- **Better organization** - Keep domain-specific guidance with the code
+## Manual Commands
 
-## Usage Rules in Sub-Agents
-
-Sub-agents can include specific usage rules to ensure they follow library best practices:
-
-```elixir
-%{
-  subagents: [
-    %{
-      name: "Code Generation Expert",
-      description: "Expert in code generation and project setup",
-      prompt: "You are a code generation expert...",
-      tools: [:read, :write, :edit],
-      usage_rules: [:igniter, :usage_rules_elixir]
-    }
-  ]
-}
+Check what's available:
+```bash
+mix usage_rules.sync --list
 ```
 
-### Available Usage Rules
+Sync specific rules:
+```bash
+mix usage_rules.sync phoenix
+```
 
-Common usage rules that can be included:
+Re-sync everything:
+```bash
+mix usage_rules.sync
+```
 
-- **`:usage_rules_elixir`** - Elixir language best practices
-- **`:usage_rules_otp`** - OTP patterns and conventions
-- **Package-specific** - Any package that provides usage rules (`:igniter`, or others when available)
+## Example: Phoenix Project
 
-### Loading Patterns
+Before usage rules:
+```
+> Create a LiveView component for user profiles
+# Claude might write non-idiomatic Phoenix code
+```
 
-Usage rules can be loaded in different ways:
+After usage rules:
+```
+> Create a LiveView component for user profiles  
+# Claude follows Phoenix conventions:
+# - Uses proper function components
+# - Includes correct LiveView imports
+# - Follows Phoenix naming patterns
+# - Uses idiomatic event handling
+```
 
-- **`:package_name`** - Loads the main usage rules file (`deps/package_name/usage-rules.md`)
-- **`"package_name:all"`** - Loads all usage rules from a package (`deps/package_name/usage-rules/`)
-- **`"package_name:specific_rule"`** - Loads a specific rule file (`deps/package_name/usage-rules/specific_rule.md`)
+## Slash Commands
 
-## Benefits
+Manage nested memories easily:
 
-1. **Consistency** - Claude follows the same patterns throughout your codebase
-2. **Best Practices** - Automatically uses library author recommendations
-3. **Fewer Errors** - Avoids common mistakes and anti-patterns
-4. **Better Integration** - Code that works well with your dependencies
-5. **Learning** - Usage rules document patterns for your team too
+- `/memory:nested-add` - Add rules to directories
+- `/memory:nested-list` - See current setup
+- `/memory:nested-sync` - Regenerate CLAUDE.md files
 
-Learn more at [hexdocs.pm/usage_rules](https://hexdocs.pm/usage_rules).
+## Need More?
 
-## Examples
-
-### Current Project
-
-This Claude project includes these usage rules which you can see in the [CLAUDE.md](https://github.com/bradleygolden/claude/blob/main/CLAUDE.md) file.
-
-### When More Packages Add Usage Rules
-
-As packages add usage rules, they'll automatically be available. For example:
-
-- If Phoenix adds usage rules, you could use `:phoenix`
-- If Ecto adds usage rules, you could use `:ecto`
-- If Ash adds usage rules, you could use `:ash`
-
-The usage_rules package ecosystem is growing, and more packages are adding rules over time.
-
-## Troubleshooting
-
-**Usage rules not appearing in CLAUDE.md?**
-- Check that `usage_rules` is in your dependencies
-- Run `mix claude.install`
-- Verify packages have `usage-rules.md` or `usage-rules/` directory
-
-**Sub-agent not following usage rules?**
-- Verify the rules are listed in the sub-agent's `usage_rules` field
-- Check that the package name matches exactly
-- Run `mix claude.install` to regenerate sub-agents
-
-**Need help?**
-- 💬 [GitHub Discussions](https://github.com/bradleygolden/claude/discussions)
-- 🐛 [Issue Tracker](https://github.com/bradleygolden/claude/issues)
-
-## Learn More
-
-- 📖 [usage_rules Documentation](https://hexdocs.pm/usage_rules) - Full documentation for the usage_rules package
-- 🎯 [Creating Usage Rules](https://hexdocs.pm/usage_rules/creating-usage-rules.html) - How to add usage rules to your own packages
-- 🔍 [Mix Tasks Reference](https://hexdocs.pm/usage_rules/Mix.Tasks.UsageRules.html) - Available mix tasks for working with usage rules
+- **Quick reference:** [Usage Rules Cheatsheet](../cheatsheets/usage-rules.cheatmd)
+- **Package docs:** [Usage Rules Package](https://hexdocs.pm/usage_rules)

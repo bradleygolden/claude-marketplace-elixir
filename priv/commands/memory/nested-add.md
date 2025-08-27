@@ -104,10 +104,6 @@ After updating, I'll run `mix claude.install` to generate the files.
 
 ## Important Reminder
 
-⚠️ **After running `mix claude.install`, you'll need to restart Claude Code for the changes to take effect!**
-
-The command to restart Claude Code depends on how you launched it:
-- If using the CLI: Exit and run `claude` again
-- If using an IDE integration: Restart the integration
+✅ **Changes take effect immediately after running `mix claude.install`!**
 
 Let me proceed with adding this configuration.

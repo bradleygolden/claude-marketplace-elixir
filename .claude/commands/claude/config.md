@@ -117,5 +117,4 @@ Based on your configuration:
 - `/claude/status` - Check installation status
 
 After making changes, remember to:
-1. Run `/claude/install` to apply changes
-2. Restart Claude Code for changes to take effect
+1. Run `/claude/install` to apply changes (takes effect immediately)
