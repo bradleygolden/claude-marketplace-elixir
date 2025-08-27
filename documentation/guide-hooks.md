@@ -24,6 +24,7 @@ When you run `mix igniter.install claude`, it automatically sets up default hook
     post_tool_use: [:compile, :format],
     # These only run on git commit commands
     pre_tool_use: [:compile, :format, :unused_deps]
+    # session_end hooks are available but not configured by default
   }
 }
 ```
@@ -32,6 +33,7 @@ This provides:
 1. **Format checking** - Alerts when Elixir files need formatting
 2. **Compilation checking** - Catches errors and warnings immediately
 3. **Pre-commit validation** - Ensures clean code before commits
+4. **SessionEnd support** - Available for cleanup tasks when Claude sessions end
 
 ## Available Hook Atoms
 
@@ -56,6 +58,7 @@ Different hook events run at different times:
 - **`subagent_stop`** - When a sub-agent finishes responding
 - **`pre_compact`** - Before context compaction (manual or automatic)
 - **`session_start`** - When Claude Code starts or resumes a session
+- **`session_end`** - When Claude Code session ends (cleanup, logging, etc.)
 
 ### ⚠️ Stop Hook Loop Prevention
 
@@ -66,6 +69,31 @@ Stop and subagent_stop hooks use `blocking?: false` by default to prevent infini
 3. This triggers the stop hook again, creating an infinite loop
 
 The default `blocking?: false` setting keeps you informed about issues without causing Claude to get stuck. If you need blocking behavior, explicitly set `blocking?: true` but be aware of the loop risk.
+
+### SessionEnd Hook Use Cases
+
+The `session_end` hook is perfect for cleanup and logging tasks:
+
+```elixir
+%{
+  hooks: %{
+    session_end: [
+      "cmd echo 'Session completed at $(date)'",
+      {"mix my_app.cleanup", blocking?: false},
+      "mix my_app.log_session_stats"
+    ]
+  }
+}
+```
+
+**Common use cases:**
+- Cleanup temporary files or processes
+- Log session statistics or metrics
+- Archive or backup session data
+- Send notifications to external systems  
+- Update project metadata or status
+
+**Note:** SessionEnd hooks cannot affect Claude's behavior since the session is already ending. They are purely for side effects.
 
 ## Advanced Configuration
 
@@ -89,6 +117,12 @@ You can mix atom shortcuts with explicit configurations:
       {"test", when: "Bash", command: ~r/^git push/}
     ],
     
+    # SessionEnd hooks for cleanup
+    session_end: [
+      "cmd echo 'Session ended'",
+      {:custom_cleanup, blocking?: false}
+    ],
+    
     # Control output verbosity (rarely needed)
     subagent_stop: [
       {:compile, output: :full},  # WARNING: Can cause context overflow
@@ -109,33 +143,114 @@ You can mix atom shortcuts with explicit configurations:
   - `:none` - Only show pipeline summary on failures (prevents context overflow) **[Recommended]**
   - `:full` - Show complete hook output plus pipeline summary (use sparingly - can cause context issues)
 
-## Hook Event Reporting (Experimental)
+## Event Reporting System
 
-Claude supports sending hook events to external systems for monitoring and integration.
+Claude includes a comprehensive event reporting system for monitoring hook execution and integrating with external tools.
 
-### Webhook Reporter
+### Reporter Types
 
-**Note: This feature is experimental and the API may change in future releases.**
-
+#### Webhook Reporter
 Send hook events to HTTP endpoints:
 
 ```elixir
 %{
   reporters: [
     {:webhook,
-      url: "https://example.com/webhook",
+      url: "https://example.com/claude-events",
       headers: %{"Authorization" => "Bearer token"},
       timeout: 5000,
-      retry_count: 3
+      enabled?: true
     }
   ]
 }
 ```
 
-The webhook reporter sends the raw Claude Code hook event data as JSON, including:
-- Event type and timestamp
-- Tool information (for tool-related events)
-- Session and project context
+#### JSONL File Reporter  
+Log structured events to files:
+
+```elixir
+%{
+  reporters: [
+    {:jsonl, 
+      file: "claude-events.jsonl",
+      enabled?: true
+    }
+  ]
+}
+```
+
+#### Environment-Based Webhook
+Use environment variables for webhook configuration:
+
+```elixir
+%{
+  reporters: [:webhook]  # Uses CLAUDE_WEBHOOK_URL environment variable
+}
+```
+
+### Custom Reporters
+
+Create your own reporters by implementing the `Claude.Hooks.Reporter` behaviour:
+
+```elixir
+defmodule MyApp.CustomReporter do
+  @behaviour Claude.Hooks.Reporter
+
+  @impl true
+  def report(event_data, opts) do
+    # Process the hook event
+    case send_to_service(event_data, opts) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+end
+
+# Configuration:
+%{
+  reporters: [
+    {MyApp.CustomReporter, api_key: "secret", enabled?: true}
+  ]
+}
+```
+
+### Event Data Structure
+
+All reporters receive the raw Claude Code hook event data as a map:
+
+```elixir
+%{
+  "hook_event_name" => "PostToolUse",
+  "session_id" => "abc123",
+  "tool_name" => "Write", 
+  "tool_input" => %{"file_path" => "/path/to/file", "content" => "..."},
+  "tool_response" => %{"success" => true},
+  "cwd" => "/project/path",
+  "timestamp" => "2025-08-27T12:00:00Z"
+}
+```
+
+### Plugin Integration
+
+Reporters are easily configured via plugins:
+
+```elixir
+# Use the Webhook plugin
+%{
+  plugins: [
+    Claude.Plugins.Base,
+    Claude.Plugins.Webhook
+  ]
+}
+
+# Or the Logging plugin  
+%{
+  plugins: [
+    Claude.Plugins.Base,
+    Claude.Plugins.Logging
+  ]
+}
+```
 
 ## How It Works
 
