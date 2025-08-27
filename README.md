@@ -33,6 +33,22 @@ mix igniter.install claude
 | 🔗 **MCP Servers** | Phoenix development tools integration via Tidewave | [MCP Guide](documentation/guide-mcp.md) |
 | 🛠️ **Slash Commands** | Pre-configured commands for common Elixir tasks | [Slash Commands Guide](documentation/guide-slash-commands.md) |
 
+## Built-in Plugins
+
+| Plugin | Auto-Activates | Description | What It Provides |
+|--------|----------------|-------------|------------------|
+| **Base** | Always | Standard hooks for code quality | Compile/format checks, dependency validation |
+| **ClaudeCode** | Always | Claude Code documentation and context | Hook guides, subagent docs, settings reference |
+| **Phoenix** | When `:phoenix` dependency | Phoenix project configuration | Tidewave MCP server, LiveView/Ecto rules, DaisyUI docs |
+| **Webhook** | Manual | Event reporting via HTTP | Real-time hook events to external systems |
+| **Logging** | Manual | JSONL file event logging | Structured logs for analysis and monitoring |
+
+**Plugin Options:** Most plugins support customization. For example:
+```elixir
+{Claude.Plugins.Phoenix, include_daisyui?: false, port: 4001}
+{Claude.Plugins.Webhook, url: "https://api.example.com/hooks"}
+```
+
 ## Installation
 
 **Requirements:** Elixir 1.18+, [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/quickstart), Mix project
