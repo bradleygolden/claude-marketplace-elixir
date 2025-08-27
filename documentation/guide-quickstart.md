@@ -120,7 +120,7 @@ You've just experienced Claude's core features:
 ### Enable More Features
 
 - **[Plugin System](guide-plugins.md)** - Create custom plugins or configure existing ones (Webhook reporting, JSONL logging, etc.)
-- **[Create Sub-Agents](guide-subagents.md)** - Use `mix claude.gen.subagent` to build specialized AI assistants
+- **[Create Sub-Agents](guide-subagents.md)** - Build specialized AI assistants with the Meta Agent
 - **[Advanced Hooks](guide-hooks.md)** - Add SessionEnd hooks for cleanup tasks and customize hook behavior
 - **[Slash Commands](guide-slash-commands.md)** - Complete reference for all bundled development commands
 - **[Setup MCP Servers](guide-mcp.md)** - Configure additional MCP servers beyond auto-detected ones
