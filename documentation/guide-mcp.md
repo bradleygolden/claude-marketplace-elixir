@@ -19,9 +19,11 @@ Claude automatically configures [Tidewave](https://tidewave.ai/) for Phoenix pro
 When you run `mix claude.install` in a Phoenix project, Claude automatically:
 
 1. Detects Phoenix is installed
-2. Adds Tidewave to your `.claude.exs` configuration
+2. The `Claude.Plugins.Phoenix` plugin automatically adds Tidewave to your configuration
 3. Generates `.mcp.json` with the proper server configuration
 4. Enables the MCP server in Claude Code
+
+The Phoenix plugin handles this configuration seamlessly - see the [Plugin System Guide](guide-plugins.md) for more details on how plugins auto-configure your project.
 
 ### Manual Configuration
 
