@@ -115,7 +115,7 @@ defmodule Claude.MCP.Config do
 
   defp tidewave_config(port) do
     %{
-      "type" => "sse",
+      "type" => "http",
       "url" => "http://localhost:#{port}/tidewave/mcp"
     }
   end
