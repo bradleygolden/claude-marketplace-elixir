@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Claude.Install do
   alias Claude.MCP.Config
 
   @usage_rules_version "~> 0.1"
-  @tidewave_version "~> 0.2"
+  @tidewave_version "~> 0.4"
 
   @meta_agent_config %{
     name: "Meta Agent",

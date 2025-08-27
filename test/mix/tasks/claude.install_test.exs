@@ -698,7 +698,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
       {:ok, json} = Jason.decode(content)
 
-      assert json["mcpServers"]["tidewave"]["type"] == "sse"
+      assert json["mcpServers"]["tidewave"]["type"] == "http"
       assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:4000/tidewave/mcp"
     end
 
@@ -793,7 +793,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
       {:ok, json} = Jason.decode(content)
 
-      assert json["mcpServers"]["tidewave"]["type"] == "sse"
+      assert json["mcpServers"]["tidewave"]["type"] == "http"
       assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:4000/tidewave/mcp"
     end
 
@@ -816,7 +816,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
       {:ok, json} = Jason.decode(content)
 
-      assert json["mcpServers"]["tidewave"]["type"] == "sse"
+      assert json["mcpServers"]["tidewave"]["type"] == "http"
       assert json["mcpServers"]["tidewave"]["url"] == "http://localhost:5000/tidewave/mcp"
     end
 

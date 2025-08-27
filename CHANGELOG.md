@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2025-08-27
+
+### Fixed
+- Updated Tidewave MCP configuration to use HTTP streaming transport ("http") instead of SSE for compatibility with Tidewave 0.4+ (#106)
+- Updated Tidewave dependency requirement from "~> 0.2" to "~> 0.4" to ensure compatibility with HTTP streaming transport
+
 ## [0.5.1] - 2025-08-22
 
 ### Added
@@ -146,7 +152,8 @@ See the new updated [README.md](README.md) for more details!
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/bradleygolden/claude/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/bradleygolden/claude/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/bradleygolden/claude/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bradleygolden/claude/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bradleygolden/claude/compare/v0.3.4...v0.4.0
