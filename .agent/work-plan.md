@@ -19,12 +19,12 @@
 
 ## Discovery Notes
 
-- ✅ `documentation/guide-plugins.md` - Complete with 0.6.0 features
-- ✅ `cheatsheets/plugins.cheatmd` - Complete and current
-- ✅ `documentation/guide-hooks.md` - Has SessionEnd + reporters
-- ✅ `README.md` - Already updated with 0.6.0 features
-- ✅ `CHANGELOG.md` - Has complete 0.6.0 release section
-- 🔄 Need to check other documentation files for completeness
+- ✅ `documentation/guide-plugins.md` - Complete comprehensive plugin guide
+- ✅ `cheatsheets/plugins.cheatmd` - Complete and current 
+- ✅ `documentation/guide-hooks.md` - Need to verify SessionEnd + reporters
+- ✅ `README.md` - Updated with 0.6.0 features (plugin system, reporters)
+- ✅ `CHANGELOG.md` - Complete 0.6.0 release section (2025-08-27)
+- 🔄 Need to check hooks guide and other files for completeness
 
 ## Status
 - Started: 2025-08-27
