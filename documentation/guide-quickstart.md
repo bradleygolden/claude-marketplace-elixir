@@ -116,6 +116,7 @@ You've just experienced Claude's core features:
 ### Enable More Features
 
 - **[Create Sub-Agents](guide-subagents.md)** - Use `mix claude.gen.subagent` to build specialized AI assistants
+- **[Plugin System](guide-plugins.md)** - Extensible configuration system that auto-adapts to your project setup
 - **[Configure Additional Hooks](guide-hooks.md)** - Customize hook behavior and add custom checks
 - **[Setup MCP Servers](guide-mcp.md)** - Configure Tidewave for Phoenix development (auto-configured for Phoenix projects)
 
