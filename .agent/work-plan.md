@@ -19,10 +19,12 @@
 
 ## Discovery Notes
 
-- `documentation/guide-plugins.md` already exists with comprehensive plugin system documentation ✅
-- `cheatsheets/plugins.cheatmd` already exists - need to check if it's current ❓
-- Project seems to already have 0.6.0 features documented partially
-- Need to check what's missing vs what exists
+- ✅ `documentation/guide-plugins.md` - Complete with 0.6.0 features
+- ✅ `cheatsheets/plugins.cheatmd` - Complete and current
+- ✅ `documentation/guide-hooks.md` - Has SessionEnd + reporters
+- ✅ `README.md` - Already updated with 0.6.0 features
+- ✅ `CHANGELOG.md` - Has complete 0.6.0 release section
+- 🔄 Need to check other documentation files for completeness
 
 ## Status
 - Started: 2025-08-27
