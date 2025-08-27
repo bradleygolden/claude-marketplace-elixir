@@ -15,7 +15,8 @@ If you need blocking behavior for stop hooks, explicitly set `blocking?: true` b
     stop: [:compile, :format],
     subagent_stop: [:compile, :format],
     post_tool_use: [:compile, :format],
-    pre_tool_use: [:compile, :format, :unused_deps]
+    pre_tool_use: [:compile, :format, :unused_deps],
+    session_end: ["cmd echo 'Session ended'"]  # Optional cleanup
   }
 }
 ```
@@ -202,23 +203,36 @@ stop: [:compile, :format]  # Both use :none by default
 
 **Important:** The `:output` option defaults to `:none` to prevent context overflow. Using `:full` can cause Claude to run out of context space with long outputs (test failures, compilation errors, etc). Claude can run commands directly when it needs details.
 
-## Event Reporting (Experimental)
+## Event Reporting System
 
-**Note: This feature is experimental and may change in future releases.**
-
-### Webhook Reporter
-
-Send hook events to external endpoints:
+### Reporter Types
 
 ```elixir
 %{
   reporters: [
-    {:webhook,
-      url: "https://example.com/webhook",
-      headers: %{"Authorization" => "Bearer token"},
-      timeout: 5000,
-      retry_count: 3
-    }
+    # Webhook reporter
+    {:webhook, url: "https://example.com/events"},
+    
+    # JSONL file reporter  
+    {:jsonl, file: "claude-events.jsonl"},
+    
+    # Environment-based webhook
+    :webhook,  # Uses CLAUDE_WEBHOOK_URL
+    
+    # Custom reporter
+    {MyApp.CustomReporter, api_key: "secret"}
+  ]
+}
+```
+
+### Via Plugins
+
+```elixir
+%{
+  plugins: [
+    Claude.Plugins.Base,
+    Claude.Plugins.Webhook,   # Adds webhook reporter
+    Claude.Plugins.Logging    # Adds JSONL reporter
   ]
 }
 ```
@@ -306,6 +320,17 @@ Runs when Claude Code starts a new session.
 session_start: [
   {"load_env", when: :startup},
   {"restore_state", when: :resume}
+]
+```
+
+### `session_end`
+Runs when Claude Code session ends (cleanup, logging, etc).
+
+```elixir
+session_end: [
+  "cmd echo 'Session ended'",
+  {"my_app.cleanup", blocking?: false},
+  "my_app.log_session_stats"
 ]
 ```
 

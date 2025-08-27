@@ -63,12 +63,14 @@ defmodule Claude.MixProject do
       extras: [
         {"documentation/guide-quickstart.md", title: "Quickstart"},
         {"README.md", title: "Overview"},
+        {"documentation/guide-plugins.md", title: "Plugin System Guide"},
         {"documentation/guide-hooks.md", title: "Hooks Guide"},
         {"documentation/guide-subagents.md", title: "Sub-Agents Guide"},
         {"documentation/guide-mcp.md", title: "MCP Servers Guide"},
         {"documentation/guide-usage-rules.md", title: "Usage Rules Guide"},
         {"CHANGELOG.md", title: "Changelog"},
         {"LICENSE", title: "License"},
+        {"cheatsheets/plugins.cheatmd", title: "Plugin System Cheatsheet"},
         {"cheatsheets/hooks.cheatmd", title: "Hooks Cheatsheet"},
         {"cheatsheets/subagents.cheatmd", title: "Sub-Agents Cheatsheet"},
         {"cheatsheets/mcp.cheatmd", title: "MCP Cheatsheet"},
@@ -77,12 +79,14 @@ defmodule Claude.MixProject do
       groups_for_extras: [
         "Getting Started": ["documentation/guide-quickstart.md", "README.md"],
         Guides: [
+          "documentation/guide-plugins.md",
           "documentation/guide-hooks.md",
           "documentation/guide-subagents.md",
           "documentation/guide-mcp.md",
           "documentation/guide-usage-rules.md"
         ],
         Cheatsheets: [
+          "cheatsheets/plugins.cheatmd",
           "cheatsheets/hooks.cheatmd",
           "cheatsheets/subagents.cheatmd",
           "cheatsheets/mcp.cheatmd",
