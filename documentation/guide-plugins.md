@@ -121,15 +121,29 @@ Configures webhook event reporting:
 
 ### Claude.Plugins.Logging
 
-Configures structured event logging:
+Configures structured event logging to files:
 
 ```elixir
 %{
   reporters: [
     {:jsonl, file: "claude-events.jsonl"}
-  ]
+  ],
+  hooks: %{
+    # Registers ALL hook events for complete observability
+    pre_tool_use: ["claude_hooks_reporter"],
+    post_tool_use: ["claude_hooks_reporter"],
+    stop: ["claude_hooks_reporter"],
+    subagent_stop: ["claude_hooks_reporter"],
+    session_start: ["claude_hooks_reporter"],
+    session_end: ["claude_hooks_reporter"]    # New in 0.6.0
+  }
 }
 ```
+
+**Features:**
+- **All Events Captured**: Automatically logs every hook event type including `session_end`
+- **Structured Output**: JSONL format for easy processing
+- **Configurable Location**: Specify custom log file paths
 
 ## Configuration Merging
 
@@ -145,7 +159,7 @@ Plugins compose together intelligently:
   
   # Direct configuration (lower priority)
   hooks: %{
-    session_end: [:cleanup]     # Adds to Base plugin hooks
+    session_end: ["mix myapp.cleanup"]     # New in 0.6.0 - runs when Claude sessions end
   }
 }
 
@@ -289,16 +303,28 @@ defmodule MyApp.CustomReporter do
   
   @impl true
   def report(event_data, opts) do
-    # Process the event data
-    case send_to_custom_service(event_data, opts) do
-      {:ok, _} -> :ok
-      {:error, reason} -> {:error, reason}
+    # Process the event data - all hook events including SessionEnd
+    case event_data["hook_event_name"] do
+      "SessionEnd" -> 
+        handle_session_end(event_data, opts)
+      "PreToolUse" ->
+        handle_tool_event(event_data, opts)
+      _ ->
+        handle_generic_event(event_data, opts)
     end
+  end
+  
+  defp handle_session_end(event_data, opts) do
+    # SessionEnd events include reason: "clear", "logout", "prompt_input_exit", "other"
+    reason = event_data["reason"]
+    session_id = event_data["session_id"]
+    
+    send_to_custom_service(%{type: "session_end", reason: reason, session: session_id}, opts)
   end
   
   defp send_to_custom_service(event_data, opts) do
     # Your custom implementation
-    :ok
+    {:ok, "processed"}
   end
 end
 
@@ -373,6 +399,64 @@ MyApp plugin for Claude Code integration.
 ## Usage
     %{plugins: [MyApp.Plugin]}
 """
+```
+
+## SessionEnd Hook Event (New in 0.6.0)
+
+The `SessionEnd` hook event runs when Claude Code sessions end and is useful for cleanup tasks, logging session statistics, or saving session state.
+
+### SessionEnd Event Data
+
+```elixir
+%{
+  "hook_event_name" => "SessionEnd",
+  "session_id" => "abc123",
+  "transcript_path" => "~/.claude/projects/.../transcript.jsonl",
+  "cwd" => "/path/to/project",
+  "reason" => "clear"  # One of: "clear", "logout", "prompt_input_exit", "other"
+}
+```
+
+### SessionEnd Hook Configuration
+
+```elixir
+%{
+  hooks: %{
+    session_end: [
+      "mix myapp.cleanup",           # Run cleanup tasks
+      "mix myapp.save_metrics",      # Save session metrics 
+      {:cmd, "rm -rf tmp/claude-*", when: "Bash"}  # Shell commands
+    ]
+  }
+}
+```
+
+### Using SessionEnd with Reporters
+
+```elixir
+defmodule MyApp.SessionTracker do
+  @behaviour Claude.Hooks.Reporter
+  
+  @impl true
+  def report(%{"hook_event_name" => "SessionEnd"} = event_data, opts) do
+    session_id = event_data["session_id"]
+    reason = event_data["reason"]
+    
+    # Log session end
+    File.write!("sessions.log", "#{session_id} ended: #{reason}\n", [:append])
+    
+    # Clean up session-specific resources
+    cleanup_session_files(session_id)
+    
+    :ok
+  end
+  
+  def report(_other_event, _opts), do: :ok
+  
+  defp cleanup_session_files(session_id) do
+    # Your cleanup logic here
+  end
+end
 ```
 
 ## Common Patterns
