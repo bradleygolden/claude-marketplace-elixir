@@ -1,79 +1,49 @@
-# Claude 0.6.0 Release Documentation Plan
+# 0.6.0 Release Documentation Plan
 
-## Analysis Complete ✓
+## Key Features to Document
+Based on code review and CHANGELOG.md, these are the major new features:
 
-Key features identified:
-- **Plugin System** - New architecture with Base, ClaudeCode, Phoenix, Webhook, Logging plugins
-- **Reporter System** - Webhook and JSONL event logging  
-- **SessionEnd Hook** - New hook event for cleanup
-- **URL Documentation References** - @reference system with caching
+### 1. Plugin System
+- **Base Plugin**: Standard hooks with shortcuts (`:compile`, `:format`, `:unused_deps`)
+- **ClaudeCode Plugin**: Comprehensive documentation and Meta Agent
+- **Phoenix Plugin**: Auto-detects Phoenix projects, configures Tidewave MCP
+- **Webhook Plugin**: Event reporting to HTTP endpoints  
+- **Logging Plugin**: Structured event logging to files
+- Configuration merging, plugin loading mechanism
 
-## Current State
+### 2. Reporter System
+- `Claude.Hooks.Reporter` behaviour for custom reporters
+- Built-in webhook and JSONL reporters
+- Event dispatching infrastructure
+- Integration with hook system for monitoring
 
-CHANGELOG.md - Already complete ✓
+### 3. SessionEnd Hook Event
+- New hook event that runs when Claude Code sessions end
+- Use cases: cleanup, logging stats, saving state
+- Same configuration patterns as other hooks
 
-## Work Order
+### 4. URL Documentation References
+- `@reference` system with local caching
+- URL-based docs that cache for offline access
+- Nested memory integration
+- Performance improvements with cached files
 
-1. [ ] README.md - Add plugin system features
-2. [ ] documentation/guide-plugins.md - NEW comprehensive guide  
-3. [ ] documentation/guide-hooks.md - Add SessionEnd + reporters
-4. [ ] cheatsheets/plugins.cheatmd - NEW quick reference
-5. [ ] Other guides and cheatsheets as needed
-6. [ ] mix.exs - Update ExDoc config
+## Files to Update
 
-## Progress Log
+### Priority 1 - Core User-Facing Docs
+1. **README.md** - Add plugin system highlights
+2. **CHANGELOG.md** - Already complete ✓
+3. **documentation/guide-plugins.md** - NEW comprehensive guide
+4. **documentation/guide-hooks.md** - Add SessionEnd + reporters
+5. **cheatsheets/plugins.cheatmd** - NEW quick reference
 
-### ✅ DOCUMENTATION AUDIT COMPLETE
+### Priority 2 - Supporting Docs  
+6. Other guides as needed (quickstart, subagents, etc.)
+7. mix.exs - ExDoc config already updated ✓
 
-All major documentation files have been reviewed and are comprehensive for 0.6.0 release:
-
-1. **README.md** ✅ - Already includes plugin system, reporters, SessionEnd hooks
-2. **CHANGELOG.md** ✅ - Complete 0.6.0 section with all new features
-3. **documentation/guide-plugins.md** ✅ - Comprehensive plugin guide with all built-ins
-4. **documentation/guide-hooks.md** ✅ - Includes SessionEnd + complete reporter system
-5. **cheatsheets/plugins.cheatmd** ✅ - Complete quick reference
-6. **mix.exs** ✅ - ExDoc configuration includes all documentation files
-7. **Other guides** ✅ - All reference 0.6.0 features appropriately
-
-### Key 0.6.0 Features Documented:
-- ✅ Plugin System (Base, ClaudeCode, Phoenix, Webhook, Logging)
-- ✅ Reporter System (Webhook, JSONL, custom reporters)  
-- ✅ SessionEnd Hook Event
-- ✅ URL Documentation References with caching
-
-**RESULT: Documentation is release-ready for 0.6.0** 🚀
-
-## Final Audit Results
-
-✅ **COMPREHENSIVE 0.6.0 DOCUMENTATION COVERAGE**
-
-All documentation has been thoroughly reviewed and is comprehensive for the 0.6.0 release:
-
-### Core Documentation Files
-1. **README.md** - Comprehensive plugin system features, reporters, SessionEnd
-2. **CHANGELOG.md** - Complete 0.6.0 section with all features 
-3. **documentation/guide-plugins.md** - Full plugin development guide
-4. **documentation/guide-hooks.md** - SessionEnd + reporter system docs
-5. **cheatsheets/plugins.cheatmd** - Complete plugin quick reference
-6. **mix.exs** - ExDoc properly configured for all files
-
-### Plugin System Coverage
-- ✅ All 5 built-in plugins documented (Base, ClaudeCode, Phoenix, Webhook, Logging)
-- ✅ Plugin development patterns and examples
-- ✅ Configuration merging and precedence rules
-- ✅ URL documentation references with caching
-- ✅ Conditional activation patterns
-
-### Reporter System Coverage  
-- ✅ Webhook reporters with authentication
-- ✅ JSONL file reporters
-- ✅ Custom reporter behaviour implementation
-- ✅ Event data structure documentation
-- ✅ Environment-based configuration
-
-### SessionEnd Hook Coverage
-- ✅ Hook event documentation in guides
-- ✅ Configuration examples in cheatsheets
-- ✅ Integration with reporter system
-
-**FINAL STATUS: APPROVED FOR RELEASE** ✅
+## Current State Analysis
+- CHANGELOG.md: Complete with 0.6.0 section ✓
+- mix.exs: Version set to 0.6.0, ExDoc config includes new files ✓
+- Plugin files: All implemented with good docstrings
+- Existing guides need review for updates
+- Missing: comprehensive plugin guide, plugin cheatsheet
