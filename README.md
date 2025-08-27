@@ -31,7 +31,7 @@ mix igniter.install claude
 | 🤖 **Sub-agents** | Specialized AI assistants with built-in best practices | [Sub-agents Guide](documentation/guide-subagents.md) |
 | 📚 **Usage Rules** | Automatically syncs best practices from your dependencies | [Usage Rules Guide](documentation/guide-usage-rules.md) |
 | 🔗 **MCP Servers** | Phoenix development tools integration via Tidewave | [MCP Guide](documentation/guide-mcp.md) |
-| 🛠️ **Slash Commands** | Pre-configured commands for common Elixir tasks | Type `/` in Claude Code |
+| 🛠️ **Slash Commands** | Pre-configured commands for common Elixir tasks | [Slash Commands Guide](documentation/guide-slash-commands.md) |
 
 ## Installation
 
@@ -64,6 +64,7 @@ Run `mix claude.install` after updating to apply changes.
 - [Plugin System Guide](documentation/guide-plugins.md) - Create and configure plugins
 - [Hooks Reference](documentation/guide-hooks.md) - Available hooks and events
 - [Sub-Agents Guide](documentation/guide-subagents.md) - Specialized AI assistants
+- [Slash Commands Guide](documentation/guide-slash-commands.md) - Bundled development commands
 - [MCP Servers Guide](documentation/guide-mcp.md) - Phoenix development tools
 - [Usage Rules Guide](documentation/guide-usage-rules.md) - Best practices integration
 
