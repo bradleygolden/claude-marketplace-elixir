@@ -1,50 +1,40 @@
-# Claude 0.6.0 Documentation Update Work Plan
+# Claude 0.6.0 Release Documentation Work Plan
 
-## Status: In Progress
+## Current Status
+- README.md ✅ Already updated with plugin system features 
+- CHANGELOG.md ✅ Already has 0.6.0 section with all key features
+- .agent directory ✅ Created for scratchpad
 
 ## Key Features to Document (Since 0.5.1)
 
-✅ **Plugin System** - Already well documented in README
-- Base, ClaudeCode, Phoenix, Webhook, Logging plugins
-- Auto-detection capabilities
-- Smart merging
+### Plugin System
+- New architecture with Base, ClaudeCode, Phoenix, Webhook, Logging plugins
+- Auto-detection capabilities (Phoenix projects get Tidewave)
+- Smart configuration merging
+- Custom plugin creation
 
-✅ **Reporter System** - Already well documented in README and CHANGELOG  
+### Reporter System  
 - Webhook and JSONL event logging
-- Custom reporter behavior
-- Event registration
+- `Claude.Hooks.Reporter` behaviour
+- Complete observability with all hook events
 
-✅ **SessionEnd Hook** - Already documented in README and CHANGELOG
+### SessionEnd Hook
 - New hook event for cleanup
-- Session end reasons
+- Session end reasons and use cases
 
-✅ **URL Documentation References** - Already documented in README and CHANGELOG
+### URL Documentation References
 - @reference system with caching
-- Local caching for offline access
+- Offline access capabilities
 
-## Analysis of Current State
+## Files to Review/Update
 
-### README.md - ✅ COMPLETE
-- Already includes comprehensive 0.6.0 features
-- Plugin system well documented (lines 56-64)
-- Smart hooks section updated (lines 66-74)
-- Roadmap section shows 0.6.0 as "Recently Added" (lines 203-221)
+1. documentation/guide-plugins.md - ✅ Exists, need to review
+2. documentation/guide-hooks.md - Need to add SessionEnd + reporters
+3. cheatsheets/plugins.cheatmd - ✅ Exists, need to review 
+4. mix.exs - Check ExDoc config
 
-### CHANGELOG.md - ✅ COMPLETE  
-- Has comprehensive 0.6.0 entry (lines 10-42)
-- All major features documented with details
-- Breaking changes and improvements noted
-
-## Tasks Remaining
-
-1. ✅ README.md - Already complete 
-2. ✅ CHANGELOG.md - Already complete
-3. ❓ Check documentation/guide-plugins.md - May need updates
-4. ❓ Check documentation/guide-hooks.md - May need SessionEnd + reporters
-5. ❓ Check cheatsheets/plugins.cheatmd - May need updates
-6. ❓ Check mix.exs ExDoc config - May need updates
-7. ❓ Verify all guides are up to date
-
-## Next Steps
-- Examine existing documentation files to see what needs updates
-- Focus on guides and cheatsheets vs README which looks complete
+## Priority Order
+1. Review existing plugin guide
+2. Update hooks guide with SessionEnd + reporters  
+3. Review plugin cheatsheet
+4. Update ExDoc config if needed
