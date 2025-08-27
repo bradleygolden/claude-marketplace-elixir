@@ -32,8 +32,6 @@ defmodule Mix.Tasks.Claude.Install do
   @usage_rules_version "~> 0.1"
   @tidewave_version "~> 0.2"
 
-  # Meta agent configuration removed - can be added by users if needed
-
   @tool_atom_to_string %{
     bash: "Bash",
     edit: "Edit",
@@ -104,7 +102,6 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp add_claude_exs_to_formatter(igniter) do
     default_formatter = """
-    # Used by "mix format"
     [
       inputs: [".claude.exs", "{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
     ]
@@ -247,8 +244,6 @@ defmodule Mix.Tasks.Claude.Install do
   end
 
   defp parse_hook_spec(_, _, _), do: nil
-
-  # Meta agent formatting function removed with configuration
 
   defp claude_exs_template do
     """
@@ -609,23 +604,18 @@ defmodule Mix.Tasks.Claude.Install do
     claude_exs_path = ".claude.exs"
 
     if Igniter.exists?(igniter, claude_exs_path) do
-      # Read the original config without plugin processing to preserve the original structure
       case read_and_eval_claude_exs(igniter, claude_exs_path) do
         {:ok, original_config} when is_map(original_config) ->
-          # Check if Tidewave is already configured using the plugin-processed config
           case read_config_with_plugins(igniter, claude_exs_path) do
             {:ok, processed_config} ->
               mcp_servers = Map.get(processed_config, :mcp_servers, [])
 
-              # Check if tidewave is already explicitly configured in the original file
               original_mcp_servers = Map.get(original_config, :mcp_servers, [])
               original_has_tidewave = tidewave_already_configured?(original_mcp_servers)
 
               if original_has_tidewave do
-                # Don't modify if user already has explicit tidewave config
                 igniter
               else
-                # Add tidewave using plugin config if user provided custom port, otherwise simple atom
                 phoenix_has_custom_port =
                   case Map.get(original_config, :plugins, []) do
                     plugins when is_list(plugins) ->
@@ -643,7 +633,6 @@ defmodule Mix.Tasks.Claude.Install do
 
                 tidewave_config =
                   if phoenix_has_custom_port and tidewave_already_configured?(mcp_servers) do
-                    # Extract the plugin's tidewave configuration
                     Enum.find_value(mcp_servers, :tidewave, fn
                       {:tidewave, opts} -> {:tidewave, opts}
                       :tidewave -> :tidewave
@@ -668,7 +657,6 @@ defmodule Mix.Tasks.Claude.Install do
               end
 
             _ ->
-              # Fallback: just add to original config
               updated_servers = add_tidewave_to_list(Map.get(original_config, :mcp_servers, []))
               updated_config = Map.put(original_config, :mcp_servers, updated_servers)
 
@@ -738,7 +726,6 @@ defmodule Mix.Tasks.Claude.Install do
   defp add_tidewave_to_list(_), do: [:tidewave]
 
   defp sync_usage_rules(igniter) do
-    # Always show notice on first install (when CLAUDE.md doesn't exist)
     show_notice = !Igniter.exists?(igniter, "CLAUDE.md")
 
     igniter
@@ -974,7 +961,6 @@ defmodule Mix.Tasks.Claude.Install do
       "description: #{subagent.description}"
     ]
 
-    # Add tools line only if tools are specified
     lines =
       if subagent.tools != [] do
         tools_line =
@@ -1123,7 +1109,6 @@ defmodule Mix.Tasks.Claude.Install do
     end)
   end
 
-  # Helper function to read config with plugin support
   defp read_config_with_plugins(igniter, path) do
     case read_and_eval_claude_exs(igniter, path) do
       {:ok, base_config} when is_map(base_config) ->
@@ -1134,14 +1119,12 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
-  # Apply plugins to a config map (similar to Claude.Config but works with any config)
   defp apply_plugins_to_config(igniter, base_config) do
     case Map.get(base_config, :plugins, []) do
       [] ->
         {:ok, Map.delete(base_config, :plugins)}
 
       plugins when is_list(plugins) ->
-        # Add igniter context to each plugin's options
         plugins_with_igniter =
           Enum.map(plugins, fn
             {module, opts} when is_list(opts) -> {module, Keyword.put(opts, :igniter, igniter)}
