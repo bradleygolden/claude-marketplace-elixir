@@ -374,7 +374,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
              end)
     end
 
-    test "creates meta agent by default" do
+    test "Base plugin only provides hooks configuration (no subagents)" do
       igniter =
         test_project()
         |> Igniter.compose_task("claude.install")
@@ -394,20 +394,10 @@ defmodule Mix.Tasks.Claude.InstallTest do
       {:ok, plugin_configs} = Claude.Plugin.load_plugins(base_config.plugins)
       merged_config = Claude.Plugin.merge_configs(plugin_configs ++ [base_config])
 
-      assert Map.has_key?(merged_config, :subagents)
-      subagents = Map.get(merged_config, :subagents, [])
-      assert is_list(subagents)
-      assert length(subagents) > 0
+      refute Map.has_key?(merged_config, :subagents)
 
-      meta_agent =
-        Enum.find(subagents, fn agent ->
-          Map.get(agent, :name) == "Meta Agent"
-        end)
-
-      assert meta_agent != nil
-      assert Map.has_key?(meta_agent, :description)
-      assert Map.has_key?(meta_agent, :prompt)
-      assert Map.has_key?(meta_agent, :tools)
+      assert Map.has_key?(merged_config, :hooks)
+      assert Map.has_key?(merged_config.hooks, :stop)
     end
 
     test "generates subagents with correct YAML frontmatter format" do
@@ -501,10 +491,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
 
       assert content =~ "You are an expert in Ash Framework."
-      assert content =~ "## Usage Rules"
-      assert content =~ "### ash"
-      assert content =~ "# Ash Usage Rules"
-      assert content =~ "Use Ash for declarative resources."
+
+      refute content =~ "## Usage Rules"
     end
 
     test "handles multiple usage_rules for subagents" do
@@ -540,13 +528,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       source = Rewrite.source!(igniter.rewrite, ".claude/agents/full-stack.md")
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ "## Usage Rules"
-      assert content =~ "### ash"
-      assert content =~ "# Ash Rules"
-      assert content =~ "Ash content."
-      assert content =~ "### phoenix"
-      assert content =~ "# Phoenix Rules"
-      assert content =~ "Phoenix content."
+      refute content =~ "## Usage Rules"
     end
 
     test "handles string-based usage_rules with sub-rules" do
@@ -581,9 +563,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       source = Rewrite.source!(igniter.rewrite, ".claude/agents/resource-expert.md")
       content = Rewrite.Source.get(source, :content)
 
-      assert content =~ "## Usage Rules"
-      assert content =~ "### ash:resources"
-      assert content =~ "Resource specific rules."
+      refute content =~ "## Usage Rules"
     end
 
     test "handles empty usage_rules list without adding section" do
@@ -664,6 +644,111 @@ defmodule Mix.Tasks.Claude.InstallTest do
                String.contains?(warning, "usage_rules must be a list") or
                  String.contains?(warning, "Invalid Rules")
              end)
+    end
+
+    test "supports memories field in subagent configuration" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Memory Agent",
+                  description: "Agent with memories field",
+                  prompt: "Base prompt",
+                  memories: [
+                    "usage_rules:elixir"
+                  ]
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude/agents/memory-agent.md")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "Base prompt"
+
+      assert content =~ "name: memory-agent"
+      assert content =~ "description: Agent with memories field"
+    end
+
+    test "supports nested_memories field for backward compatibility" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Legacy Agent",
+                  description: "Agent with legacy nested_memories",
+                  prompt: "Base prompt",
+                  nested_memories: [
+                    "usage_rules:elixir"
+                  ]
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude/agents/legacy-agent.md")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "Base prompt"
+
+      assert content =~ "name: legacy-agent"
+      assert content =~ "description: Agent with legacy nested_memories"
+    end
+
+    test "validates both memories and nested_memories field format" do
+      igniter1 =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Memories Agent",
+                  description: "Agent with memories field",
+                  prompt: "Base prompt",
+                  memories: ["usage_rules:elixir"]
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      igniter2 =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              subagents: [
+                %{
+                  name: "Nested Memories Agent", 
+                  description: "Agent with nested_memories field",
+                  prompt: "Base prompt",
+                  nested_memories: ["usage_rules:elixir"]
+                }
+              ]
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert Rewrite.source!(igniter1.rewrite, ".claude/agents/memories-agent.md")
+      assert Rewrite.source!(igniter2.rewrite, ".claude/agents/nested-memories-agent.md")
     end
   end
 

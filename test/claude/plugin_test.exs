@@ -214,4 +214,175 @@ defmodule Claude.PluginTest do
       assert "complex-agent" in agent_names
     end
   end
+
+  describe "get_nested_memories/1" do
+    test "returns empty map for empty configs" do
+      assert %{} = Claude.Plugin.get_nested_memories([])
+    end
+
+    test "extracts nested memories from single config" do
+      configs = [TestPlugins.WithMemories.config([])]
+      result = Claude.Plugin.get_nested_memories(configs)
+
+      assert Map.has_key?(result, ".")
+      assert Map.has_key?(result, "test")
+
+      root_memories = result["."]
+      assert Enum.any?(root_memories, &match?({:url, "https://example.com/api-docs.md", _}, &1))
+      assert "usage_rules:elixir" in root_memories
+      assert "custom:memory" in root_memories
+
+      test_memories = result["test"]
+      assert "usage_rules:otp" in test_memories
+      assert Enum.any?(test_memories, &match?({:url, "https://example.com/test-guide.md", _}, &1))
+    end
+
+    test "merges nested memories from multiple configs" do
+      configs = [
+        TestPlugins.WithMemories.config([]),
+        %{nested_memories: %{"." => ["another:memory"], "lib" => ["lib:memory"]}}
+      ]
+
+      result = Claude.Plugin.get_nested_memories(configs)
+
+      root_memories = result["."]
+      assert "usage_rules:elixir" in root_memories
+      assert "another:memory" in root_memories
+
+      test_memories = result["test"]
+      assert "usage_rules:otp" in test_memories
+
+      lib_memories = result["lib"]
+      assert "lib:memory" in lib_memories
+    end
+
+    test "handles configs without nested_memories" do
+      configs = [
+        TestPlugins.Simple.config([]),
+        TestPlugins.WithMemories.config([])
+      ]
+
+      result = Claude.Plugin.get_nested_memories(configs)
+
+      assert Map.has_key?(result, ".")
+      assert Map.has_key?(result, "test")
+      refute Map.has_key?(result, "simple")
+    end
+  end
+
+  describe "get_url_memories/1" do
+    test "returns empty list for configs without URL memories" do
+      configs = [TestPlugins.Simple.config([])]
+      result = Claude.Plugin.get_url_memories(configs)
+
+      assert [] = result
+    end
+
+    test "extracts URL memories from configs" do
+      configs = [TestPlugins.WithMemories.config([])]
+      result = Claude.Plugin.get_url_memories(configs)
+
+      assert length(result) == 2
+
+      urls = Enum.map(result, fn {_, url, _} -> url end)
+      assert "https://example.com/api-docs.md" in urls
+      assert "https://example.com/test-guide.md" in urls
+    end
+
+    test "filters out non-URL memories" do
+      configs = [TestPlugins.WithMemories.config([])]
+      result = Claude.Plugin.get_url_memories(configs)
+
+      refute Enum.any?(result, fn
+               {:url, _, _} -> false
+               _ -> true
+             end)
+    end
+
+    test "handles multiple configs with URL memories" do
+      config1 = %{
+        nested_memories: %{
+          "." => [{:url, "https://example1.com", as: "Doc1", cache: "./cache1.md"}]
+        }
+      }
+
+      config2 = %{
+        nested_memories: %{
+          "test" => [{:url, "https://example2.com", as: "Doc2", cache: "./cache2.md"}]
+        }
+      }
+
+      result = Claude.Plugin.get_url_memories([config1, config2])
+
+      assert length(result) == 2
+      urls = Enum.map(result, fn {_, url, _} -> url end)
+      assert "https://example1.com" in urls
+      assert "https://example2.com" in urls
+    end
+  end
+
+  describe "get_available_subagent_memories/1" do
+    test "returns empty categories for configs without memories" do
+      configs = [TestPlugins.Simple.config([])]
+      result = Claude.Plugin.get_available_subagent_memories(configs)
+
+      assert %{documentation: [], usage_rules: []} = result
+    end
+
+    test "categorizes memories from configs" do
+      configs = [TestPlugins.WithMemories.config([])]
+      result = Claude.Plugin.get_available_subagent_memories(configs)
+
+      assert Map.has_key?(result, :documentation)
+      assert Map.has_key?(result, :usage_rules)
+
+      documentation = result.documentation
+      assert length(documentation) == 1
+      urls = Enum.map(documentation, fn {_, url, _} -> url end)
+      assert "https://example.com/api-docs.md" in urls
+
+      usage_rules = result.usage_rules
+      assert "usage_rules:elixir" in usage_rules
+      assert "usage_rules:otp" in usage_rules
+    end
+
+    test "combines memories from root and test directories" do
+      configs = [TestPlugins.WithMemories.config([])]
+      result = Claude.Plugin.get_available_subagent_memories(configs)
+
+      usage_rules = result.usage_rules
+      assert "usage_rules:elixir" in usage_rules
+      assert "usage_rules:otp" in usage_rules
+
+      documentation = result.documentation
+      assert length(documentation) == 1
+    end
+
+    test "handles multiple plugin configurations" do
+      config1 = %{
+        nested_memories: %{
+          "." => [
+            "usage_rules:phoenix",
+            {:url, "https://phoenix.com", as: "Phoenix", cache: "./phoenix.md"}
+          ]
+        }
+      }
+
+      config2 = %{
+        nested_memories: %{
+          "test" => ["usage_rules:ex_unit"]
+        }
+      }
+
+      result = Claude.Plugin.get_available_subagent_memories([config1, config2])
+
+      usage_rules = result.usage_rules
+      assert "usage_rules:phoenix" in usage_rules
+      assert "usage_rules:ex_unit" in usage_rules
+
+      documentation = result.documentation
+      assert length(documentation) == 1
+      assert match?({:url, "https://phoenix.com", _}, hd(documentation))
+    end
+  end
 end

@@ -125,4 +125,48 @@ defmodule TestPlugins do
       }
     end
   end
+
+  defmodule WithMemories do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      %{
+        nested_memories: %{
+          "." => [
+            {:url, "https://example.com/api-docs.md",
+             as: "API Documentation", cache: "./ai/api/docs.md"},
+            "usage_rules:elixir",
+            "custom:memory"
+          ],
+          "test" => [
+            "usage_rules:otp",
+            {:url, "https://example.com/test-guide.md",
+             as: "Test Guide", cache: "./ai/test/guide.md"}
+          ]
+        }
+      }
+    end
+  end
+
+  defmodule WithSubagentMemories do
+    @behaviour Claude.Plugin
+
+    def config(_opts) do
+      %{
+        subagents: [
+          %{
+            name: "memory-test-agent",
+            description: "Agent for testing memories",
+            prompt: "Test prompt",
+            tools: [:read],
+            memories: [
+              "usage_rules:elixir",
+              {:url, "https://example.com/agent-docs.md",
+               as: "Agent Docs", cache: "./ai/agent/docs.md"}
+            ]
+          }
+        ]
+      }
+    end
+  end
 end

@@ -15,18 +15,10 @@ defmodule Claude.Plugins.BaseTest do
              }
     end
 
-    test "includes Meta Agent subagent" do
+    test "does not include subagents (Meta Agent moved to ClaudeCode plugin)" do
       config = Base.config([])
 
-      assert [meta_agent] = config.subagents
-      assert meta_agent.name == "Meta Agent"
-
-      assert meta_agent.description ==
-               "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect."
-
-      assert meta_agent.tools == [:write, :read, :edit, :multi_edit, :bash, :web_search]
-      assert is_binary(meta_agent.prompt)
-      assert String.contains?(meta_agent.prompt, "expert agent architect")
+      refute Map.has_key?(config, :subagents)
     end
 
     test "ignores options since Base has no configurable options" do
@@ -41,7 +33,7 @@ defmodule Claude.Plugins.BaseTest do
 
       assert is_map(config)
       assert Map.has_key?(config, :hooks)
-      assert Map.has_key?(config, :subagents)
+      refute Map.has_key?(config, :subagents)
     end
   end
 
@@ -50,7 +42,7 @@ defmodule Claude.Plugins.BaseTest do
       assert {:ok, config} = Claude.Plugin.load_plugin(Base)
 
       assert Map.has_key?(config, :hooks)
-      assert Map.has_key?(config, :subagents)
+      refute Map.has_key?(config, :subagents)
     end
 
     test "merges correctly with other configuration" do

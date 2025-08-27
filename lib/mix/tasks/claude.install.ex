@@ -683,7 +683,7 @@ defmodule Mix.Tasks.Claude.Install do
       Enum.map(subagent_configs, fn config ->
         case validate_and_generate_subagent(config) do
           {:ok, {name, path, content}} ->
-            {:ok, {name, path, content}}
+            {:ok, {name, path, content, config}}
 
           {:error, reason} ->
             {:error, {config[:name] || "Unknown", reason}}
@@ -697,11 +697,13 @@ defmodule Mix.Tasks.Claude.Install do
 
       {updated_igniter, changed_files} = add_generated_files_with_tracking(igniter, successful)
 
+      final_igniter = add_usage_rules_to_subagents(updated_igniter, successful)
+
       if changed_files != [] do
-        updated_igniter
+        final_igniter
         |> Igniter.add_notice(format_subagents_success_message(changed_files))
       else
-        updated_igniter
+        final_igniter
       end
     else
       igniter
@@ -711,7 +713,8 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp validate_and_generate_subagent(config) do
     with :ok <- validate_subagent_config(config),
-         {:ok, enhanced_prompt} <- maybe_add_usage_rules(config) do
+         {:ok, enhanced_prompt} <- maybe_add_usage_rules(config),
+         {:ok, final_prompt} <- maybe_add_memories_using_claude_md_logic(enhanced_prompt, config) do
       name = config.name
       filename = subagent_filename(name)
       relative_path = Path.join([".claude", "agents", filename])
@@ -720,7 +723,7 @@ defmodule Mix.Tasks.Claude.Install do
         generate_subagent_markdown(%{
           name: name,
           description: config.description,
-          prompt: enhanced_prompt,
+          prompt: final_prompt,
           tools: config[:tools] || []
         })
 
@@ -733,24 +736,71 @@ defmodule Mix.Tasks.Claude.Install do
     missing_keys = required_keys -- Map.keys(config)
 
     if missing_keys == [] do
-      case config[:tools] do
-        nil ->
-          :ok
-
-        tools when is_list(tools) ->
-          if Enum.all?(tools, &is_atom/1) do
-            :ok
-          else
-            {:error, "Tools must be a list of atoms"}
-          end
-
-        _ ->
-          {:error, "Tools must be a list"}
+      with :ok <- validate_tools(config[:tools]),
+           :ok <- validate_nested_memories(config[:nested_memories]),
+           :ok <- validate_memories(config[:memories]) do
+        :ok
       end
     else
       {:error, "Missing required keys: #{inspect(missing_keys)}"}
     end
   end
+
+  defp validate_tools(nil), do: :ok
+
+  defp validate_tools(tools) when is_list(tools) do
+    if Enum.all?(tools, &is_atom/1) do
+      :ok
+    else
+      {:error, "Tools must be a list of atoms"}
+    end
+  end
+
+  defp validate_tools(_), do: {:error, "Tools must be a list"}
+
+  defp validate_nested_memories(nil), do: :ok
+
+  defp validate_nested_memories(memories) when is_list(memories) do
+    valid_memory? = fn
+      {:url, _} -> true
+      {:url, _, _} -> true
+      {:file, _} -> true
+      {:file, _, _} -> true
+      item when is_atom(item) or is_binary(item) -> true
+      _ -> false
+    end
+
+    if Enum.all?(memories, valid_memory?) do
+      :ok
+    else
+      {:error,
+       "nested_memories must use CLAUDE.md nested memory format: strings, atoms, {:url, url} or {:url, url, opts}"}
+    end
+  end
+
+  defp validate_nested_memories(_), do: {:error, "nested_memories must be a list"}
+
+  defp validate_memories(nil), do: :ok
+
+  defp validate_memories(memories) when is_list(memories) do
+    valid_memory? = fn
+      {:url, _} -> true
+      {:url, _, _} -> true
+      {:file, _} -> true
+      {:file, _, _} -> true
+      item when is_atom(item) or is_binary(item) -> true
+      _ -> false
+    end
+
+    if Enum.all?(memories, valid_memory?) do
+      :ok
+    else
+      {:error,
+       "memories must use CLAUDE.md nested memory format: strings, atoms, {:url, url} or {:url, url, opts}"}
+    end
+  end
+
+  defp validate_memories(_), do: {:error, "memories must be a list"}
 
   defp maybe_add_usage_rules(config) do
     case config[:usage_rules] do
@@ -758,74 +808,74 @@ defmodule Mix.Tasks.Claude.Install do
         {:ok, config.prompt}
 
       rules when is_list(rules) ->
-        usage_rules_content = load_usage_rules(rules)
-
-        if usage_rules_content == "" do
-          {:ok, config.prompt}
-        else
-          enhanced_prompt = config.prompt <> "\n\n## Usage Rules\n\n" <> usage_rules_content
-          {:ok, enhanced_prompt}
-        end
+        {:ok, config.prompt}
 
       _ ->
         {:error, "usage_rules must be a list"}
     end
   end
 
-  defp load_usage_rules(rules) do
-    rules
-    |> Enum.map(&load_single_usage_rule/1)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.join("\n\n")
-  end
+  defp maybe_add_memories_using_claude_md_logic(prompt, config) do
+    memories = config[:nested_memories] || config[:memories]
 
-  defp load_single_usage_rule(rule) when is_atom(rule) do
-    path = Path.join(["deps", Atom.to_string(rule), "usage-rules.md"])
+    case memories do
+      nil ->
+        {:ok, prompt}
 
-    case File.read(path) do
-      {:ok, content} -> "### #{rule}\n\n#{content}"
-      _ -> nil
-    end
-  end
-
-  defp load_single_usage_rule(rule) when is_binary(rule) do
-    case String.split(rule, ":", parts: 2) do
-      [package] ->
-        load_single_usage_rule(String.to_atom(package))
-
-      [package, "all"] ->
-        deps_path = Path.join("deps", package)
-        usage_rules_path = Path.join(deps_path, "usage-rules")
-
-        if File.dir?(usage_rules_path) do
-          usage_rules_path
-          |> File.ls!()
-          |> Enum.filter(&String.ends_with?(&1, ".md"))
-          |> Enum.map(fn file ->
-            path = Path.join(usage_rules_path, file)
-
-            case File.read(path) do
-              {:ok, content} -> "### #{package}:#{Path.rootname(file)}\n\n#{content}"
-              _ -> nil
+      memories when is_list(memories) ->
+        case process_memories_using_claude_md_logic(memories) do
+          {:ok, processed_content} ->
+            if processed_content == "" do
+              {:ok, prompt}
+            else
+              enhanced_prompt = prompt <> "\n\n## Additional Context\n\n" <> processed_content
+              {:ok, enhanced_prompt}
             end
-          end)
-          |> Enum.reject(&is_nil/1)
-          |> Enum.join("\n\n")
-        else
-          nil
+
+          {:error, reason} ->
+            {:error, reason}
         end
 
-      [package, sub_rule] ->
-        path = Path.join(["deps", package, "usage-rules", "#{sub_rule}.md"])
-
-        case File.read(path) do
-          {:ok, content} -> "### #{package}:#{sub_rule}\n\n#{content}"
-          _ -> nil
-        end
+      _ ->
+        {:error, "memories/nested_memories must be a list"}
     end
   end
 
-  defp load_single_usage_rule(_), do: nil
+  defp process_memories_using_claude_md_logic(memories) do
+    try do
+      {_rules, docs} = partition_memory_items_for_subagent(memories)
+
+      rules_content = ""
+
+      docs_content =
+        if docs != [] do
+          Claude.Documentation.process_references("", docs)
+        else
+          ""
+        end
+
+      combined_content =
+        [rules_content, docs_content]
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.join("\n\n")
+
+      {:ok, combined_content}
+    rescue
+      error ->
+        {:error, "Failed to process memories: #{Exception.message(error)}"}
+    end
+  end
+
+  defp partition_memory_items_for_subagent(items) do
+    Enum.split_with(items, fn
+      {:url, _} -> false
+      {:url, _, _} -> false
+      {:file, _} -> false
+      {:file, _, _} -> false
+      item when is_atom(item) or is_binary(item) -> true
+      _ -> false
+    end)
+  end
 
   defp subagent_filename(name) do
     name
@@ -878,7 +928,7 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp add_generated_files_with_tracking(igniter, results) do
     {final_igniter, changed_files} =
-      Enum.reduce(results, {igniter, []}, fn {_name, relative_path, content} = result,
+      Enum.reduce(results, {igniter, []}, fn {_name, relative_path, content, _config} = result,
                                              {acc, changed} ->
         case Rewrite.source(acc.rewrite, relative_path) do
           {:ok, existing_source} ->
@@ -920,6 +970,28 @@ defmodule Mix.Tasks.Claude.Install do
     {final_igniter, Enum.reverse(changed_files)}
   end
 
+  defp add_usage_rules_to_subagents(igniter, results) do
+    Enum.reduce(results, igniter, fn {_name, relative_path, _content, config}, acc ->
+      case config[:usage_rules] do
+        rules when is_list(rules) and rules != [] ->
+          rule_strings =
+            Enum.map(rules, fn
+              rule when is_atom(rule) -> Atom.to_string(rule)
+              rule when is_binary(rule) -> rule
+            end)
+
+          args =
+            [relative_path] ++
+              rule_strings ++ ["--link-to-folder", "deps", "--link-style", "at", "--yes"]
+
+          Igniter.compose_task(acc, "usage_rules.sync", args)
+
+        _ ->
+          acc
+      end
+    end)
+  end
+
   defp format_subagents_success_message(results) do
     lines = [
       "Generated #{length(results)} subagent(s):",
@@ -927,7 +999,7 @@ defmodule Mix.Tasks.Claude.Install do
     ]
 
     result_lines =
-      Enum.map(results, fn {name, relative_path, _content} ->
+      Enum.map(results, fn {name, relative_path, _content, _config} ->
         "• #{name} → #{relative_path}"
       end)
 
