@@ -12,9 +12,7 @@ defmodule Claude.NestedMemories do
           nested_memories = Map.get(config, :nested_memories, %{})
 
           if is_map(nested_memories) and nested_memories != %{} do
-            igniter
-            |> process_nested_memories(nested_memories)
-            |> Igniter.add_task("nested_memories.generate")
+            process_nested_memories(igniter, nested_memories)
           else
             igniter
           end

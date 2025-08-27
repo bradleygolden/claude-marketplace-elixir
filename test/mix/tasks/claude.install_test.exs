@@ -1719,10 +1719,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "nested_memories:")
       assert String.contains?(content, "custom_rule")
-
-      assert Enum.any?(igniter.tasks, fn {task_name, _args} ->
-               task_name == "nested_memories.generate"
-             end)
     end
 
     test "Phoenix plugin doesn't activate for non-Phoenix projects" do
