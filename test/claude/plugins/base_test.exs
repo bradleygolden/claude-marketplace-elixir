@@ -8,8 +8,6 @@ defmodule Claude.Plugins.BaseTest do
       config = Base.config([])
 
       assert config.hooks == %{
-               stop: [:compile, :format],
-               subagent_stop: [:compile, :format],
                post_tool_use: [:compile, :format],
                pre_tool_use: [:compile, :format, :unused_deps]
              }
@@ -47,13 +45,13 @@ defmodule Claude.Plugins.BaseTest do
 
     test "merges correctly with other configuration" do
       plugin_configs = [Base.config([])]
-      base_config = %{hooks: %{stop: [:custom_task]}}
+      base_config = %{hooks: %{post_tool_use: [:custom_task]}}
 
       final_config = Claude.Plugin.merge_configs(plugin_configs ++ [base_config])
 
-      assert :compile in final_config.hooks.stop
-      assert :format in final_config.hooks.stop
-      assert :custom_task in final_config.hooks.stop
+      assert :compile in final_config.hooks.post_tool_use
+      assert :format in final_config.hooks.post_tool_use
+      assert :custom_task in final_config.hooks.post_tool_use
     end
   end
 end

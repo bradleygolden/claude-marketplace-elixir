@@ -81,8 +81,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       custom_config = """
       %{
         hooks: %{
-          stop: [:compile, :format],
-          post_tool_use: ["custom --task"]
+          post_tool_use: [:compile, :format, "custom --task"]
         },
         custom_setting: true
       }
@@ -397,7 +396,9 @@ defmodule Mix.Tasks.Claude.InstallTest do
       refute Map.has_key?(merged_config, :subagents)
 
       assert Map.has_key?(merged_config, :hooks)
-      assert Map.has_key?(merged_config.hooks, :stop)
+      assert Map.has_key?(merged_config.hooks, :post_tool_use)
+      assert Map.has_key?(merged_config.hooks, :pre_tool_use)
+      refute Map.has_key?(merged_config.hooks, :stop)
     end
 
     test "generates subagents with correct YAML frontmatter format" do
