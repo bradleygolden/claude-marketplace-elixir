@@ -19,8 +19,6 @@ When you run `mix igniter.install claude`, it automatically sets up default hook
 ```elixir
 %{
   hooks: %{
-    stop: [:compile, :format],
-    subagent_stop: [:compile, :format],
     post_tool_use: [:compile, :format],
     # These only run on git commit commands
     pre_tool_use: [:compile, :format, :unused_deps]
@@ -29,9 +27,8 @@ When you run `mix igniter.install claude`, it automatically sets up default hook
 ```
 
 This provides:
-1. **Format checking** - Alerts when Elixir files need formatting
-2. **Compilation checking** - Catches errors and warnings immediately
-3. **Pre-commit validation** - Ensures clean code before commits
+1. **Immediate validation** - Checks formatting and compilation after file edits
+2. **Pre-commit validation** - Ensures clean code before commits, including unused dependency checks
 
 ## Available Hook Atoms
 
@@ -57,15 +54,27 @@ Different hook events run at different times:
 - **`pre_compact`** - Before context compaction (manual or automatic)
 - **`session_start`** - When Claude Code starts or resumes a session
 
-### ⚠️ Stop Hook Loop Prevention
+## Best Practices
 
-Stop and subagent_stop hooks use `blocking?: false` by default to prevent infinite loops:
+### Choosing the Right Hook Event
 
-1. When a stop hook fails with `blocking?: true`, it sends error feedback to Claude
-2. Claude tries to fix the issue and finishes responding again
-3. This triggers the stop hook again, creating an infinite loop
+- **`post_tool_use`** - Use for immediate validation after file edits (formatting, compilation)
+- **`pre_tool_use`** - Use for validation before critical operations like git commits
+- **`stop`/`subagent_stop`** - Use sparingly for simple operations that rarely fail (see Advanced section)
 
-The default `blocking?: false` setting keeps you informed about issues without causing Claude to get stuck. If you need blocking behavior, explicitly set `blocking?: true` but be aware of the loop risk.
+### What Makes a Good Hook
+
+✅ **Good hook operations:**
+- Format checking with `mix format --check-formatted`
+- Compilation with `mix compile --warnings-as-errors`
+- Simple logging or metrics collection
+- Read-only operations that provide context
+
+❌ **Avoid in hooks:**
+- Running tests (use explicit commands instead)
+- Operations that frequently fail for legitimate reasons
+- Complex multi-step processes
+- Operations that might trigger additional work
 
 ## Advanced Configuration
 
@@ -74,15 +83,9 @@ You can mix atom shortcuts with explicit configurations:
 ```elixir
 %{
   hooks: %{
-    # Standard hooks
+    # Standard hooks - recommended default
     post_tool_use: [:compile, :format],
-
-    # Custom hook with options
-    stop: [
-      :format,
-      {"custom_task", halt_pipeline?: true},
-      {"cmd echo 'Done'", blocking?: false}
-    ],
+    pre_tool_use: [:compile, :format, :unused_deps],
 
     # Conditional execution
     pre_tool_use: [
@@ -90,9 +93,42 @@ You can mix atom shortcuts with explicit configurations:
     ],
     
     # Control output verbosity (rarely needed)
-    subagent_stop: [
+    post_tool_use: [
       {:compile, output: :full},  # WARNING: Can cause context overflow
-      :format                      # Default :none - recommended
+      :format                     # Default :none - recommended
+    ]
+  }
+}
+```
+
+### Stop and Subagent Stop Hooks (Advanced)
+
+⚠️ **Stop hooks are not included in default configuration due to the risk of notification stacking.**
+
+Stop hooks run when Claude finishes responding. Use them ONLY for:
+- Simple logging and metrics collection
+- Notifications that rarely fail
+- Cleanup operations with high success rates
+
+**DO NOT use stop hooks for:**
+- Running tests (use pre_tool_use for commits instead)
+- Compilation checks (use post_tool_use after edits)
+- Any validation that might legitimately fail
+- Operations that could trigger additional work
+
+Even with `blocking?: false`, failed stop hooks generate persistent notifications in Claude Code that can stack up and become disruptive.
+
+```elixir
+%{
+  hooks: %{
+    # Standard hooks (recommended)
+    post_tool_use: [:compile, :format],
+    pre_tool_use: [:compile, :format, :unused_deps],
+    
+    # Stop hooks - opt-in only, use carefully
+    stop: [
+      {"cmd echo 'Session complete'", blocking?: false},  # Simple notification
+      {"log_metrics", blocking?: false}                   # Logging only
     ]
   }
 }

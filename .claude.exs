@@ -4,12 +4,6 @@
   hooks: %{
     pre_tool_use: [
       {"test --warnings-as-errors", when: "Bash", command: ~r/^git commit/}
-    ],
-    stop: [
-      {"test --warnings-as-errors --stale", blocking?: false}
-    ],
-    subagent_stop: [
-      {"test --warnings-as-errors --stale", blocking?: false}
     ]
   }
 }
