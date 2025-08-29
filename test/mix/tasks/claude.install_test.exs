@@ -1924,4 +1924,246 @@ defmodule Mix.Tasks.Claude.InstallTest do
                "http://localhost:${PORT:-8080}/tidewave/mcp"
     end
   end
+
+  describe "Ash plugin integration" do
+    test "automatically adds Ash plugin for Ash projects" do
+      igniter =
+        ash_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.exists?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Base")
+      assert String.contains?(content, "Claude.Plugins.Ash")
+    end
+
+    test "Ash plugin preserves existing config when Ash plugin already present" do
+      igniter =
+        ash_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Base, Claude.Plugins.Ash],
+              custom_setting: "preserved_value"
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      refute Igniter.changed?(igniter, ".claude.exs")
+
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Base")
+      assert String.contains?(content, "Claude.Plugins.Ash")
+      assert String.contains?(content, "custom_setting:")
+      assert String.contains?(content, "preserved_value")
+    end
+
+    test "Ash plugin with custom options preserved when installer runs" do
+      igniter =
+        ash_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [{Claude.Plugins.Ash, []}],
+              auto_install_deps?: true
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      refute Igniter.changed?(igniter, ".claude.exs")
+
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "Claude.Plugins.Ash")
+      assert String.contains?(content, "auto_install_deps?: true")
+    end
+
+    test "Ash plugin doesn't activate for non-Ash projects" do
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Base, Claude.Plugins.Ash],
+              custom_setting: "should_be_preserved"
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # because Ash plugin returns empty config when no Ash dependency
+      refute Igniter.changed?(igniter, ".claude.exs")
+    end
+
+    test "Ash plugin works with Base plugin hooks without conflicts" do
+      igniter =
+        ash_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Base, Claude.Plugins.Ash],
+              hooks: %{
+                stop: ["echo 'custom hook'"]
+              }
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      refute Igniter.changed?(igniter, ".claude.exs")
+
+      igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
+      source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "hooks:")
+      assert String.contains?(content, "echo 'custom hook'")
+    end
+
+    test "Ash plugin adds correct nested memories configuration" do
+      igniter =
+        ash_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "Claude.Plugins.Ash")
+    end
+
+    test "installer handles both Phoenix and Ash plugins together" do
+      igniter =
+        phx_ash_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Base")
+      assert String.contains?(content, "Claude.Plugins.Phoenix")
+      assert String.contains?(content, "Claude.Plugins.Ash")
+    end
+
+    test "Ash plugin detected during initial template creation" do
+      igniter =
+        ash_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.exists?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "Claude.Plugins.Ash")
+    end
+
+    test "Ash plugin added when running install on existing .claude.exs" do
+      igniter =
+        ash_test_project(
+          files: %{
+            ".claude.exs" => """
+            %{
+              plugins: [Claude.Plugins.Base],
+              some_other_config: "value"
+            }
+            """
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      assert Igniter.changed?(igniter, ".claude.exs")
+
+      source = Rewrite.source!(igniter.rewrite, ".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert String.contains?(content, "Claude.Plugins.Base")
+      assert String.contains?(content, "Claude.Plugins.Ash")
+      assert String.contains?(content, "some_other_config")
+      assert String.contains?(content, "value")
+    end
+  end
+
+  # Helper functions for Ash project testing
+  defp ash_test_project(opts \\ []) do
+    app = Keyword.get(opts, :app, :my_app)
+
+    default_files = %{
+      "mix.exs" => """
+      defmodule MyApp.MixProject do
+        use Mix.Project
+
+        def project do
+          [
+            app: #{inspect(app)},
+            version: "0.1.0",
+            elixir: "~> 1.14",
+            deps: deps()
+          ]
+        end
+
+        defp deps do
+          [
+            {:ash, "~> 3.0"}
+          ]
+        end
+      end
+      """
+    }
+
+    files = Map.merge(default_files, Keyword.get(opts, :files, %{}))
+    opts = Keyword.put(opts, :files, files)
+
+    test_project(opts)
+  end
+
+  defp phx_ash_test_project(opts \\ []) do
+    app = Keyword.get(opts, :app, :my_app)
+
+    default_files = %{
+      "mix.exs" => """
+      defmodule MyApp.MixProject do
+        use Mix.Project
+
+        def project do
+          [
+            app: #{inspect(app)},
+            version: "0.1.0",
+            elixir: "~> 1.14",
+            deps: deps()
+          ]
+        end
+
+        defp deps do
+          [
+            {:phoenix, "~> 1.7"},
+            {:ash, "~> 3.0"}
+          ]
+        end
+      end
+      """
+    }
+
+    files = Map.merge(default_files, Keyword.get(opts, :files, %{}))
+    opts = Keyword.put(opts, :files, files)
+
+    test_project(opts)
+  end
 end
