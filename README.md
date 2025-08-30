@@ -40,6 +40,7 @@ mix igniter.install claude
 | **Base** | Always | Standard hooks for code quality | Compile/format checks, dependency validation |
 | **ClaudeCode** | Always | Claude Code documentation and context | Hook guides, subagent docs, settings reference |
 | **Phoenix** | When `:phoenix` dependency | Phoenix project configuration | Tidewave MCP server, LiveView/Ecto rules, DaisyUI docs |
+| **Ash** | When `:ash` dependency | Ash Framework project configuration | Codegen validation, extension-specific usage rules |
 | **Webhook** | Manual | Event reporting via HTTP | Real-time hook events to external systems |
 | **Logging** | Manual | JSONL file event logging | Structured logs for analysis and monitoring |
 
@@ -67,7 +68,8 @@ All settings are managed through `.claude.exs`:
 %{
   plugins: [
     Claude.Plugins.Base,     # Standard hooks
-    Claude.Plugins.Phoenix   # Auto-configured for Phoenix projects
+    Claude.Plugins.Phoenix,  # Auto-configured for Phoenix projects
+    Claude.Plugins.Ash       # Auto-configured for Ash projects
   ],
   # Or configure directly (plugins take precedence)
   hooks: %{

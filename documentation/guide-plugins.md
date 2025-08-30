@@ -10,7 +10,8 @@ Add plugins to your `.claude.exs`:
 %{
   plugins: [
     Claude.Plugins.Base,     # Standard hooks (always include)
-    Claude.Plugins.Phoenix   # Auto-detects Phoenix projects
+    Claude.Plugins.Phoenix,  # Auto-detects Phoenix projects
+    Claude.Plugins.Ash       # Auto-detects Ash projects
   ]
 }
 ```
@@ -24,6 +25,7 @@ Run `mix claude.install` to apply changes.
 | **Base** | Always | Adds format/compile checks, pre-commit validation |
 | **ClaudeCode** | Always | Includes Claude Code documentation and Meta Agent |
 | **Phoenix** | When `:phoenix` dependency | Sets up Tidewave MCP, LiveView/Ecto rules, DaisyUI docs |
+| **Ash** | When `:ash` dependency | Adds codegen validation, extension-specific usage rules |
 | **Webhook** | Manual | Sends hook events to HTTP endpoints |
 | **Logging** | Manual | Logs all hook events to JSONL files |
 
@@ -36,6 +38,20 @@ For Phoenix projects, the Phoenix plugin automatically sets up:
 - **DaisyUI component docs** for UI development
 
 Just add `Claude.Plugins.Phoenix` and it handles everything.
+
+## Ash Magic ✨
+
+For Ash Framework projects, the Ash plugin automatically sets up:
+- **Codegen validation** runs `ash.codegen --check` after file changes
+- **Extension-aware rules** applies usage rules based on detected Ash extensions:
+  - `ash_postgres`: Database layer rules for `lib/app/` and `priv/repo/migrations`
+  - `ash_phoenix`: Web integration rules for `lib/app_web/`
+  - `ash_ai`: AI/LLM feature rules for `lib/app/`
+  - `ash_oban`: Background job rules for `lib/app/`
+  - `ash_json_api`: JSON:API rules for `lib/app_web/`
+- **Smart detection** automatically applies rules only when extensions are present
+
+Just add `Claude.Plugins.Ash` and it configures everything based on your project's Ash extensions.
 
 ## Plugin Options
 
@@ -79,6 +95,20 @@ Plugins work together seamlessly:
 }
 ```
 
+**Ash Framework Development:**
+```elixir
+%{
+  plugins: [Claude.Plugins.Base, Claude.Plugins.Ash]
+}
+```
+
+**Phoenix + Ash (full stack):**
+```elixir
+%{
+  plugins: [Claude.Plugins.Base, Claude.Plugins.Phoenix, Claude.Plugins.Ash]
+}
+```
+
 **With Event Monitoring:**
 ```elixir
 %{
@@ -86,12 +116,13 @@ Plugins work together seamlessly:
 }
 ```
 
-**Full Stack:**
+**Full Stack with Monitoring:**
 ```elixir
 %{
   plugins: [
     Claude.Plugins.Base,
     Claude.Plugins.Phoenix,
+    Claude.Plugins.Ash,
     Claude.Plugins.Logging
   ]
 }
