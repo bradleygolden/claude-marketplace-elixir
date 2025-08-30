@@ -68,12 +68,29 @@ All settings are managed through `.claude.exs`:
   plugins: [
     Claude.Plugins.Base,     # Standard hooks
     Claude.Plugins.Phoenix   # Auto-configured for Phoenix projects
-  ]
+  ],
+  # Or configure directly (plugins take precedence)
+  hooks: %{
+    post_tool_use: [:compile, :format],
+    pre_tool_use: [:compile, :format, :unused_deps]
+  },
+  mcp_servers: [:tidewave],  # For Phoenix projects
+  subagents: [...]            # Specialized AI assistants
 }
 ```
 
 Run `mix claude.install` after updating to apply changes.
 
+## How It Works
+
+This library leverages [Claude Code's hook system](https://docs.anthropic.com/en/docs/claude-code/hooks) to provide validation at appropriate times:
+
+1. **Claude edits a file** → PostToolUse hook triggered immediately
+2. **Hook runs Mix tasks** → `mix format --check-formatted`, `mix compile --warnings-as-errors`
+3. **Feedback provided** → Claude sees any issues and can fix them
+4. **Process repeats** → Until the code is production-ready
+
+Additional validation runs before git commits to ensure clean code is committed. This all happens automatically, without interrupting Claude's workflow.
 ## Documentation
 
 - [**Quickstart Guide**](documentation/guide-quickstart.md) - Get started with examples

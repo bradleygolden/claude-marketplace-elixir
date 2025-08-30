@@ -18,6 +18,7 @@ Most users just need these three shortcuts:
 %{
   hooks: %{
     post_tool_use: [:compile, :format],    # Check after edits
+    # These only run on git commit commands
     pre_tool_use: [:compile, :format, :unused_deps],  # Validate before commits
     session_end: ["mix myapp.cleanup"]     # Optional cleanup
   }
@@ -25,6 +26,10 @@ Most users just need these three shortcuts:
 ```
 
 Run `mix claude.install` to apply.
+
+This provides:
+1. **Immediate validation** - Checks formatting and compilation after file edits
+2. **Pre-commit validation** - Ensures clean code before commits, including unused dependency checks
 
 ## The Three Magic Shortcuts
 
@@ -42,6 +47,28 @@ Different events run at different times:
 - **`pre_tool_use`** - Before tools run (can block unsafe operations)
 - **`stop`** - When Claude finishes responding
 - **`session_end`** - When your Claude session ends (cleanup, logging, etc.)
+
+## Best Practices
+
+### Choosing the Right Hook Event
+
+- **`post_tool_use`** - Use for immediate validation after file edits (formatting, compilation)
+- **`pre_tool_use`** - Use for validation before critical operations like git commits
+- **`stop`/`subagent_stop`** - Use sparingly for simple operations that rarely fail (see Advanced section)
+
+### What Makes a Good Hook
+
+✅ **Good hook operations:**
+- Format checking with `mix format --check-formatted`
+- Compilation with `mix compile --warnings-as-errors`
+- Simple logging or metrics collection
+- Read-only operations that provide context
+
+❌ **Avoid in hooks:**
+- Running tests (use explicit commands instead)
+- Operations that frequently fail for legitimate reasons
+- Complex multi-step processes
+- Operations that might trigger additional work
 
 ## Common Patterns
 
@@ -63,14 +90,62 @@ Different events run at different times:
 }
 ```
 
-**With Session Cleanup:**
+**Advanced Configuration:**
 ```elixir
 %{
   hooks: %{
+    # Standard hooks - recommended default
     post_tool_use: [:compile, :format],
+    pre_tool_use: [:compile, :format, :unused_deps],
+
+    # Conditional execution
+    pre_tool_use: [
+      {"test", when: "Bash", command: ~r/^git push/}
+    ],
+    
+    # Control output verbosity (rarely needed)
+    post_tool_use: [
+      {:compile, output: :full},  # WARNING: Can cause context overflow
+      :format                     # Default :none - recommended
+    ],
+
+    # Session cleanup
     session_end: [
       "mix myapp.cleanup",
       "mix myapp.log_session_stats"
+    ]
+  }
+}
+```
+
+### Stop and Subagent Stop Hooks (Advanced)
+
+⚠️ **Stop hooks are not included in default configuration due to the risk of notification stacking.**
+
+Stop hooks run when Claude finishes responding. Use them ONLY for:
+- Simple logging and metrics collection
+- Notifications that rarely fail
+- Cleanup operations with high success rates
+
+**DO NOT use stop hooks for:**
+- Running tests (use pre_tool_use for commits instead)
+- Compilation checks (use post_tool_use after edits)
+- Any validation that might legitimately fail
+- Operations that could trigger additional work
+
+Even with `blocking?: false`, failed stop hooks generate persistent notifications in Claude Code that can stack up and become disruptive.
+
+```elixir
+%{
+  hooks: %{
+    # Standard hooks (recommended)
+    post_tool_use: [:compile, :format],
+    pre_tool_use: [:compile, :format, :unused_deps],
+    
+    # Stop hooks - opt-in only, use carefully
+    stop: [
+      {"cmd echo 'Session complete'", blocking?: false},  # Simple notification
+      {"log_metrics", blocking?: false}                   # Logging only
     ]
   }
 }

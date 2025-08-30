@@ -119,8 +119,6 @@ Instead of verbose configuration, you can use atom shortcuts that expand to sens
 # Simple configuration using atoms
 %{
   hooks: %{
-    stop: [:compile, :format],
-    subagent_stop: [:compile, :format],
     post_tool_use: [:compile, :format],
     pre_tool_use: [:compile, :format, :unused_deps]
   }
@@ -129,14 +127,14 @@ Instead of verbose configuration, you can use atom shortcuts that expand to sens
 
 Available atom shortcuts:
 - `:compile` - Runs compilation with appropriate settings for each event
-  - For `stop`/`subagent_stop`: `compile --warnings-as-errors` with `halt_pipeline?: true, blocking?: false` (prevents loops)
-  - For `post_tool_use`: Same, but only for `:write`, `:edit`, `:multi_edit` tools with `halt_pipeline?: true`
+  - For `post_tool_use`: `compile --warnings-as-errors` only for `:write`, `:edit`, `:multi_edit` tools with `halt_pipeline?: true`
   - For `pre_tool_use`: Same, but only for `git commit` commands with `halt_pipeline?: true`
 - `:format` - Runs format checking
-  - For `stop`/`subagent_stop`: Uses `blocking?: false` to prevent infinite loops
   - For `post_tool_use`: Includes file path interpolation `{{tool_input.file_path}}`
   - For `pre_tool_use`: Runs for `git commit` commands
 - `:unused_deps` - Checks for unused dependencies (only for `pre_tool_use` on `git commit`)
+
+**Note**: Stop hooks (`:stop`, `:subagent_stop`) are not included in default configurations due to notification stacking risks. They remain available for opt-in use.
 
 #### Manual Configuration
 You can still use explicit configurations alongside or instead of atoms:
@@ -144,9 +142,9 @@ You can still use explicit configurations alongside or instead of atoms:
 ```elixir
 %{
   hooks: %{
-    stop: [
+    post_tool_use: [
       :compile,
-      {"custom --task", halt_pipeline?: false, blocking?: false}
+      {"custom --task", when: [:write, :edit], halt_pipeline?: true}
     ]
   }
 }

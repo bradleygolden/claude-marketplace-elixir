@@ -6,8 +6,6 @@ defmodule Claude.Plugins.Base do
   def config(_opts) do
     %{
       hooks: %{
-        stop: [:compile, :format],
-        subagent_stop: [:compile, :format],
         post_tool_use: [:compile, :format],
         pre_tool_use: [:compile, :format, :unused_deps]
       }

@@ -35,10 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hook event registration now includes all events when reporters are configured
 - Plugin configurations take precedence over direct `.claude.exs` settings for better composability
 
+### Changed
+- Stop and subagent_stop hooks removed from default configuration (opt-in only)
+
 ### Fixed
 - Webhook reporters now correctly receive hook events during execution
 - Stop hooks with all non-blocking failures now exit with code 0 to prevent infinite loops in CI
 - Plugin system properly handles module loading and configuration merging
+
+**Why remove stop hooks from defaults?** Stop hooks running validation tasks (compile, format, test) cause persistent notification stacking in Claude Code. Even with `blocking?: false`, failed validations generate warnings that accumulate and disrupt the user experience. The new defaults focus on post_tool_use hooks for immediate validation after file changes and pre_tool_use hooks for git commit validation, which are more appropriate and don't suffer from the notification stacking problem.
 
 ## [0.5.2] - 2025-08-27
 
