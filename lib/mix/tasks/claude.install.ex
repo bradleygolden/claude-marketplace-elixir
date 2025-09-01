@@ -83,6 +83,7 @@ defmodule Mix.Tasks.Claude.Install do
       |> ensure_phoenix_plugin(path)
       |> ensure_ash_plugin(path)
       |> ensure_credo_plugin(path)
+      |> ensure_dialyzer_plugin(path)
       |> check_meta_agent_and_notify(path)
     else
       Igniter.create_new_file(
@@ -297,6 +298,42 @@ defmodule Mix.Tasks.Claude.Install do
     end
   end
 
+  defp ensure_dialyzer_plugin(igniter, path) do
+    if Igniter.Project.Deps.has_dep?(igniter, :dialyxir) do
+      case read_and_eval_claude_exs(igniter, path) do
+        {:ok, config} when is_map(config) ->
+          plugins = Map.get(config, :plugins, [])
+
+          has_dialyzer_plugin =
+            Enum.any?(plugins, fn
+              Claude.Plugins.Dialyzer -> true
+              {Claude.Plugins.Dialyzer, _} -> true
+              _ -> false
+            end)
+
+          if not has_dialyzer_plugin do
+            updated_plugins = plugins ++ [Claude.Plugins.Dialyzer]
+            updated_config = Map.put(config, :plugins, updated_plugins)
+
+            Igniter.update_file(igniter, path, fn source ->
+              Rewrite.Source.update(
+                source,
+                :content,
+                inspect(updated_config, pretty: true, limit: :infinity)
+              )
+            end)
+          else
+            igniter
+          end
+
+        _ ->
+          igniter
+      end
+    else
+      igniter
+    end
+  end
+
   defp read_hooks_from_claude_exs(igniter) do
     claude_exs_path = igniter.assigns[:claude_exs_path]
 
@@ -379,7 +416,11 @@ defmodule Mix.Tasks.Claude.Install do
           else: []
         ) ++
         if(Igniter.Project.Deps.has_dep?(igniter, :ash), do: ["Claude.Plugins.Ash"], else: []) ++
-        if(Igniter.Project.Deps.has_dep?(igniter, :credo), do: ["Claude.Plugins.Credo"], else: [])
+        if(Igniter.Project.Deps.has_dep?(igniter, :credo), do: ["Claude.Plugins.Credo"], else: []) ++
+        if(Igniter.Project.Deps.has_dep?(igniter, :dialyxir),
+          do: ["Claude.Plugins.Dialyzer"],
+          else: []
+        )
 
     plugins = "[" <> Enum.join(plugins_list, ", ") <> "]"
 
