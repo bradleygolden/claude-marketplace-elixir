@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/settings.md
-cached_at: 2025-08-27T04:19:01.179768Z
+cached_at: 2025-09-01T11:27:04.692408Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -61,8 +61,10 @@ Code through hierarchical settings:
 | `includeCoAuthoredBy`        | Whether to include the `co-authored-by Claude` byline in git commits and pull requests (default: `true`)                                                              | `false`                                                     |
 | `permissions`                | See table below for structure of permissions.                                                                                                                         |                                                             |
 | `hooks`                      | Configure custom commands to run before or after tool executions. See [hooks documentation](hooks)                                                                    | `{"PreToolUse": {"Bash": "echo 'Running command...'"}}`     |
+| `disableAllHooks`            | Disable all [hooks](hooks)                                                                                                                                            | `true`                                                      |
 | `model`                      | Override the default model to use for Claude Code                                                                                                                     | `"claude-3-5-sonnet-20241022"`                              |
 | `statusLine`                 | Configure a custom status line to display context. See [statusLine documentation](statusline)                                                                         | `{"type": "command", "command": "~/.claude/statusline.sh"}` |
+| `outputStyle`                | Configure an output style to adjust the system prompt. See [output styles documentation](output-styles)                                                               | `"Explanatory"`                                             |
 | `forceLoginMethod`           | Use `claudeai` to restrict login to Claude.ai accounts, `console` to restrict login to Anthropic Console (API usage billing) accounts                                 | `claudeai`                                                  |
 | `forceLoginOrgUUID`          | Specify the UUID of an organization to automatically select it during login, bypassing the organization selection step. Requires `forceLoginMethod` to be set         | `"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`                    |
 | `enableAllProjectMcpServers` | Automatically approve all MCP servers defined in project `.mcp.json` files                                                                                            | `true`                                                      |
@@ -108,14 +110,6 @@ This hierarchy ensures that enterprise security policies are always enforced whi
 
 * **Memory files (CLAUDE.md)**: Contain instructions and context that Claude loads at startup
 * **Settings files (JSON)**: Configure permissions, environment variables, and tool behavior
-* **Slash commands**: Custom commands that can be invoked during a session with `/command-name`
-* **MCP servers**: Extend Claude Code with additional tools and integrations
-* **Precedence**: Higher-level configurations (Enterprise) override lower-level ones (User/Project)
-* **Inheritance**: Settings are merged, with more specific settings adding to or overriding broader ones
-
-### System prompt availability
-
-<Note>
-  Unlike for claude.ai, we do not publish Claude Code's internal system prompt on this website. Use CLAUDE.md files or `--append-system-prompt` to add custom instructions to Claude Code's behavior
+* **Slash commands**: Custom commands that can be invoked during a session with `/comman
 
 [Content truncated due to length]

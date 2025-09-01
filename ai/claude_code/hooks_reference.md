@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/hooks.md
-cached_at: 2025-08-27T04:19:00.617373Z
+cached_at: 2025-09-01T11:27:04.124718Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -147,18 +147,6 @@ the stoppage occurred due to a user interrupt.
 
 Runs when a Claude Code subagent (Task tool call) has finished responding.
 
-### SessionEnd
-
-Runs when a Claude Code session ends. Useful for cleanup tasks, logging session
-statistics, or saving session state.
-
-The `reason` field in the hook input will be one of:
-
-* `clear` - Session cleared with /clear command
-* `logout` - User logged out
-* `prompt_input_exit` - User exited while prompt input was visible
-* `other` - Other exit reasons
-
 ### PreCompact
 
 Runs before Claude Code is about to run a compact operation.
@@ -179,6 +167,19 @@ development context like existing issues or recent changes to your codebase.
 * `startup` - Invoked from startup
 * `resume` - Invoked from `--resume`, `--continue`, or `/resume`
 * `clear` - Invoked from `/clear`
+* `compact` - Invoked from auto or manual compact.
+
+### SessionEnd
+
+Runs when a Claude Code session ends. Useful for cleanup tasks, logging session
+statistics, or saving session state.
+
+The `reason` field in the hook input will be one of:
+
+* `clear` - Session cleared with /clear command
+* `logout` - User logged out
+* `prompt_input_exit` - User exited while prompt input was visible
+* `other` - Other exit reasons
 
 ## Hook Input
 
@@ -363,8 +364,6 @@ All hook types can include these optional fields:
 ```json
 {
   "continue": true, // Whether Claude should continue after hook execution (default: true)
-  "stopReason": "string", // Message shown when continue is false
-
-  "suppressOut
+  "stopReason": "string", // M
 
 [Content truncated due to length]

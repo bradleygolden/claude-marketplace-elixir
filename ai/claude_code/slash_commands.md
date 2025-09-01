@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/slash-commands.md
-cached_at: 2025-08-27T04:19:00.719744Z
+cached_at: 2025-09-01T11:27:04.244882Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -94,17 +94,39 @@ Meanwhile, a file at `~/.claude/commands/component.md` creates the command `/com
 
 #### Arguments
 
-Pass dynamic values to commands using the `$ARGUMENTS` placeholder.
+Pass dynamic values to commands using argument placeholders:
 
-For example:
+##### All arguments with `$ARGUMENTS`
+
+The `$ARGUMENTS` placeholder captures all arguments passed to the command:
 
 ```bash
 # Command definition
 echo 'Fix issue #$ARGUMENTS following our coding standards' > .claude/commands/fix-issue.md
 
 # Usage
-> /fix-issue 123
+> /fix-issue 123 high-priority
+# $ARGUMENTS becomes: "123 high-priority"
 ```
+
+##### Individual arguments with `$1`, `$2`, etc.
+
+Access specific arguments individually using positional parameters (similar to shell scripts):
+
+```bash
+# Command definition
+echo 'Review PR #$1 with priority $2 and assign to $3' > .claude/commands/review-pr.md
+
+# Usage
+> /review-pr 456 high alice
+# $1 becomes "456", $2 becomes "high", $3 becomes "alice"
+```
+
+Use positional arguments when you need to:
+
+* Access arguments individually in different parts of your command
+* Provide defaults for missing arguments
+* Build more structured commands with specific parameter roles
 
 #### Bash command execution
 
@@ -159,33 +181,6 @@ Command files support frontmatter, useful for specifying metadata about the comm
 | `allowed-tools` | List of tools the command can use                                                                                                                                                     | Inherits from the conversation      |
 | `argument-hint` | The arguments expected for the slash command. Example: `argument-hint: add [tagId] \| remove [tagId] \| list`. This hint is shown to the user when auto-completing the slash command. | None                                |
 | `description`   | Brief description of the command                                                                                                                                                      | Uses the first line from the prompt |
-| `model`         | Specific model string (see [Models overview](/en/docs/about-claude/models/overview))                                                                                                  | Inherits from the conversation      |
-
-For example:
-
-```markdown
----
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*)
-argument-hint: [message]
-description: Create a git commit
-model: claude-3-5-haiku-20241022
----
-
-An example command
-```
-
-## MCP slash commands
-
-MCP servers can expose prompts as slash commands that become available in Claude Code. These commands are dynamically discovered from connected MCP servers.
-
-### Command format
-
-MCP commands follow the pattern:
-
-```
-/mcp__<server-name>__<prompt-name> [arguments]
-```
-
-### Fea
+| `model`         | Specific model
 
 [Content truncated due to length]
