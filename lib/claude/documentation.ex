@@ -38,7 +38,7 @@ defmodule Claude.Documentation do
   @doc """
   Process documentation references for content.
 
-  This is the main entry point used by `Claude.NestedMemories`.
+  This is the main entry point used by Claude.NestedMemories.
   Takes existing content and a list of documentation references,
   then updates the content with the new documentation section.
 

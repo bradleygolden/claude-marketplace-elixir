@@ -2,8 +2,9 @@
   plugins: [
     Claude.Plugins.Base,
     Claude.Plugins.ClaudeCode,
-    Claude.Plugins.Logging,
-    {Claude.Plugins.Credo, strict?: true}
+    {Claude.Plugins.Credo, strict?: true},
+    Claude.Plugins.ExDoc,
+    Claude.Plugins.Logging
   ],
   hooks: %{
     pre_tool_use: [
