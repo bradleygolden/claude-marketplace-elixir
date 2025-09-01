@@ -3,7 +3,7 @@
     Claude.Plugins.Base,
     Claude.Plugins.ClaudeCode,
     Claude.Plugins.Logging,
-    {Claude.Plugins.Credo, strict?: true, pre_commit_check?: false}
+    {Claude.Plugins.Credo, strict?: true}
   ],
   hooks: %{
     pre_tool_use: [
