@@ -4,8 +4,9 @@ defmodule Claude.Plugins.Credo do
 
   This plugin automatically configures Claude Code for Credo-enabled projects by:
 
-  * **Smart Detection**: Automatically activates when Credo dependency is detected
+  * **Automatic Analysis**: Runs Credo after file edits to catch issues early
   * **Configurable Strictness**: Control whether to run Credo in strict mode
+  * **Optional Pre-commit Checks**: Can run Credo before git commits to ensure code quality
 
   ## Usage
 
@@ -18,43 +19,52 @@ defmodule Claude.Plugins.Credo do
   Or with options:
 
       %{
-        plugins: [{Claude.Plugins.Credo, strict?: true}]
+        plugins: [{Claude.Plugins.Credo, strict?: true, pre_commit_check?: true}]
       }
-
-  The plugin will automatically activate when a `:credo` dependency is detected in `mix.exs`.
 
   ## Options
 
   * `:strict?` - Whether to run Credo in strict mode (default: `false`)
+  * `:pre_commit_check?` - Whether to run Credo before git commits (default: `false`)
   """
 
   @behaviour Claude.Plugin
 
   @impl Claude.Plugin
   def config(opts) do
-    igniter = Keyword.get(opts, :igniter)
-    strict? = Keyword.get(opts, :strict?, false)
+    opts
+    |> build_credo_command()
+    |> build_base_hooks()
+    |> maybe_add_pre_commit(opts)
+    |> wrap_in_config()
+  end
 
-    if detect_credo_project?(igniter) do
-      strict_flag = if strict?, do: " --strict", else: ""
-      credo_command = "credo#{strict_flag} {{tool_input.file_path}}"
+  defp build_credo_command(opts) do
+    strict_flag = if Keyword.get(opts, :strict?, false), do: " --strict", else: ""
+    "credo#{strict_flag} {{tool_input.file_path}}"
+  end
 
-      %{
-        hooks: %{
-          post_tool_use: [
-            {credo_command, when: [:write, :edit, :multi_edit]}
-          ],
-          pre_tool_use: [
-            {credo_command, when: "Bash", command: ~r/^git commit/}
-          ]
-        }
-      }
+  defp build_base_hooks(credo_command) do
+    %{
+      post_tool_use: [
+        {credo_command, when: [:write, :edit, :multi_edit]}
+      ]
+    }
+  end
+
+  defp maybe_add_pre_commit(hooks, opts) do
+    if Keyword.get(opts, :pre_commit_check?, false) do
+      credo_command = build_credo_command(opts)
+
+      Map.put(hooks, :pre_tool_use, [
+        {credo_command, when: "Bash", command: ~r/^git commit/}
+      ])
     else
-      %{}
+      hooks
     end
   end
 
-  defp detect_credo_project?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :credo)
+  defp wrap_in_config(hooks) do
+    %{hooks: hooks}
   end
 end
