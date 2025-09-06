@@ -80,6 +80,7 @@ defmodule Mix.Tasks.Claude.Install do
     if Igniter.exists?(igniter, path) do
       igniter
       |> ensure_default_hooks(path)
+      |> ensure_base_plugin(path)
       |> ensure_phoenix_plugin(path)
       |> ensure_ash_plugin(path)
       |> ensure_credo_plugin(path)
@@ -166,6 +167,38 @@ defmodule Mix.Tasks.Claude.Install do
 
           Then run `mix claude.install` again to regenerate the hook scripts.
           """)
+        else
+          igniter
+        end
+
+      _ ->
+        igniter
+    end
+  end
+
+  defp ensure_base_plugin(igniter, path) do
+    case read_and_eval_claude_exs(igniter, path) do
+      {:ok, config} when is_map(config) ->
+        plugins = Map.get(config, :plugins, [])
+
+        has_base_plugin =
+          Enum.any?(plugins, fn
+            Claude.Plugins.Base -> true
+            {Claude.Plugins.Base, _} -> true
+            _ -> false
+          end)
+
+        if not has_base_plugin do
+          updated_plugins = [Claude.Plugins.Base | plugins]
+          updated_config = Map.put(config, :plugins, updated_plugins)
+
+          Igniter.update_file(igniter, path, fn source ->
+            Rewrite.Source.update(
+              source,
+              :content,
+              inspect(updated_config, pretty: true, limit: :infinity)
+            )
+          end)
         else
           igniter
         end
