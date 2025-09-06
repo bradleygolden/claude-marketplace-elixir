@@ -125,13 +125,16 @@ defmodule Claude.Documentation.Fetcher do
             {:error, reason} -> raise "Failed to start Pythonx application: #{inspect(reason)}"
           end
 
-          Pythonx.uv_init(@pyproject_toml)
+          # credo:disable-for-next-line Credo.Check.Refactor.Apply
+          :ok = apply(Pythonx, :uv_init, [@pyproject_toml])
           Process.put(:claude_pythonx_initialized, true)
         rescue
           e ->
-            raise FetchError,
-                  {"initialization",
-                   "Failed to initialize Python environment: #{Exception.message(e)}"}
+            reraise FetchError.exception(
+                      {"initialization",
+                       "Failed to initialize Python environment: #{Exception.message(e)}"}
+                    ),
+                    __STACKTRACE__
         end
     end
   end
@@ -159,9 +162,11 @@ defmodule Claude.Documentation.Fetcher do
     """
 
     try do
-      {result, _globals} = Pythonx.eval(python_code, %{"url" => url})
+      # credo:disable-for-next-line Credo.Check.Refactor.Apply
+      {result, _globals} = apply(Pythonx, :eval, [python_code, %{"url" => url}])
 
-      case Pythonx.decode(result) do
+      # credo:disable-for-next-line Credo.Check.Refactor.Apply
+      case apply(Pythonx, :decode, [result]) do
         nil ->
           raise FetchError, {url, "MarkItDown returned empty content"}
 
@@ -172,8 +177,13 @@ defmodule Claude.Documentation.Fetcher do
           raise FetchError, {url, "Unexpected result type: #{inspect(other)}"}
       end
     rescue
-      e in [Pythonx.Error] ->
-        raise FetchError, {url, "Python execution failed: #{Exception.message(e)}"}
+      e ->
+        if match?(%{__struct__: module} when module == Pythonx.Error, e) do
+          reraise FetchError.exception({url, "Python execution failed: #{Exception.message(e)}"}),
+                  __STACKTRACE__
+        else
+          reraise e, __STACKTRACE__
+        end
     end
   end
 
