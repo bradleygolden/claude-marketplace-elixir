@@ -30,6 +30,9 @@ defmodule Claude.Plugins.Phoenix do
   * `:include_daisyui?` - Whether to include DaisyUI component library documentation (default: `true`)
   * `:port` - Default port for Tidewave MCP server (default: `4000`). Environment variable `PORT` will still override this.
   * `:tidewave_enabled?` - Whether to enable Tidewave MCP server configuration (default: `true`)
+  * `:server_check` - Endpoint module to check for running server. Can be:
+    - `false` or `nil` - Disabled (default)
+    - Module atom (e.g., `MyAppWeb.Endpoint`) - Check if this endpoint is running
 
   ## Phoenix Version Support
 
@@ -51,16 +54,33 @@ defmodule Claude.Plugins.Phoenix do
     include_daisyui? = Keyword.get(opts, :include_daisyui?, true)
     port = Keyword.get(opts, :port, 4000)
     tidewave_enabled? = Keyword.get(opts, :tidewave_enabled?, true)
+    server_check = Keyword.get(opts, :server_check, false)
 
-    if detect_phoenix_project?(igniter) and tidewave_enabled? do
+    if detect_phoenix_project?(igniter) do
       app_name = get_app_name(igniter)
       phoenix_version = get_phoenix_version()
 
-      %{
-        mcp_servers: [tidewave: [port: "${PORT:-#{port}}"]],
-        nested_memories:
+      base_config = %{}
+
+      base_config =
+        if tidewave_enabled? do
+          Map.put(base_config, :mcp_servers, tidewave: [port: "${PORT:-#{port}}"])
+        else
+          base_config
+        end
+
+      base_config =
+        Map.put(
+          base_config,
+          :nested_memories,
           build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?)
-      }
+        )
+
+      if server_check do
+        Map.put(base_config, :hooks, build_server_check_hooks(server_check))
+      else
+        base_config
+      end
     else
       %{}
     end
@@ -164,5 +184,20 @@ defmodule Claude.Plugins.Phoenix do
     else
       []
     end
+  end
+
+  defp build_server_check_hooks(server_check) do
+    check_command = build_server_check_command(server_check)
+
+    %{
+      session_start: [
+        {check_command, when: [:startup, :resume, :clear, :compact]}
+      ]
+    }
+  end
+
+  defp build_server_check_command(server_check) when is_atom(server_check) do
+    # Pass the endpoint module to the Mix task
+    "claude.phoenix.check #{server_check}"
   end
 end
