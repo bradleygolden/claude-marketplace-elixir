@@ -77,7 +77,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       |> assert_creates(".claude/settings.json")
     end
 
-    test "preserves existing .claude.exs file" do
+    test "adds Base plugin to existing .claude.exs file" do
       custom_config = """
       %{
         hooks: %{
@@ -87,13 +87,22 @@ defmodule Mix.Tasks.Claude.InstallTest do
       }
       """
 
-      test_project(
-        files: %{
-          ".claude.exs" => custom_config
-        }
-      )
-      |> Igniter.compose_task("claude.install")
-      |> assert_unchanged(".claude.exs")
+      igniter =
+        test_project(
+          files: %{
+            ".claude.exs" => custom_config
+          }
+        )
+        |> Igniter.compose_task("claude.install")
+
+      # The Base plugin should be added
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "plugins: [Claude.Plugins.Base]"
+      # Original content should be preserved
+      assert content =~ "post_tool_use: [:compile, :format, \"custom --task\"]"
+      assert content =~ "custom_setting: true"
     end
 
     test "generates .claude.exs with Base plugin" do
@@ -130,7 +139,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
              end)
     end
 
-    test "accepts new map-based hook format" do
+    test "accepts new map-based hook format and adds Base plugin" do
       new_format_config = """
       %{
         hooks: %{
@@ -149,7 +158,14 @@ defmodule Mix.Tasks.Claude.InstallTest do
         |> Igniter.compose_task("claude.install")
 
       assert igniter.issues == []
-      assert_unchanged(igniter, ".claude.exs")
+      # The Base plugin should be added
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "plugins: [Claude.Plugins.Base]"
+      # Original hooks should be preserved
+      assert content =~ "stop: [:compile, :format]"
+      assert content =~ "post_tool_use: [:compile]"
     end
 
     test "handles mixed atom and explicit hook configurations" do
@@ -171,7 +187,14 @@ defmodule Mix.Tasks.Claude.InstallTest do
         |> Igniter.compose_task("claude.install")
 
       assert igniter.issues == []
-      assert_unchanged(igniter, ".claude.exs")
+      # The Base plugin should be added and options should be preserved as lists
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "plugins: [Claude.Plugins.Base]"
+      # The mixed config with options should be preserved (as a list now)
+      assert content =~ ~r/stop:.*:compile.*"custom --task".*halt_pipeline\?/s
+      assert content =~ "post_tool_use: [:format]"
     end
 
     test "adds usage_rules dependency" do
@@ -1155,7 +1178,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
   end
 
   describe "hook configuration from .claude.exs" do
-    test "handles missing hooks key in .claude.exs" do
+    test "handles missing hooks key in .claude.exs and adds Base plugin with hooks" do
       igniter =
         test_project(
           files: %{
@@ -1168,8 +1191,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
+      # The Base plugin is added, which provides hooks
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "plugins: [Claude.Plugins.Base]"
+      assert content =~ "some_other_config: true"
+
+      # With Base plugin added, hooks ARE configured
       assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "No hooks configured")
+               String.contains?(notice, "Claude hooks have been configured")
              end)
     end
 
@@ -1563,7 +1594,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       end
     end
 
-    test "no hooks and no reporters creates empty settings" do
+    test "no hooks and no reporters still creates hooks from Base plugin" do
       igniter =
         test_project(
           files: %{
@@ -1582,7 +1613,11 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
       settings = Jason.decode!(content)
 
-      refute Map.has_key?(settings, "hooks")
+      # Base plugin is added, which provides hooks
+      assert Map.has_key?(settings, "hooks")
+      # Check that PostToolUse and PreToolUse hooks are created from Base plugin
+      assert Map.has_key?(settings["hooks"], "PostToolUse")
+      assert Map.has_key?(settings["hooks"], "PreToolUse")
     end
 
     test "backward compatibility: existing configs without reporters unchanged" do
@@ -1711,12 +1746,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      refute Igniter.changed?(igniter, ".claude.exs")
+      # Base plugin should be added while preserving Phoenix plugin with options
+      assert Igniter.changed?(igniter, ".claude.exs")
 
       igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
       source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
+      # Base plugin should be added
+      assert String.contains?(content, "Claude.Plugins.Base")
+      # Phoenix plugin with options should be preserved
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "include_daisyui?: false")
 
@@ -1742,7 +1781,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      assert_unchanged(igniter, ".claude.exs")
+      # Base plugin should be added
+      source = igniter.rewrite |> Rewrite.source!(".claude.exs")
+      content = Rewrite.Source.get(source, :content)
+
+      assert content =~ "Claude.Plugins.Base"
+      assert content =~ "Claude.Plugins.Phoenix"
+      # MCP servers configuration should be preserved
+      assert content =~ "mcp_servers:"
+      assert content =~ "tidewave"
+      assert content =~ "port: 5000"
 
       assert_creates(igniter, ".mcp.json")
 
@@ -1767,7 +1815,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      refute Igniter.changed?(igniter, ".claude.exs")
+      # Base plugin should be added
+      assert Igniter.changed?(igniter, ".claude.exs")
 
       # Include the existing file to read it from the test project  
       igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
@@ -1775,6 +1824,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Base")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
 
       assert String.contains?(content, ":custom_server")
@@ -1801,7 +1851,8 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      refute Igniter.changed?(igniter, ".claude.exs")
+      # Base plugin should be added
+      assert Igniter.changed?(igniter, ".claude.exs")
 
       igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
       source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
@@ -1901,13 +1952,15 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      refute Igniter.changed?(igniter, ".claude.exs")
+      # Base plugin should be added
+      assert Igniter.changed?(igniter, ".claude.exs")
 
       igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
       source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
       assert String.contains?(content, "plugins:")
+      assert String.contains?(content, "Claude.Plugins.Base")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "port: 8080")
 
@@ -1982,12 +2035,16 @@ defmodule Mix.Tasks.Claude.InstallTest do
         )
         |> Igniter.compose_task("claude.install")
 
-      refute Igniter.changed?(igniter, ".claude.exs")
+      # Base plugin should be added
+      assert Igniter.changed?(igniter, ".claude.exs")
 
       igniter_with_file = Igniter.include_existing_file(igniter, ".claude.exs")
       source = Rewrite.source!(igniter_with_file.rewrite, ".claude.exs")
       content = Rewrite.Source.get(source, :content)
 
+      # Base plugin should be added
+      assert String.contains?(content, "Claude.Plugins.Base")
+      # Ash plugin should be preserved
       assert String.contains?(content, "Claude.Plugins.Ash")
       assert String.contains?(content, "auto_install_deps?: true")
     end
