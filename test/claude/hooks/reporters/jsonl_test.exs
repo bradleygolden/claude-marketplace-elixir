@@ -183,15 +183,23 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
     end
 
     test "logs warnings on directory creation failure" do
-      opts = [path: "/invalid/path/that/cannot/be/created", filename_pattern: "test.jsonl"]
+      with_temp_dir(fn temp_dir ->
+        stub(File, :mkdir_p, fn _ -> {:error, :eperm} end)
 
-      log =
-        capture_log(fn ->
-          assert {:error, {:directory_creation_failed, _}} =
-                   Jsonl.report(@sample_event_data, opts)
-        end)
+        opts = [
+          path: Path.join(temp_dir, "uncreatable"),
+          filename_pattern: "test.jsonl",
+          create_dirs: true
+        ]
 
-      assert log =~ "Failed to create log directory"
+        log =
+          capture_log(fn ->
+            assert {:error, {:directory_creation_failed, _}} =
+                     Jsonl.report(@sample_event_data, opts)
+          end)
+
+        assert log =~ "Failed to create log directory"
+      end)
     end
   end
 
