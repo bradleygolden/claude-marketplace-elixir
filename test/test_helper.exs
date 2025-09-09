@@ -1,5 +1,9 @@
 ExUnit.start()
 
+for app <- [:req, :pythonx, :igniter] do
+  Application.ensure_all_started(app)
+end
+
 Mimic.copy(Mix.Task)
 Mimic.copy(System)
 Mimic.copy(File)
