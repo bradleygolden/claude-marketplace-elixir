@@ -144,6 +144,21 @@ defmodule Claude.Documentation.CacheTest do
 
       assert Cache.needs_refresh?(fresh_file, 24) == false
     end
+
+    test "returns true for stale files when max_age_hours is small", %{cache_dir: cache_dir} do
+      stale_file = Path.join(cache_dir, "stale.md")
+      File.write!(stale_file, "stale content")
+
+      old_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-2 * 3600)
+        |> NaiveDateTime.truncate(:second)
+        |> NaiveDateTime.to_erl()
+
+      File.touch(stale_file, old_time)
+
+      assert Cache.needs_refresh?(stale_file, 1) == true
+    end
   end
 
   describe "list_cached_docs/1" do
