@@ -59,7 +59,8 @@ defmodule Claude.Plugins.Phoenix do
       %{
         mcp_servers: [tidewave: [port: "${PORT:-#{port}}"]],
         nested_memories:
-          build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?)
+          build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?),
+        inline_usage_rules: ["phoenix"]
       }
     else
       %{}

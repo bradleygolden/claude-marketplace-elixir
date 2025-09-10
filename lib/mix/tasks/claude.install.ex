@@ -779,14 +779,19 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp sync_usage_rules(igniter) do
     show_notice = !Igniter.exists?(igniter, "CLAUDE.md")
+    inline_rules = get_inline_usage_rules(igniter)
 
-    igniter
-    |> Igniter.add_task("usage_rules.sync", [
+    base_args = [
       "CLAUDE.md",
       "--all",
       "--link-to-folder",
       "deps"
-    ])
+    ]
+
+    args = base_args ++ ["--inline", Enum.join(inline_rules, ",")]
+
+    igniter
+    |> Igniter.add_task("usage_rules.sync", args)
     |> then(fn igniter_with_task ->
       if show_notice do
         igniter_with_task
@@ -799,6 +804,26 @@ defmodule Mix.Tasks.Claude.Install do
         igniter_with_task
       end
     end)
+  end
+
+  defp get_inline_usage_rules(igniter) do
+    claude_exs_path = igniter.assigns[:claude_exs_path]
+
+    inline_from_config =
+      if Igniter.exists?(igniter, claude_exs_path) do
+        case read_config_with_plugins(igniter, claude_exs_path) do
+          {:ok, config} when is_map(config) ->
+            Map.get(config, :inline_usage_rules, [])
+
+          _ ->
+            []
+        end
+      else
+        []
+      end
+
+    ["usage_rules:all" | inline_from_config]
+    |> Enum.uniq()
   end
 
   defp generate_nested_memories(igniter) do

@@ -55,7 +55,8 @@ defmodule Claude.Plugins.Ash do
             {"ash.codegen --check", when: [:write, :edit, :multi_edit]}
           ]
         },
-        nested_memories: build_nested_memories(igniter, app_name)
+        nested_memories: build_nested_memories(igniter, app_name),
+        inline_usage_rules: ["ash"]
       }
     else
       %{}
