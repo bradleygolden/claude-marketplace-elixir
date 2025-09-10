@@ -5,7 +5,6 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
   alias Mix.Tasks.Claude.Hooks.Run
 
   setup :verify_on_exit!
-  setup :setup_test_directory
   setup :stub_system_calls
 
   setup do
