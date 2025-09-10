@@ -167,7 +167,6 @@ Current hooks:
 - **ElixirFormatter** - Checks if .ex/.exs files need formatting after edits
 - **CompilationChecker** - Checks for compilation errors after edits
 - **PreCommitCheck** - Validates formatting, compilation, and unused dependencies before commits
-- **RelatedFiles** (optional) - Suggests updating related files based on naming patterns
 
 ### CLI Structure
 

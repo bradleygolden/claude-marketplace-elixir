@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Stop and subagent_stop hooks removed from default configuration (opt-in only)
 
+### Removed
+- Deprecated RelatedFiles hook removed to resolve compilation errors (#75)
+
 ### Fixed
 - Webhook reporters now correctly receive hook events during execution
 - Stop hooks with all non-blocking failures now exit with code 0 to prevent infinite loops in CI
