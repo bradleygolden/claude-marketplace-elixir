@@ -21,14 +21,18 @@ This ensures Claude Code follows the exact patterns and conventions that library
 When you run `mix claude.install`, Claude automatically runs:
 
 ```bash
-mix usage_rules.sync CLAUDE.md --all --link-to-folder deps
+mix usage_rules.sync CLAUDE.md --all --link-to-folder deps --inline phoenix,ash
 ```
 
 This command:
 - Gathers usage rules from all dependencies that provide them
 - Creates links to the usage rules files in `deps/` instead of inlining content
+- Inlines core rules for selected packages (here Phoenix and Ash) while linking others
 - Keeps your root `CLAUDE.md` file lean and reduces context window usage
 - Ensures Claude Code always has access to current best practices when needed
+
+Plugins can configure which packages are always inlined. For example, the Phoenix and Ash plugins
+embed their core rules directly while keeping other dependency rules referenced.
 
 ### In Your CLAUDE.md
 

@@ -2098,6 +2098,21 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert String.contains?(content, "Claude.Plugins.Ash")
     end
 
+    test "usage rules for Phoenix and Ash are inlined" do
+      igniter =
+        phx_ash_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      assert Enum.any?(igniter.tasks, fn
+               {"usage_rules.sync", args} ->
+                 "--inline" in args &&
+                   Enum.any?(args, &(&1 in ["phoenix,ash", "ash,phoenix"]))
+
+               _ ->
+                 false
+             end)
+    end
+
     test "Ash plugin detected during initial template creation" do
       igniter =
         ash_test_project()

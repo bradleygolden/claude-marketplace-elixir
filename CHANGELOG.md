@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - @reference system with URL caching for documentation references in nested memories
 - Plugin system for extending .claude.exs configuration with reusable modules
 - Register all hook events when reporters are configured for complete observability
+- Plugins can specify `inline_usage_rules` to embed selected packages in the root CLAUDE.md (Phoenix and Ash plugins inline their core rules)
 
 ### Changed
 - Stop and subagent_stop hooks removed from default configuration (opt-in only)
