@@ -633,7 +633,6 @@ defmodule Mix.Tasks.Claude.Install do
       ".claude/hooks/elixir_formatter.exs",
       ".claude/hooks/compilation_checker.exs",
       ".claude/hooks/pre_commit_check.exs",
-      ".claude/hooks/related_files.exs",
       ~r{\.claude/hooks/.*\.exs$}
     ]
 
