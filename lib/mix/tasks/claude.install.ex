@@ -808,6 +808,7 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp get_inline_usage_rules(igniter) do
     claude_exs_path = igniter.assigns[:claude_exs_path]
+
     inline_from_config =
       if Igniter.exists?(igniter, claude_exs_path) do
         case read_config_with_plugins(igniter, claude_exs_path) do

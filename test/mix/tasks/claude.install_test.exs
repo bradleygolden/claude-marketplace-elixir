@@ -2118,6 +2118,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       igniter =
         phx_ash_test_project()
         |> Igniter.compose_task("claude.install")
+
       {"usage_rules.sync", args} =
         Enum.find(igniter.tasks, fn {task, _} -> task == "usage_rules.sync" end)
 
