@@ -126,7 +126,7 @@ defmodule Claude.Hooks.Reporters.Jsonl do
 
   defp expand_filename_pattern(pattern) do
     now = DateTime.utc_now()
-    date = Date.to_iso8601(now)
+    date = now |> DateTime.to_date() |> Date.to_iso8601()
 
     datetime =
       DateTime.to_iso8601(now)
