@@ -71,6 +71,22 @@ defmodule Mix.Tasks.Claude.InstallTest do
              end)
     end
 
+    test "inlines base usage rules by default" do
+      igniter =
+        test_project()
+        |> Igniter.compose_task("claude.install")
+
+      {"usage_rules.sync", args} =
+        Enum.find(igniter.tasks, fn {task, _} -> task == "usage_rules.sync" end)
+
+      inline_arg =
+        args
+        |> Enum.drop_while(&(&1 != "--inline"))
+        |> Enum.at(1, "")
+
+      assert String.contains?(inline_arg, "usage_rules:all")
+    end
+
     test "creates claude settings if one doesn't exist" do
       test_project()
       |> Igniter.compose_task("claude.install")
@@ -2096,6 +2112,26 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert String.contains?(content, "Claude.Plugins.Base")
       assert String.contains?(content, "Claude.Plugins.Phoenix")
       assert String.contains?(content, "Claude.Plugins.Ash")
+    end
+
+    test "usage rules for Phoenix and Ash are inlined" do
+      igniter =
+        phx_ash_test_project()
+        |> Igniter.compose_task("claude.install")
+
+      {"usage_rules.sync", args} =
+        Enum.find(igniter.tasks, fn {task, _} -> task == "usage_rules.sync" end)
+
+      inline_arg =
+        args
+        |> Enum.drop_while(&(&1 != "--inline"))
+        |> Enum.at(1, "")
+
+      inline_parts = String.split(inline_arg, ",")
+
+      assert "usage_rules:all" in inline_parts
+      assert "phoenix" in inline_parts
+      assert "ash" in inline_parts
     end
 
     test "Ash plugin detected during initial template creation" do

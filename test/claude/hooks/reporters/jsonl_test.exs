@@ -113,6 +113,18 @@ defmodule Claude.Hooks.Reporters.JsonlTest do
       end)
     end
 
+    test "creates events file with default options" do
+      with_temp_dir(fn temp_dir ->
+        File.cd!(temp_dir, fn ->
+          assert Jsonl.report(@sample_event_data, []) == :ok
+
+          today = Date.utc_today() |> Date.to_iso8601()
+          expected_file = ".claude/logs/events-#{today}.jsonl"
+          assert File.exists?(expected_file)
+        end)
+      end)
+    end
+
     test "expands filename patterns correctly" do
       with_temp_dir(fn temp_dir ->
         opts = [

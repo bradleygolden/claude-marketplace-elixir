@@ -19,6 +19,13 @@ defmodule Claude.Plugins.AshTest do
 
       assert result == %{}
     end
+
+    test "config includes inline_usage_rules for ash" do
+      igniter = ash_test_project()
+      result = Ash.config(igniter: igniter)
+
+      assert result.inline_usage_rules == ["ash"]
+    end
   end
 
   describe "config/1 - hooks configuration" do

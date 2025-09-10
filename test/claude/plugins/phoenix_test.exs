@@ -88,6 +88,13 @@ defmodule Claude.Plugins.PhoenixTest do
       assert "phoenix:html" in web_memories
       assert "phoenix:elixir" in web_memories
     end
+
+    test "config includes inline_usage_rules for phoenix" do
+      igniter = phx_test_project()
+      result = Phoenix.config(igniter: igniter)
+
+      assert result.inline_usage_rules == ["phoenix"]
+    end
   end
 
   describe "config/1 - version detection with custom mix.lock" do

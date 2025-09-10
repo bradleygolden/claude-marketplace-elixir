@@ -70,11 +70,12 @@ defmodule Claude.Plugins.Phoenix do
         end
 
       base_config =
-        Map.put(
-          base_config,
+        base_config
+        |> Map.put(
           :nested_memories,
           build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?)
         )
+        |> Map.put(:inline_usage_rules, ["phoenix"])
 
       if server_check do
         Map.put(base_config, :hooks, build_server_check_hooks(server_check))
