@@ -90,7 +90,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
         task_runner: task_runner
       )
 
-      assert_received {:mix_task_run, "format", ["--check-formatted", "lib/test.ex"]}
+      assert_received {:mix_task_run, "format", ["lib/test.ex"]}
     end
 
     test "expands multiple atoms in pre_tool_use for git commit" do
@@ -120,7 +120,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       )
 
       assert_received {:mix_task_run, "compile", ["--warnings-as-errors"]}
-      assert_received {:mix_task_run, "format", ["--check-formatted"]}
+      assert_received {:mix_task_run, "format", []}
       assert_received {:mix_task_run, "deps.unlock", ["--check-unused"]}
     end
 
@@ -196,7 +196,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       config = %{
         hooks: %{
           pre_tool_use: [
-            {"format --check-formatted", when: "Write"}
+            {"format", when: "Write"}
           ]
         }
       }
@@ -220,7 +220,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
         task_runner: task_runner
       )
 
-      assert_received {:task_executed, "format", ["--check-formatted"]}
+      assert_received {:task_executed, "format", []}
     end
 
     test "provides helpful error message for non-existent Mix tasks" do
@@ -577,7 +577,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
       config = %{
         hooks: %{
           post_tool_use: [
-            "format --check-formatted {{tool_input.file_path}}"
+            "format {{tool_input.file_path}}"
           ]
         }
       }
@@ -600,7 +600,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunTest do
         task_runner: task_runner
       )
 
-      assert_received {:mix_task_run, "format", ["--check-formatted", "lib/test.ex"]}
+      assert_received {:mix_task_run, "format", ["lib/test.ex"]}
     end
 
     test "template interpolation handles nested paths", _context do
