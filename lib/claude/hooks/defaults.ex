@@ -38,16 +38,16 @@ defmodule Claude.Hooks.Defaults do
          when: "Bash", command: ~r/^git commit/, halt_pipeline?: true}
 
       {:format, :stop} ->
-        {"format --check-formatted", blocking?: false}
+        {"format", blocking?: false}
 
       {:format, :subagent_stop} ->
-        {"format --check-formatted", blocking?: false}
+        {"format", blocking?: false}
 
       {:format, :post_tool_use} ->
-        {"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit, :multi_edit]}
+        {"format {{tool_input.file_path}}", when: [:write, :edit, :multi_edit]}
 
       {:format, :pre_tool_use} ->
-        {"format --check-formatted", when: "Bash", command: ~r/^git commit/}
+        {"format", when: "Bash", command: ~r/^git commit/}
 
       {:unused_deps, :pre_tool_use} ->
         {"deps.unlock --check-unused", when: "Bash", command: ~r/^git commit/}

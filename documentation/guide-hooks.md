@@ -27,7 +27,7 @@ When you run `mix igniter.install claude`, it automatically sets up default hook
 ```
 
 This provides:
-1. **Immediate validation** - Checks formatting and compilation after file edits
+1. **Immediate validation** - Formats code and checks compilation after file edits
 2. **Pre-commit validation** - Ensures clean code before commits, including unused dependency checks
 
 ## Available Hook Atoms
@@ -37,7 +37,7 @@ Claude provides these atom shortcuts that expand to full hook configurations:
 ### Available Hooks
 - **`:compile`** - Runs `mix compile --warnings-as-errors` with `halt_pipeline?: true` (stops on failure)
   - For `stop`/`subagent_stop`: Uses `blocking?: false` to prevent infinite loops
-- **`:format`** - Runs `mix format --check-formatted` (checks only, doesn't auto-format)
+- **`:format`** - Runs `mix format` to automatically format code
   - For `stop`/`subagent_stop`: Uses `blocking?: false` to prevent infinite loops
 - **`:unused_deps`** - Runs `mix deps.unlock --check-unused` (pre_tool_use on git commits only)
 
@@ -65,7 +65,7 @@ Different hook events run at different times:
 ### What Makes a Good Hook
 
 ✅ **Good hook operations:**
-- Format checking with `mix format --check-formatted`
+- Auto-formatting with `mix format`
 - Compilation with `mix compile --warnings-as-errors`
 - Simple logging or metrics collection
 - Read-only operations that provide context

@@ -20,6 +20,7 @@ If you need blocking behavior for stop hooks, explicitly set `blocking?: true` b
 }
 ```
 
+
 ## Atom Shortcuts
 
 ### `:compile` - Compilation Checking
@@ -40,21 +41,21 @@ post_tool_use: [:compile]  # Auto-filters: :write, :edit, :multi_edit
 pre_tool_use: [:compile]   # Auto-filters: git commit commands
 ```
 
-### `:format` - Format Checking
+### `:format` - Auto Formatting
 
-Runs `mix format --check-formatted` (checks only, doesn't auto-format).
+Runs `mix format` to automatically format code.
 
 ```elixir
-# Check formatting when Claude finishes
+# Format code when Claude finishes
 stop: [:format]
 
-# Check formatting after sub-agents
+# Format code after sub-agents
 subagent_stop: [:format]
 
-# Check specific file after editing
+# Format specific file after editing
 post_tool_use: [:format]  # Uses {{tool_input.file_path}}
 
-# Check formatting before commits
+# Format code before commits
 pre_tool_use: [:format]   # Auto-filters: git commit commands
 ```
 
@@ -83,10 +84,10 @@ pre_tool_use: [:unused_deps]
 
 | Event | Expands To | Description |
 |-------|------------|-------------|
-| `:stop` | `"format --check-formatted"` | Check all files |
-| `:subagent_stop` | `"format --check-formatted"` | Check all files |
-| `:post_tool_use` | `{"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit, :multi_edit]}` | Check modified file |
-| `:pre_tool_use` | `{"format --check-formatted", when: "Bash", command: ~r/^git commit/}` | Check all before commit |
+| `:stop` | `"format"` | Format all files |
+| `:subagent_stop` | `"format"` | Format all files |
+| `:post_tool_use` | `{"format {{tool_input.file_path}}", when: [:write, :edit, :multi_edit]}` | Format modified file |
+| `:pre_tool_use` | `{"format", when: "Bash", command: ~r/^git commit/}` | Format all before commit |
 
 ### `:unused_deps` Expansions
 
@@ -348,7 +349,7 @@ session_start: [
     stop: [
       # Run all checks, stop on first failure
       {"compile --warnings-as-errors", halt_pipeline?: true},
-      {"format --check-formatted", halt_pipeline?: true},
+      {"format", halt_pipeline?: true},
       {"test", halt_pipeline?: true},
       {"credo --strict", halt_pipeline?: true},
       {"dialyzer", halt_pipeline?: true}
@@ -508,7 +509,7 @@ claude --debug
   hooks: %{
     stop: [
       {"compile --all-warnings", halt_pipeline?: true},
-      {"format --check-formatted", halt_pipeline?: true},
+      {"format", halt_pipeline?: true},
       {"test --cover", halt_pipeline?: true},
       {"credo --strict", halt_pipeline?: true},
       {"dialyzer", halt_pipeline?: true},
