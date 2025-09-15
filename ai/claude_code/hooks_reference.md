@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/hooks.md
-cached_at: 2025-09-08T09:26:21.396906Z
+cached_at: 2025-09-15T09:25:47.243476Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->

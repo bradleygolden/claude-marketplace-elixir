@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/settings.md
-cached_at: 2025-09-08T09:26:21.949189Z
+cached_at: 2025-09-15T09:25:47.959339Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -75,41 +75,13 @@ Code through hierarchical settings:
 
 ### Permission settings
 
-| Keys                           | Description                                                                                                                                                       | Example                                                                |
-| :----------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------- |
-| `allow`                        | Array of [permission rules](/en/docs/claude-code/iam#configuring-permissions) to allow tool use                                                                   | `[ "Bash(git diff:*)" ]`                                               |
-| `ask`                          | Array of [permission rules](/en/docs/claude-code/iam#configuring-permissions) to ask for confirmation upon tool use.                                              | `[ "Bash(git push:*)" ]`                                               |
-| `deny`                         | Array of [permission rules](/en/docs/claude-code/iam#configuring-permissions) to deny tool use. Use this to also exclude sensitive files from Claude Code access. | `[ "WebFetch", "Bash(curl:*)", "Read(./.env)", "Read(./secrets/**)" ]` |
-| `additionalDirectories`        | Additional [working directories](iam#working-directories) that Claude has access to                                                                               | `[ "../docs/" ]`                                                       |
-| `defaultMode`                  | Default [permission mode](iam#permission-modes) when opening Claude Code                                                                                          | `"acceptEdits"`                                                        |
-| `disableBypassPermissionsMode` | Set to `"disable"` to prevent `bypassPermissions` mode from being activated. See [managed policy settings](iam#enterprise-managed-policy-settings)                | `"disable"`                                                            |
-
-### Settings precedence
-
-Settings are applied in order of precedence (highest to lowest):
-
-1. **Enterprise managed policies** (`managed-settings.json`)
-   * Deployed by IT/DevOps
-   * Cannot be overridden
-
-2. **Command line arguments**
-   * Temporary overrides for a specific session
-
-3. **Local project settings** (`.claude/settings.local.json`)
-   * Personal project-specific settings
-
-4. **Shared project settings** (`.claude/settings.json`)
-   * Team-shared project settings in source control
-
-5. **User settings** (`~/.claude/settings.json`)
-   * Personal global settings
-
-This hierarchy ensures that enterprise security policies are always enforced while still allowing teams and individuals to customize their experience.
-
-### Key points about the configuration system
-
-* **Memory files (CLAUDE.md)**: Contain instructions and context that Claude loads at startup
-* **Settings files (JSON)**: Configure permissions, environment variables, and tool behavior
-* **Slash commands**: Custom commands that can be invoked during a session with `/comman
+| Keys                           | Description                                                                                                                                                                                                                                                                                                                   | Example                                                                |
+| :----------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------- |
+| `allow`                        | Array of [permission rules](/en/docs/claude-code/iam#configuring-permissions) to allow tool use. **Note:** Bash rules use prefix matching, not regex                                                                                                                                                                          | `[ "Bash(git diff:*)" ]`                                               |
+| `ask`                          | Array of [permission rules](/en/docs/claude-code/iam#configuring-permissions) to ask for confirmation upon tool use.                                                                                                                                                                                                          | `[ "Bash(git push:*)" ]`                                               |
+| `deny`                         | Array of [permission rules](/en/docs/claude-code/iam#configuring-permissions) to deny tool use. Use this to also exclude sensitive files from Claude Code access. **Note:** Bash patterns are prefix matches and can be bypassed (see [Bash permission limitations](/en/docs/claude-code/iam#tool-specific-permission-rules)) | `[ "WebFetch", "Bash(curl:*)", "Read(./.env)", "Read(./secrets/**)" ]` |
+| `additionalDirectories`        | Additional [working directories](iam#working-directories) that Claude has access to                                                                                                                                                                                                                                           | `[ "../docs/" ]`                                                       |
+| `defaultMode`                  | Default [permission mode](iam#permission-modes) when opening Claude Code                                                                                                                                                                                                                                                      | `"acceptEdits"`                                                        |
+| `disableBypassPermissionsMode` | Set to `"disable"` to prevent `bypassPermissions` mode from being activated. See [managed policy settings](iam#enterprise-managed-policy-settings)                                                    
 
 [Content truncated due to length]
