@@ -1,7 +1,7 @@
 ---
 allowed-tools: [Bash, Read, Edit]
 argument-hint: "[--keep-config] [--keep-memories]"
-description: Uninstall Claude Code integrations (hooks, subagents, etc.)
+description: Uninstall Claude Code integrations (hooks, settings, etc.)
 ---
 
 # Claude Uninstallation
@@ -16,7 +16,6 @@ Arguments: `$ARGUMENTS`
 
 ! echo -e "\n=== Installed components ===" && \
   (ls .claude/hooks/ 2>/dev/null | wc -l | xargs echo "Hooks:") && \
-  (ls .claude/agents/ 2>/dev/null | wc -l | xargs echo "Subagents:") && \
   ([ -f .claude/settings.json ] && echo "Settings: ✓") && \
   ([ -f .mcp.json ] && echo "MCP config: ✓")
 
@@ -38,7 +37,6 @@ Based on your options:
 
 Standard removal includes:
 - `.claude/hooks/` - All hook scripts
-- `.claude/agents/` - All subagent files
 - `.claude/settings.json` - Local settings
 - `.mcp.json` - MCP server configuration
 
@@ -47,8 +45,6 @@ Standard removal includes:
 ! echo -e "\n=== Removing Claude installation ==="
 
 ! echo "Removing hooks..." && rm -rf .claude/hooks/ 2>/dev/null && echo "✓ Hooks removed" || echo "No hooks to remove"
-
-! echo "Removing subagents..." && rm -rf .claude/agents/ 2>/dev/null && echo "✓ Subagents removed" || echo "No subagents to remove"
 
 ! echo "Removing settings..." && rm -f .claude/settings.json 2>/dev/null && echo "✓ Settings removed" || echo "No settings to remove"
 

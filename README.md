@@ -103,7 +103,7 @@ This will:
 1. Add `claude` to your dependencies
 2. Generate `.claude.exs` configuration file
 3. Configure hooks in `.claude/settings.json`
-4. Generate sub-agents in `.claude/agents/`
+4. Generate hooks in `.claude/hooks/`
 5. Install bundled slash commands in `.claude/commands/`
 6. Sync usage rules to `CLAUDE.md`
 7. Create `.mcp.json` for MCP servers (if configured)
@@ -119,7 +119,6 @@ All Claude settings are managed through `.claude.exs`:
     pre_tool_use: [:compile, :format, :unused_deps]
   },
   mcp_servers: [:tidewave],  # For Phoenix projects
-  subagents: [...]            # Specialized AI assistants
 }
 ```
 
@@ -143,7 +142,6 @@ Additional validation runs before git commits to ensure clean code is committed.
 - [MCP Servers Guide](documentation/guide-mcp.md) - Model Context Protocol integration
 - [Usage Rules Guide](documentation/guide-usage-rules.md) - Best practices integration
 - [Anthropic's Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks)
-- [Anthropic's Subagents Guide](https://docs.anthropic.com/en/docs/claude-code/sub-agents)
 
 ## Contributing
 
@@ -188,8 +186,6 @@ mix compile --warnings-as-errors
 - Testing and documentation servers
 - Auto-configuration based on project dependencies
 
-**Dynamic Sub-agents**
-- Generate sub-agents for each dependency with context automatically
 - Common workflow templates (LiveView, GraphQL, Testing)
 
 Want to contribute? Open an issue on [GitHub](https://github.com/bradleygolden/claude/issues)!
