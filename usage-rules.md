@@ -119,19 +119,6 @@ When you run `mix claude.install`, this configuration is automatically written t
 
 **Note**: While only Tidewave is officially supported through the installer, you can manually add other MCP servers to `.mcp.json` following the Claude Code documentation.
 
-## Bundled Slash Commands
-
-Claude includes pre-configured slash commands that are automatically installed in `.claude/commands/` when you run `mix claude.install`:
-
-### Available Commands
-
-- **Claude Library Management**: `/claude:install`, `/claude:uninstall`, `/claude:config`, `/claude:status`
-- **Dependency Management**: `/mix:deps`, `/mix:deps-add`, `/mix:deps-remove`, `/mix:deps-upgrade`
-- **Nested Memories**: `/memory:nested-add`, `/memory:nested-list`, `/memory:nested-remove`, `/memory:nested-sync`
-- **Elixir Version**: `/elixir:version-check`, `/elixir:compatibility`, `/elixir:upgrade`
-
-Type `/` in Claude Code to see all available commands with descriptions.
-
 ## Nested Memories
 
 Distribute CLAUDE.md files across different directories in your project for context-specific guidance:

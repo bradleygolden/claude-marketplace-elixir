@@ -15,7 +15,7 @@ defmodule Claude.Plugins.ClaudeCode do
 
   ## Configuration Generated
 
-  * Root directory gets Claude Code documentation for hooks, slash commands, memory management, and settings
+  * Root directory gets Claude Code documentation for hooks, memory management, and settings
   * Test directory gets Elixir and OTP usage rules
 
   The plugin provides URL-based memories that are automatically cached locally

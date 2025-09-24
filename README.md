@@ -76,16 +76,6 @@ Integrate with Phoenix development tools via Tidewave. MCP servers are configure
 
 → See [Usage Rules Guide](documentation/guide-usage-rules.md) for how Claude integrates with usage rules.
 
-### 🛠️ **Bundled Commands**
-
-Pre-configured slash commands for common Elixir development tasks, automatically installed in `.claude/commands/`.
-
-- **Library Management**: `/claude:install`, `/claude:uninstall`, `/claude:config`
-- **Dependency Management**: `/mix:deps`, `/mix:deps-add`, `/mix:deps-upgrade`
-- **Nested Memories**: `/memory:nested-add`, `/memory:nested-sync`, `/memory:check`
-
-→ Type `/` in Claude Code to see all available commands.
-
 ## Installation
 
 ### Requirements
@@ -104,9 +94,8 @@ This will:
 2. Generate `.claude.exs` configuration file
 3. Configure hooks in `.claude/settings.json`
 4. Generate hooks in `.claude/hooks/`
-5. Install bundled slash commands in `.claude/commands/`
-6. Sync usage rules to `CLAUDE.md`
-7. Create `.mcp.json` for MCP servers (if configured)
+5. Sync usage rules to `CLAUDE.md`
+6. Create `.mcp.json` for MCP servers (if configured)
 
 ## Configuration File
 
@@ -171,13 +160,6 @@ mix compile --warnings-as-errors
 - Directory-specific CLAUDE.md files (e.g., `lib/my_app_web/CLAUDE.md` for Phoenix)
 - Configure via `nested_memories` in `.claude.exs`
 - Distribute context-specific usage rules across your codebase
-
-**Bundled Slash Commands**
-- `/claude:*` commands for library management (install, uninstall, config, status)
-- `/elixir:*` commands for version management and compatibility checks
-- `/memory:*` commands for nested memories management
-- `/mix:*` commands for dependency management
-- Auto-installed in `.claude/commands/` during `mix claude.install`
 
 ### 🚀 Coming Soon
 
