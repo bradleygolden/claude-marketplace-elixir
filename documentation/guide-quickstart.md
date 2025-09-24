@@ -34,7 +34,6 @@ This automatically:
 - ✅ Creates `.claude.exs` configuration
 - ✅ Installs formatting and compilation hooks
 - ✅ Sets up `.claude/` directory structure
-- ✅ Installs bundled slash commands in `.claude/commands/`
 - ✅ Syncs usage rules from dependencies to `CLAUDE.md`
 
 ## Step 2: Test Format Checking
@@ -87,19 +86,6 @@ If there are any formatting issues, compilation errors, or unused dependencies, 
 - 📋 Show what needs fixing
 - 🔄 Help resolve issues before committing
 
-## Step 5: Try Slash Commands
-
-Claude comes with bundled slash commands for common tasks. Type `/` in Claude Code to see all available commands, or try:
-
-```
-/mix:deps-check
-```
-
-This will check your dependency status using the bundled command. Other useful commands include:
-- `/claude:status` - Check Claude installation status
-- `/mix:deps-add` - Add new dependencies
-- `/memory:nested-add` - Configure nested memories for directories
-
 ## What Just Happened?
 
 You've just experienced Claude's core features:
@@ -108,8 +94,7 @@ You've just experienced Claude's core features:
 2. **Instant Compilation Checks** - Warnings and errors caught immediately
 3. **Pre-Commit Validation** - Only clean code gets committed
 4. **Intelligent Feedback** - Claude sees and can fix issues automatically
-5. **Bundled Commands** - Pre-configured slash commands for common tasks
-6. **Best Practices** - Claude follows usage rules from your dependencies (see [Usage Rules Guide](guide-usage-rules.md))
+5. **Best Practices** - Claude follows usage rules from your dependencies (see [Usage Rules Guide](guide-usage-rules.md))
 
 ## Next Steps
 

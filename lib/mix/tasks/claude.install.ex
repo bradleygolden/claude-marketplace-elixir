@@ -50,7 +50,6 @@ defmodule Mix.Tasks.Claude.Install do
     |> copy_wrapper_script()
     |> sync_usage_rules()
     |> generate_nested_memories()
-    |> install_commands()
     |> setup_tidewave_if_configured()
     |> add_claude_exs_to_formatter()
   end
@@ -808,10 +807,6 @@ defmodule Mix.Tasks.Claude.Install do
 
   defp generate_nested_memories(igniter) do
     Claude.NestedMemories.generate(igniter)
-  end
-
-  defp install_commands(igniter) do
-    Claude.CommandInstaller.install(igniter)
   end
 
   defp setup_tidewave_if_configured(igniter) do

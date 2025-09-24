@@ -891,32 +891,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
   end
 
-  describe "command installation" do
-    test "does not block installation when commands already exist" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              hooks: %{
-                stop: [:compile]
-              }
-            }
-            """,
-            ".claude/commands/mix/deps.md" => """
-            ---
-            description: Existing command
-            ---
-            """
-          }
-        )
-
-      result = Igniter.compose_task(igniter, "claude.install", ["--yes"])
-
-      assert length(result.issues) == 0
-    end
-  end
-
   describe "reporters integration" do
     test "registers all hook events when reporters are configured" do
       igniter =
