@@ -84,13 +84,8 @@ defmodule Claude.Documentation.References do
     else
       updated_content =
         Enum.reduce(references, content, fn ref, acc ->
-          case resolve_reference(ref, mode: mode) do
-            resolved when is_binary(resolved) ->
-              replace_references_outside_code_blocks(acc, ref, resolved)
-
-            _ ->
-              acc
-          end
+          resolved = resolve_reference(ref, mode: mode)
+          replace_references_outside_code_blocks(acc, ref, resolved)
         end)
 
       if updated_content != content do
