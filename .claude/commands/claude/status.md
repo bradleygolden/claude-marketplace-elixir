@@ -34,6 +34,15 @@ I'll check the status of Claude Code integration in your project.
     echo "No hooks installed"; \
   fi
 
+### Subagents
+
+! echo -e "\n=== Subagents ===" && \
+  if [ -d ".claude/agents" ]; then \
+    echo "Installed subagents:" && ls .claude/agents/*.md 2>/dev/null | xargs -I {} basename {} .md | sed 's/^/  - /'; \
+  else \
+    echo "No subagents installed"; \
+  fi
+
 ### Nested Memories
 
 ! echo -e "\n=== Nested Memories ===" && \

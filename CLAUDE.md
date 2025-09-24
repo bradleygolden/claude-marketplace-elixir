@@ -355,7 +355,6 @@ _A code generation and project patching framework_
 <!-- doc-ref:ai-claude-code-slash-commands-md:end -->
 
 
-
 <!-- doc-ref:ai-claude-code-hooks-guide-md:start -->
 - @./ai/claude_code/hooks_guide.md
 <!-- doc-ref:ai-claude-code-hooks-guide-md:end -->
