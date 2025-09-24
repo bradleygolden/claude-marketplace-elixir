@@ -88,12 +88,7 @@ defmodule Claude.Documentation.Cache do
     if File.exists?(resolved_path) do
       stat = File.stat!(resolved_path)
 
-      mtime =
-        case stat.mtime do
-          %NaiveDateTime{} = naive -> naive
-          erl -> NaiveDateTime.from_erl!(erl)
-        end
-
+      mtime = NaiveDateTime.from_erl!(stat.mtime)
       mtime_datetime = DateTime.from_naive!(mtime, "Etc/UTC")
       age_hours = DateTime.diff(DateTime.utc_now(), mtime_datetime, :hour)
       age_hours > max_age_hours
