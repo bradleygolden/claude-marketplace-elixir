@@ -165,4 +165,29 @@ defmodule Claude.Plugins.PhoenixTest do
       refute daisyui_entry in web_memories
     end
   end
+
+  describe "config/1 - tidewave option" do
+    test "returns config without mcp_servers when tidewave disabled" do
+      igniter = phx_test_project()
+      result = Phoenix.config(igniter: igniter, tidewave_enabled?: false)
+
+      refute Map.has_key?(result, :mcp_servers)
+      assert Map.has_key?(result, :nested_memories)
+    end
+  end
+
+  describe "config/1 - server check option" do
+    test "includes server check hook when provided" do
+      igniter = phx_test_project()
+      result = Phoenix.config(igniter: igniter, server_check: MyAppWeb.Endpoint)
+
+      expected = %{
+        session_start: [
+          {"claude.phoenix.check MyAppWeb.Endpoint", when: [:startup, :resume, :clear, :compact]}
+        ]
+      }
+
+      assert result.hooks == expected
+    end
+  end
 end
