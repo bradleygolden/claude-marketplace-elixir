@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/sub-agents.md
-cached_at: 2025-09-08T09:26:21.603848Z
+cached_at: 2025-09-22T09:27:15.148545Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -97,6 +97,7 @@ Each subagent is defined in a Markdown file with this structure:
 name: your-sub-agent-name
 description: Description of when this subagent should be invoked
 tools: tool1, tool2, tool3  # Optional - inherits all tools if omitted
+model: sonnet  # Optional - specify model alias or 'inherit'
 ---
 
 Your subagent's system prompt goes here. This can be multiple paragraphs
@@ -109,11 +110,24 @@ the subagent should follow.
 
 #### Configuration fields
 
-| Field         | Required | Description                                                                                 |
-| :------------ | :------- | :------------------------------------------------------------------------------------------ |
-| `name`        | Yes      | Unique identifier using lowercase letters and hyphens                                       |
-| `description` | Yes      | Natural language description of the subagent's purpose                                      |
-| `tools`       | No       | Comma-separated list of specific tools. If omitted, inherits all tools from the main thread |
+| Field         | Required | Description                                                                                                                                                                                                                      |
+| :------------ | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | Yes      | Unique identifier using lowercase letters and hyphens                                                                                                                                                                            |
+| `description` | Yes      | Natural language description of the subagent's purpose                                                                                                                                                                           |
+| `tools`       | No       | Comma-separated list of specific tools. If omitted, inherits all tools from the main thread                                                                                                                                      |
+| `model`       | No       | Model to use for this subagent. Can be a model alias (`sonnet`, `opus`, `haiku`) or `'inherit'` to use the main conversation's model. If omitted, defaults to the [configured subagent model](/en/docs/claude-code/model-config) |
+
+### Model selection
+
+The `model` field allows you to control which [AI model](/en/docs/claude-code/model-config) the subagent uses:
+
+* **Model alias**: Use one of the available aliases: `sonnet`, `opus`, or `haiku`
+* **`'inherit'`**: Use the same model as the main conversation (useful for consistency)
+* **Omitted**: If not specified, uses the default model configured for subagents (`sonnet`)
+
+<Note>
+  Using `'inherit'` is particularly useful when you want your subagents to adapt to the model choice of the main conversation, ensuring consistent capabilities and response style throughout your session.
+</Note>
 
 ### Available tools
 
@@ -201,6 +215,7 @@ Request a specific subagent by mentioning it in your command:
 name: code-reviewer
 description: Expert code review specialist. Proactively reviews code for quality, security, and maintainability. Use immediately after writing or modifying code.
 tools: Read, Grep, Glob, Bash
+model: inherit
 ---
 
 You are a senior code reviewer ensuring high standards of code quality and security.
@@ -239,66 +254,6 @@ tools: Read, Edit, Bash, Grep, Glob
 
 You are an expert debugger specializing in root cause analysis.
 
-When invoked:
-1. Capture error message and stack trace
-2. Identify reproduction steps
-3. Isolate the failure location
-4. Implement minimal fix
-5. Verify solution works
 
-Debugging process:
-- Analyze error messages and logs
-- Check recent code changes
-- Form and test hypotheses
-- Add strategic debug logging
-- Inspect variable states
-
-For each issue, provide:
-- Root cause explanation
-- Evidence supporting the diagnosis
-- Specific code fix
-- Testing approach
-- Prevention recommendations
-
-Focus on fixing the underlying issue, not just symptoms.
-```
-
-### Data scientist
-
-```markdown
----
-name: data-scientist
-description: Data analysis expert for SQL queries, BigQuery operations, and data insights. Use proactively for data analysis tasks and queries.
-tools: Bash, Read, Write
----
-
-You are a data scientist specializing in SQL and BigQuery analysis.
-
-When invoked:
-1. Understand the data analysis requirement
-2. Write efficient SQL queries
-3. Use BigQuery command line tools (bq) when appropriate
-4. Analyze and summarize results
-5. Present findings clearly
-
-Key practices:
-- Write optimized SQL queries with proper filters
-- Use appropriate aggregations and joins
-- Include comments explaining complex logic
-- Format results for readability
-- Provide data-driven recommendations
-
-For each analysis:
-- Explain the query approach
-- Document any assumptions
-- Highlight key findings
-- Suggest next steps based on data
-
-Always ensure queries are efficient and cost-effective.
-```
-
-## Best practices
-
-* **Start with Claude-generated agents**: We highly recommend generating your initial subagent with Claude and then 
 
 [Content truncated due to length]

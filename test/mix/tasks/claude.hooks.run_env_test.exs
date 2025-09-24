@@ -133,7 +133,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
       config = %{
         hooks: %{
           stop: [
-            "format --check-formatted"
+            "format"
           ]
         }
       }
@@ -155,7 +155,7 @@ defmodule Mix.Tasks.Claude.Hooks.RunEnvTest do
         task_runner: task_runner
       )
 
-      assert_received {:task_executed, "format", ["--check-formatted"], %{}}
+      assert_received {:task_executed, "format", [], %{}}
     end
 
     test "env vars work with cmd prefix" do

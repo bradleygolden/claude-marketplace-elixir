@@ -423,7 +423,7 @@ defmodule Mix.Tasks.Claude.Gen.Subagent do
       "        id: :elixir_quality_checks,\n" <>
       "        matcher: [:write, :edit, :multi_edit],\n" <>
       "        tasks: [\n" <>
-      "          \"format --check-formatted {{tool_input.file_path}}\",\n" <>
+      "          \"format {{tool_input.file_path}}\",\n" <>
       "          \"compile --warnings-as-errors\"\n" <>
       "        ]\n" <>
       "      }\n" <>

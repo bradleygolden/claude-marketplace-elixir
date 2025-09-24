@@ -989,7 +989,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             %{
               hooks: %{
                 post_tool_use: [
-                  {"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit]}
+                  {"format {{tool_input.file_path}}", when: [:write, :edit]}
                 ]
               }
             }
@@ -1234,7 +1234,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             %{
               hooks: %{
                 post_tool_use: [
-                  {"format --check-formatted {{tool_input.file_path}}", when: [:write, :edit]},
+                  {"format {{tool_input.file_path}}", when: [:write, :edit]},
                   {"compile --warnings-as-errors", when: [:write, :edit, :multi_edit]}
                 ],
                 pre_tool_use: [

@@ -27,23 +27,22 @@ defmodule Claude.Hooks.DefaultsTest do
 
     test "expands :format atom for stop event" do
       assert Defaults.expand_hook(:format, :stop) ==
-               {"format --check-formatted", blocking?: false}
+               {"format", blocking?: false}
     end
 
     test "expands :format atom for subagent_stop event" do
       assert Defaults.expand_hook(:format, :subagent_stop) ==
-               {"format --check-formatted", blocking?: false}
+               {"format", blocking?: false}
     end
 
     test "expands :format atom for post_tool_use event" do
       assert Defaults.expand_hook(:format, :post_tool_use) ==
-               {"format --check-formatted {{tool_input.file_path}}",
-                when: [:write, :edit, :multi_edit]}
+               {"format {{tool_input.file_path}}", when: [:write, :edit, :multi_edit]}
     end
 
     test "expands :format atom for pre_tool_use event" do
       assert Defaults.expand_hook(:format, :pre_tool_use) ==
-               {"format --check-formatted", when: "Bash", command: ~r/^git commit/}
+               {"format", when: "Bash", command: ~r/^git commit/}
     end
 
     test "expands :unused_deps atom for pre_tool_use event" do
@@ -79,7 +78,7 @@ defmodule Claude.Hooks.DefaultsTest do
       expanded = Defaults.expand_hook(hook, :stop)
 
       assert expanded ==
-               {"format --check-formatted", [env: %{"MIX_ENV" => "dev"}, blocking?: false]}
+               {"format", [env: %{"MIX_ENV" => "dev"}, blocking?: false]}
     end
 
     test "expands atom with options for post_tool_use preserving existing options" do
@@ -114,7 +113,7 @@ defmodule Claude.Hooks.DefaultsTest do
 
       assert expanded == [
                {"compile --warnings-as-errors", halt_pipeline?: true, blocking?: false},
-               {"format --check-formatted", blocking?: false}
+               {"format", blocking?: false}
              ]
     end
 
@@ -126,7 +125,7 @@ defmodule Claude.Hooks.DefaultsTest do
       assert expanded == [
                {"compile --warnings-as-errors", halt_pipeline?: true, blocking?: false},
                "custom task",
-               {"format --check-formatted", blocking?: false, when: [:write]}
+               {"format", blocking?: false, when: [:write]}
              ]
     end
 
@@ -147,8 +146,7 @@ defmodule Claude.Hooks.DefaultsTest do
                   halt_pipeline?: true,
                   env: %{"MIX_ENV" => "test"}
                 ]},
-               {"format --check-formatted",
-                [when: "Bash", command: ~r/^git commit/, blocking?: false]},
+               {"format", [when: "Bash", command: ~r/^git commit/, blocking?: false]},
                {"deps.unlock --check-unused", when: "Bash", command: ~r/^git commit/}
              ]
     end
@@ -199,26 +197,26 @@ defmodule Claude.Hooks.DefaultsTest do
       env = %{"MIX_ENV" => "dev"}
 
       # stop event - format returns simple string, env should be added as options
-      assert {"format --check-formatted", opts} =
+      assert {"format", opts} =
                Defaults.expand_hook({:format, env: env}, :stop)
 
       assert opts[:env] == env
 
       # subagent_stop event
-      assert {"format --check-formatted", opts} =
+      assert {"format", opts} =
                Defaults.expand_hook({:format, env: env}, :subagent_stop)
 
       assert opts[:env] == env
 
       # post_tool_use event
-      assert {"format --check-formatted {{tool_input.file_path}}", opts} =
+      assert {"format {{tool_input.file_path}}", opts} =
                Defaults.expand_hook({:format, env: env}, :post_tool_use)
 
       assert opts[:env] == env
       assert opts[:when] == [:write, :edit, :multi_edit]
 
       # pre_tool_use event
-      assert {"format --check-formatted", opts} =
+      assert {"format", opts} =
                Defaults.expand_hook({:format, env: env}, :pre_tool_use)
 
       assert opts[:env] == env
@@ -249,7 +247,7 @@ defmodule Claude.Hooks.DefaultsTest do
 
       assert [
                {"compile --warnings-as-errors", compile_opts},
-               {"format --check-formatted", format_opts},
+               {"format", format_opts},
                {"deps.unlock --check-unused", deps_opts}
              ] = expanded
 
