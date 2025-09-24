@@ -19,10 +19,6 @@ mix claude.install
 ```
 
 ### Generator
-```bash
-# Generate a new sub-agent interactively
-mix claude.gen.subagent
-```
 
 ## Hook System
 
@@ -158,10 +154,6 @@ Claude supports creating specialized AI assistants (sub-agents) for your project
 ### Interactive Generation
 
 Use the new generator to create sub-agents:
-
-```bash
-mix claude.gen.subagent
-```
 
 This will prompt you for:
 - Name and description

@@ -169,13 +169,6 @@ mix compile --warnings-as-errors
 
 ### ✅ Recently Added
 
-**Mix Task Generator**
-- `mix claude.gen.subagent` - Interactive generator for new sub-agents with:
-  - Name validation and formatting
-  - Tool selection with warnings
-  - Multi-line prompt support
-  - Automatic `.claude.exs` integration
-
 **Nested Memories**
 - Directory-specific CLAUDE.md files (e.g., `lib/my_app_web/CLAUDE.md` for Phoenix)
 - Configure via `nested_memories` in `.claude.exs`
