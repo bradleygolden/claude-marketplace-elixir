@@ -63,7 +63,6 @@ defmodule Claude.ClaudeCodeCase do
       use Mimic
 
       import ExUnit.CaptureIO
-      import Claude.Test
 
       import Claude.ClaudeCodeCase,
         only: [

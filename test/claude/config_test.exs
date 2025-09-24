@@ -1,6 +1,14 @@
 defmodule Claude.ConfigTest do
   use Claude.ClaudeCodeCase
 
+  defp create_file(base_dir, relative_path, content) do
+    full_path = Path.join(base_dir, relative_path)
+    dir = Path.dirname(full_path)
+    File.mkdir_p!(dir)
+    File.write!(full_path, content)
+    full_path
+  end
+
   describe "read_base_config/0" do
     test "reads valid .claude.exs file", %{test_dir: test_dir} do
       config_content = """
@@ -10,7 +18,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:ok, config} = Claude.Config.read_base_config()
@@ -25,7 +33,7 @@ defmodule Claude.ConfigTest do
     end
 
     test "returns error when file contains invalid Elixir", %{test_dir: test_dir} do
-      Claude.Test.create_file(test_dir, ".claude.exs", "invalid syntax %{")
+      create_file(test_dir, ".claude.exs", "invalid syntax %{")
 
       File.cd!(test_dir, fn ->
         assert {:error, message} = Claude.Config.read_base_config()
@@ -34,7 +42,7 @@ defmodule Claude.ConfigTest do
     end
 
     test "returns error when file doesn't return a map", %{test_dir: test_dir} do
-      Claude.Test.create_file(test_dir, ".claude.exs", "\"not a map\"")
+      create_file(test_dir, ".claude.exs", "\"not a map\"")
 
       File.cd!(test_dir, fn ->
         assert {:error, message} = Claude.Config.read_base_config()
@@ -53,7 +61,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:ok, result} = Claude.Config.read()
@@ -70,7 +78,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:ok, result} = Claude.Config.read()
@@ -90,7 +98,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:ok, result} = Claude.Config.read()
@@ -117,7 +125,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:ok, result} = Claude.Config.read()
@@ -137,7 +145,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:error, message} = Claude.Config.read()
@@ -154,7 +162,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:error, message} = Claude.Config.read()
@@ -184,7 +192,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", config_content)
+      create_file(test_dir, ".claude.exs", config_content)
 
       File.cd!(test_dir, fn ->
         assert {:ok, result} = Claude.Config.read()
@@ -243,7 +251,7 @@ defmodule Claude.ConfigTest do
       }
       """
 
-      Claude.Test.create_file(test_dir, ".claude.exs", legacy_config_content)
+      create_file(test_dir, ".claude.exs", legacy_config_content)
 
       File.cd!(test_dir, fn ->
         {expected_config, _} = Code.eval_string(legacy_config_content)
