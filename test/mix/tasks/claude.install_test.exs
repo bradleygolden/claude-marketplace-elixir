@@ -350,442 +350,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
     end
   end
 
-  describe "subagent generation" do
-    test "generates subagents from .claude.exs configuration" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Ecto Expert",
-                  description: "Expert in Ecto and database queries",
-                  prompt: "You are an expert in Ecto...",
-                  tools: [:read, :grep, :edit]
-                },
-                %{
-                  name: "Phoenix Specialist",
-                  description: "Expert in Phoenix framework",
-                  prompt: "You are a Phoenix framework specialist..."
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      assert_creates(igniter, ".claude/agents/ecto-expert.md")
-      assert_creates(igniter, ".claude/agents/phoenix-specialist.md")
-
-      assert Enum.any?(igniter.notices, fn notice ->
-               String.contains?(notice, "Generated 2 subagent(s)")
-             end)
-    end
-
-    test "handles invalid subagent configuration gracefully" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Invalid Agent"
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      assert Enum.any?(igniter.warnings, fn warning ->
-               String.contains?(warning, "Failed to generate some subagents")
-             end)
-    end
-
-    test "Base plugin only provides hooks configuration (no subagents)" do
-      igniter =
-        test_project()
-        |> Igniter.compose_task("claude.install")
-
-      assert Enum.any?(Map.keys(igniter.rewrite.sources), fn path ->
-               path == ".claude.exs"
-             end)
-
-      claude_exs_source = Rewrite.source!(igniter.rewrite, ".claude.exs")
-      claude_exs_content = Rewrite.Source.get(claude_exs_source, :content)
-      assert String.contains?(claude_exs_content, "Claude.Plugins.Base")
-
-      {base_config, _} = Code.eval_string(claude_exs_content)
-      assert is_map(base_config)
-      assert Map.has_key?(base_config, :plugins)
-
-      {:ok, plugin_configs} = Claude.Plugin.load_plugins(base_config.plugins)
-      merged_config = Claude.Plugin.merge_configs(plugin_configs ++ [base_config])
-
-      refute Map.has_key?(merged_config, :subagents)
-
-      assert Map.has_key?(merged_config, :hooks)
-      assert Map.has_key?(merged_config.hooks, :post_tool_use)
-      assert Map.has_key?(merged_config.hooks, :pre_tool_use)
-      refute Map.has_key?(merged_config.hooks, :stop)
-    end
-
-    test "generates subagents with correct YAML frontmatter format" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Test Agent",
-                  description: "A test agent for verification",
-                  prompt: "You are a test agent that helps with testing.",
-                  tools: [:read, :grep]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/test-agent.md")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~
-               ~r/^---\nname: test-agent\ndescription: A test agent for verification\ntools: Read, Grep\n---\n\n/
-
-      assert content =~ "You are a test agent that helps with testing."
-    end
-
-    test "generates subagents without tools line when no tools specified" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "No Tools Agent",
-                  description: "An agent with no tool restrictions",
-                  prompt: "You are an agent with access to all tools."
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/no-tools-agent.md")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~
-               ~r/^---\nname: no-tools-agent\ndescription: An agent with no tool restrictions\n---\n\n/
-
-      refute content =~ ~r/tools:/
-    end
-
-    test "generates subagents with usage_rules when specified" do
-      File.mkdir_p!("deps/ash")
-
-      File.write!(
-        "deps/ash/usage-rules.md",
-        "# Ash Usage Rules\n\nUse Ash for declarative resources."
-      )
-
-      on_exit(fn -> File.rm_rf!("deps/ash") end)
-
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Resource Manager",
-                  description: "Manages Ash resources",
-                  prompt: "You are an expert in Ash Framework.",
-                  tools: [:read, :write],
-                  usage_rules: [:ash]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/resource-manager.md")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~ "You are an expert in Ash Framework."
-
-      refute content =~ "## Usage Rules"
-    end
-
-    test "handles multiple usage_rules for subagents" do
-      File.mkdir_p!("deps/ash")
-      File.mkdir_p!("deps/phoenix")
-      File.write!("deps/ash/usage-rules.md", "# Ash Rules\n\nAsh content.")
-      File.write!("deps/phoenix/usage-rules.md", "# Phoenix Rules\n\nPhoenix content.")
-
-      on_exit(fn ->
-        File.rm_rf!("deps/ash")
-        File.rm_rf!("deps/phoenix")
-      end)
-
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Full Stack",
-                  description: "Full stack expert",
-                  prompt: "Base prompt.",
-                  usage_rules: [:ash, :phoenix]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/full-stack.md")
-      content = Rewrite.Source.get(source, :content)
-
-      refute content =~ "## Usage Rules"
-    end
-
-    test "handles string-based usage_rules with sub-rules" do
-      File.mkdir_p!("deps/ash/usage-rules")
-
-      File.write!(
-        "deps/ash/usage-rules/resources.md",
-        "# Resource Rules\n\nResource specific rules."
-      )
-
-      on_exit(fn -> File.rm_rf!("deps/ash") end)
-
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Resource Expert",
-                  description: "Expert in resources",
-                  prompt: "Base prompt.",
-                  usage_rules: ["ash:resources"]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/resource-expert.md")
-      content = Rewrite.Source.get(source, :content)
-
-      refute content =~ "## Usage Rules"
-    end
-
-    test "handles empty usage_rules list without adding section" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Empty Rules",
-                  description: "Has empty rules",
-                  prompt: "Base prompt.",
-                  usage_rules: []
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/empty-rules.md")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~ "Base prompt."
-      refute content =~ "## Usage Rules"
-    end
-
-    test "gracefully handles missing usage rules files" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Missing Rules",
-                  description: "Has missing rules",
-                  prompt: "Original prompt.",
-                  usage_rules: [:nonexistent, "missing:rule"]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/missing-rules.md")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~ "Original prompt."
-      refute content =~ "## Usage Rules"
-    end
-
-    test "validates usage_rules must be a list" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Invalid Rules",
-                  description: "Invalid usage_rules",
-                  prompt: "Prompt.",
-                  usage_rules: "not_a_list"
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      assert Enum.any?(igniter.warnings, fn warning ->
-               String.contains?(warning, "usage_rules must be a list") or
-                 String.contains?(warning, "Invalid Rules")
-             end)
-    end
-
-    test "supports memories field in subagent configuration" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Memory Agent",
-                  description: "Agent with memories field",
-                  prompt: "Base prompt",
-                  memories: [
-                    "usage_rules:elixir"
-                  ]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/memory-agent.md")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~ "Base prompt"
-
-      assert content =~ "name: memory-agent"
-      assert content =~ "description: Agent with memories field"
-    end
-
-    test "supports nested_memories field for backward compatibility" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Legacy Agent",
-                  description: "Agent with legacy nested_memories",
-                  prompt: "Base prompt",
-                  nested_memories: [
-                    "usage_rules:elixir"
-                  ]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      source = Rewrite.source!(igniter.rewrite, ".claude/agents/legacy-agent.md")
-      content = Rewrite.Source.get(source, :content)
-
-      assert content =~ "Base prompt"
-
-      assert content =~ "name: legacy-agent"
-      assert content =~ "description: Agent with legacy nested_memories"
-    end
-
-    test "validates both memories and nested_memories field format" do
-      igniter1 =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Memories Agent",
-                  description: "Agent with memories field",
-                  prompt: "Base prompt",
-                  memories: ["usage_rules:elixir"]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      igniter2 =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Nested Memories Agent", 
-                  description: "Agent with nested_memories field",
-                  prompt: "Base prompt",
-                  nested_memories: ["usage_rules:elixir"]
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      assert Rewrite.source!(igniter1.rewrite, ".claude/agents/memories-agent.md")
-      assert Rewrite.source!(igniter2.rewrite, ".claude/agents/nested-memories-agent.md")
-    end
-  end
-
   describe "tidewave MCP configuration" do
     test "automatically installs tidewave for Phoenix projects" do
       igniter =
@@ -1076,30 +640,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
       assert Enum.any?(notices, &String.contains?(&1, "Claude hooks have been configured"))
       assert Enum.any?(notices, &String.contains?(&1, "Syncing usage rules to CLAUDE.md"))
     end
-
-    test "includes subagent notice when subagents are configured" do
-      igniter =
-        test_project(
-          files: %{
-            ".claude.exs" => """
-            %{
-              subagents: [
-                %{
-                  name: "Test Agent",
-                  description: "A test agent",
-                  prompt: "You are a test agent"
-                }
-              ]
-            }
-            """
-          }
-        )
-        |> Igniter.compose_task("claude.install")
-
-      notices = igniter.notices
-
-      assert Enum.any?(notices, &String.contains?(&1, "Generated 1 subagent(s)"))
-    end
   end
 
   describe "session_start hook support" do
@@ -1142,7 +682,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             %{
               hooks: %{
                 stop: [:compile, :format],
-                subagent_stop: [:compile, :format],
+
                 post_tool_use: [:compile, :format],
                 pre_tool_use: [:compile, :format, :unused_deps]
               }
@@ -1253,7 +793,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
 
       assert settings["hooks"]["PreToolUse"]
       assert settings["hooks"]["Stop"]
-      assert settings["hooks"]["SubagentStop"]
+      assert settings["hooks"]["PostToolUse"]
 
       pre_hooks = settings["hooks"]["PreToolUse"]
       assert is_list(pre_hooks)
@@ -1407,7 +947,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         "PreToolUse",
         "PostToolUse",
         "Stop",
-        "SubagentStop",
         "UserPromptSubmit",
         "Notification",
         "PreCompact",
@@ -1447,7 +986,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
             %{
               hooks: %{
                 stop: [:compile, :format],
-                subagent_stop: [:compile],
+
                 pre_tool_use: [{"deps.unlock --check-unused", when: "Bash(git commit:*)"}]
               }
             }
@@ -1462,7 +1001,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
       settings = Jason.decode!(content)
 
-      expected_events = ["Stop", "SubagentStop", "PreToolUse"]
+      expected_events = ["Stop", "PreToolUse"]
       unexpected_events = ["UserPromptSubmit", "Notification", "PreCompact", "SessionStart"]
 
       actual_events = Map.keys(settings["hooks"])
@@ -1503,7 +1042,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         "PreToolUse",
         "PostToolUse",
         "Stop",
-        "SubagentStop",
         "UserPromptSubmit",
         "Notification",
         "PreCompact",
@@ -1547,7 +1085,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         "PreToolUse",
         "PostToolUse",
         "Stop",
-        "SubagentStop",
         "UserPromptSubmit",
         "Notification",
         "PreCompact",
@@ -1587,7 +1124,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         "PreToolUse",
         "PostToolUse",
         "Stop",
-        "SubagentStop",
         "UserPromptSubmit",
         "Notification",
         "PreCompact",
@@ -1636,7 +1172,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
                 stop: [:compile, :format],
                 post_tool_use: [:compile, :format],
                 pre_tool_use: [:compile, :format, :unused_deps],
-                subagent_stop: [:compile, :format]
+
               }
             }
             """
@@ -1648,7 +1184,7 @@ defmodule Mix.Tasks.Claude.InstallTest do
       content = Rewrite.Source.get(source, :content)
       settings = Jason.decode!(content)
 
-      expected_events = ["Stop", "PostToolUse", "PreToolUse", "SubagentStop"]
+      expected_events = ["Stop", "PostToolUse", "PreToolUse"]
       unexpected_events = ["UserPromptSubmit", "Notification", "PreCompact", "SessionStart"]
 
       actual_events = Map.keys(settings["hooks"])
@@ -1689,7 +1225,6 @@ defmodule Mix.Tasks.Claude.InstallTest do
         "PreToolUse",
         "PostToolUse",
         "Stop",
-        "SubagentStop",
         "UserPromptSubmit",
         "Notification",
         "PreCompact",

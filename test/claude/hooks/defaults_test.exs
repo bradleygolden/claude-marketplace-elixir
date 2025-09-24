@@ -8,9 +8,8 @@ defmodule Claude.Hooks.DefaultsTest do
                {"compile --warnings-as-errors", halt_pipeline?: true, blocking?: false}
     end
 
-    test "expands :compile atom for subagent_stop event" do
-      assert Defaults.expand_hook(:compile, :subagent_stop) ==
-               {"compile --warnings-as-errors", halt_pipeline?: true, blocking?: false}
+    test "does not expand :compile atom for subagent_stop event" do
+      assert Defaults.expand_hook(:compile, :subagent_stop) == :compile
     end
 
     test "expands :compile atom for post_tool_use event" do
@@ -30,9 +29,8 @@ defmodule Claude.Hooks.DefaultsTest do
                {"format", blocking?: false}
     end
 
-    test "expands :format atom for subagent_stop event" do
-      assert Defaults.expand_hook(:format, :subagent_stop) ==
-               {"format", blocking?: false}
+    test "does not expand :format atom for subagent_stop event" do
+      assert Defaults.expand_hook(:format, :subagent_stop) == :format
     end
 
     test "expands :format atom for post_tool_use event" do
@@ -168,12 +166,11 @@ defmodule Claude.Hooks.DefaultsTest do
       assert opts[:env] == env
       assert opts[:halt_pipeline?] == true
 
-      # subagent_stop event
-      assert {"compile --warnings-as-errors", opts} =
+      # subagent_stop event - no expansion
+      assert {:compile, opts} =
                Defaults.expand_hook({:compile, env: env}, :subagent_stop)
 
       assert opts[:env] == env
-      assert opts[:halt_pipeline?] == true
 
       # post_tool_use event
       assert {"compile --warnings-as-errors", opts} =
@@ -202,8 +199,8 @@ defmodule Claude.Hooks.DefaultsTest do
 
       assert opts[:env] == env
 
-      # subagent_stop event
-      assert {"format", opts} =
+      # subagent_stop event - no expansion
+      assert {:format, opts} =
                Defaults.expand_hook({:format, env: env}, :subagent_stop)
 
       assert opts[:env] == env

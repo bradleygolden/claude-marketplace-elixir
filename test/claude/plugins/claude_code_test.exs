@@ -8,7 +8,7 @@ defmodule Claude.Plugins.ClaudeCodeTest do
       memories = ClaudeCode.claude_code_memories()
 
       assert is_list(memories)
-      assert length(memories) == 6
+      assert length(memories) == 5
 
       # Check that all memories are URL tuples with proper structure
       Enum.each(memories, fn memory ->
@@ -29,7 +29,6 @@ defmodule Claude.Plugins.ClaudeCodeTest do
       expected_topics = [
         "hooks.md",
         "slash-commands.md",
-        "sub-agents.md",
         "hooks-guide.md",
         "memory.md",
         "settings.md"
@@ -59,7 +58,6 @@ defmodule Claude.Plugins.ClaudeCodeTest do
 
       assert is_map(config)
       assert Map.has_key?(config, :nested_memories)
-      assert Map.has_key?(config, :subagents)
     end
 
     test "ignores options since ClaudeCode has no configurable options" do
@@ -78,7 +76,7 @@ defmodule Claude.Plugins.ClaudeCodeTest do
       # Root directory should have Claude Code documentation
       root_memories = config.nested_memories["."]
       assert is_list(root_memories)
-      assert length(root_memories) == 6
+      assert length(root_memories) == 5
 
       # All root memories should be URL tuples
       Enum.each(root_memories, fn memory ->
@@ -90,33 +88,6 @@ defmodule Claude.Plugins.ClaudeCodeTest do
       assert "usage_rules:elixir" in test_memories
       assert "usage_rules:otp" in test_memories
     end
-
-    test "includes Meta Agent subagent with memories" do
-      config = ClaudeCode.config([])
-
-      assert [meta_agent] = config.subagents
-      assert meta_agent.name == "Meta Agent"
-
-      assert meta_agent.description ==
-               "Generates new, complete Claude Code subagent from user descriptions. Use PROACTIVELY when users ask to create new subagents. Expert agent architect."
-
-      assert meta_agent.tools == [:write, :read, :edit, :multi_edit, :bash, :web_search]
-      assert is_binary(meta_agent.prompt)
-      assert String.contains?(meta_agent.prompt, "expert agent architect")
-
-      # Meta agent should have access to Claude Code memories
-      assert is_list(meta_agent.memories)
-      assert length(meta_agent.memories) == 6
-    end
-
-    test "Meta Agent memories match claude_code_memories function" do
-      config = ClaudeCode.config([])
-
-      [meta_agent] = config.subagents
-      expected_memories = ClaudeCode.claude_code_memories()
-
-      assert meta_agent.memories == expected_memories
-    end
   end
 
   describe "integration with plugin system" do
@@ -124,7 +95,6 @@ defmodule Claude.Plugins.ClaudeCodeTest do
       assert {:ok, config} = Claude.Plugin.load_plugin(ClaudeCode)
 
       assert Map.has_key?(config, :nested_memories)
-      assert Map.has_key?(config, :subagents)
     end
 
     test "merges correctly with other configuration" do
@@ -139,7 +109,7 @@ defmodule Claude.Plugins.ClaudeCodeTest do
 
       # Should still have the Claude Code URL memories
       url_memories = Enum.filter(root_memories, &match?({:url, _, _}, &1))
-      assert length(url_memories) == 6
+      assert length(url_memories) == 5
     end
   end
 end

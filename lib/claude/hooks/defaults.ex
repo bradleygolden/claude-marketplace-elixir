@@ -27,9 +27,6 @@ defmodule Claude.Hooks.Defaults do
       {:compile, :stop} ->
         {"compile --warnings-as-errors", halt_pipeline?: true, blocking?: false}
 
-      {:compile, :subagent_stop} ->
-        {"compile --warnings-as-errors", halt_pipeline?: true, blocking?: false}
-
       {:compile, :post_tool_use} ->
         {"compile --warnings-as-errors", when: [:write, :edit, :multi_edit], halt_pipeline?: true}
 
@@ -38,9 +35,6 @@ defmodule Claude.Hooks.Defaults do
          when: "Bash", command: ~r/^git commit/, halt_pipeline?: true}
 
       {:format, :stop} ->
-        {"format", blocking?: false}
-
-      {:format, :subagent_stop} ->
         {"format", blocking?: false}
 
       {:format, :post_tool_use} ->
