@@ -78,7 +78,6 @@ Before working with any concepts related to settings, hooks or sub agents, ALWAY
 
 To reference claude code settings, please see [Setting](ai/anthropic/claude_code/configuration/setting.md)
 To reference claude code hooks, please see [Hooks](ai/anthropic/claude_code/reference/hooks.md) and [Hooks](ai/anthropic/claude_code/guides/hooks.md)
-To reference claude code sub agents, please see [Sub Agents](ai/anthropic/claude_code/build_with/sub_agents.md)
 
 ## Architecture Overview
 
@@ -134,7 +133,7 @@ Available atom shortcuts:
   - For `pre_tool_use`: Runs for `git commit` commands
 - `:unused_deps` - Checks for unused dependencies (only for `pre_tool_use` on `git commit`)
 
-**Note**: Stop hooks (`:stop`, `:subagent_stop`) are not included in default configurations due to notification stacking risks. They remain available for opt-in use.
+**Note**: Stop hooks are not included in default configurations due to notification stacking risks. They remain available for opt-in use.
 
 #### Manual Configuration
 You can still use explicit configurations alongside or instead of atoms:
@@ -193,20 +192,6 @@ The test suite is organized with these key patterns:
 - **Parallel structure** - Tests mirror the `lib/` structure for easy navigation
 - **Temporary directories** - Tests use isolated temporary directories for filesystem operations
 
-### Sub-Agent System
-
-The project includes several specialized sub-agents in `.claude.exs`:
-- **Meta Agent** - Generates new sub-agents from user descriptions (proactive)
-- **README Manager** - Maintains project documentation
-- **Changelog Manager** - Handles version history using Keep a Changelog format
-- **Release Operations Manager** - Coordinates release processes and validation
-- **Claude Code Specialist** - Expert in Claude Code concepts using local docs
-
-Each sub-agent is designed with:
-- Clear delegation triggers (when to invoke)
-- Minimal tool sets (performance optimization)
-- Context discovery patterns (what to read first)
-- Self-contained prompts (no memory between invocations)
 
 <!-- usage-rules-start -->
 <!-- usage-rules-header -->
@@ -368,11 +353,6 @@ _A code generation and project patching framework_
 <!-- doc-ref:ai-claude-code-slash-commands-md:start -->
 - @./ai/claude_code/slash_commands.md
 <!-- doc-ref:ai-claude-code-slash-commands-md:end -->
-
-
-<!-- doc-ref:ai-claude-code-sub-agents-md:start -->
-- @./ai/claude_code/sub-agents.md
-<!-- doc-ref:ai-claude-code-sub-agents-md:end -->
 
 
 <!-- doc-ref:ai-claude-code-hooks-guide-md:start -->

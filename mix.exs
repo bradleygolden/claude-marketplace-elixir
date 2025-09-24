@@ -55,7 +55,7 @@ defmodule Claude.MixProject do
       },
       maintainers: ["Bradley Golden"],
       files:
-        ~w(lib priv .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-subagents.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+        ~w(lib priv .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
     ]
   end
 
@@ -66,13 +66,11 @@ defmodule Claude.MixProject do
         {"documentation/guide-quickstart.md", title: "Quickstart"},
         {"README.md", title: "Overview"},
         {"documentation/guide-hooks.md", title: "Hooks Guide"},
-        {"documentation/guide-subagents.md", title: "Sub-Agents Guide"},
         {"documentation/guide-mcp.md", title: "MCP Servers Guide"},
         {"documentation/guide-usage-rules.md", title: "Usage Rules Guide"},
         {"CHANGELOG.md", title: "Changelog"},
         {"LICENSE", title: "License"},
         {"cheatsheets/hooks.cheatmd", title: "Hooks Cheatsheet"},
-        {"cheatsheets/subagents.cheatmd", title: "Sub-Agents Cheatsheet"},
         {"cheatsheets/mcp.cheatmd", title: "MCP Cheatsheet"},
         {"cheatsheets/usage-rules.cheatmd", title: "Usage Rules Cheatsheet"}
       ],
@@ -80,13 +78,11 @@ defmodule Claude.MixProject do
         "Getting Started": ["documentation/guide-quickstart.md", "README.md"],
         Guides: [
           "documentation/guide-hooks.md",
-          "documentation/guide-subagents.md",
           "documentation/guide-mcp.md",
           "documentation/guide-usage-rules.md"
         ],
         Cheatsheets: [
           "cheatsheets/hooks.cheatmd",
-          "cheatsheets/subagents.cheatmd",
           "cheatsheets/mcp.cheatmd",
           "cheatsheets/usage-rules.cheatmd"
         ],

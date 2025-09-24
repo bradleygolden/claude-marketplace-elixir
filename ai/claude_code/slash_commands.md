@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/slash-commands.md
-cached_at: 2025-09-22T09:27:14.979446Z
+cached_at: 2025-09-24T19:07:36.386921Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -176,11 +176,10 @@ Slash commands can trigger extended thinking by including [extended thinking key
 
 Command files support frontmatter, useful for specifying metadata about the command:
 
-| Frontmatter     | Purpose                                                                                                                                                                               | Default                             |
-| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------- |
-| `allowed-tools` | List of tools the command can use                                                                                                                                                     | Inherits from the conversation      |
-| `argument-hint` | The arguments expected for the slash command. Example: `argument-hint: add [tagId] \| remove [tagId] \| list`. This hint is shown to the user when auto-completing the slash command. | None                                |
-| `description`   | Brief description of the command                                                                                                                                                      | Uses the first line from the prompt |
-| `model`         | Specific model
+| Frontmatter                | Purpose                                                                                                                                                                               | Default                             |
+| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------- |
+| `allowed-tools`            | List of tools the command can use                                                                                                                                                     | Inherits from the conversation      |
+| `argument-hint`            | The arguments expected for the slash command. Example: `argument-hint: add [tagId] \| remove [tagId] \| list`. This hint is shown to the user when auto-completing the slash command. | None                                |
+| `description`              | Brief description of the command                                                                                                                                                      | Uses the first li
 
 [Content truncated due to length]

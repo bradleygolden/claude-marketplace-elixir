@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/hooks.md
-cached_at: 2025-09-22T09:27:14.805514Z
+cached_at: 2025-09-24T19:07:36.169807Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -91,7 +91,7 @@ ensuring they work regardless of Claude's current directory:
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-style.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-style.sh"
           }
         ]
       }
@@ -364,6 +364,6 @@ All hook types can include these optional fields:
 ```json
 {
   "continue": true, // Whether Claude should continue after hook execution (default: true)
-  "stopReason": "string", // M
+  "stopReason": "string", 
 
 [Content truncated due to length]

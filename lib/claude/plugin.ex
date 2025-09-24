@@ -65,45 +65,6 @@ defmodule Claude.Plugin do
     end)
   end
 
-  @doc "Get all URL memories from plugin configurations for subagent access."
-  def get_url_memories(configs) when is_list(configs) do
-    configs
-    |> get_nested_memories()
-    |> Enum.flat_map(fn {_path, memories} ->
-      Enum.filter(memories, fn
-        {:url, _url, opts} when is_list(opts) -> true
-        _ -> false
-      end)
-    end)
-  end
-
-  @doc "Get available memories for subagent configuration from plugin configs."
-  def get_available_subagent_memories(configs) when is_list(configs) do
-    nested_memories = get_nested_memories(configs)
-
-    root_memories = Map.get(nested_memories, ".", [])
-    test_memories = Map.get(nested_memories, "test", [])
-
-    %{
-      documentation: filter_url_memories(root_memories),
-      usage_rules: filter_usage_rules(root_memories ++ test_memories)
-    }
-  end
-
-  defp filter_url_memories(memories) do
-    Enum.filter(memories, fn
-      {:url, _url, _opts} -> true
-      _ -> false
-    end)
-  end
-
-  defp filter_usage_rules(memories) do
-    Enum.filter(memories, fn
-      binary when is_binary(binary) -> String.contains?(binary, "usage_rules")
-      _ -> false
-    end)
-  end
-
   @doc "Merge multiple configuration maps together."
   def merge_configs([]), do: %{}
   def merge_configs([single_config]), do: single_config

@@ -62,11 +62,6 @@ Automatically check formatting, catch compilation errors, validate commits, and 
 
 → See [Hooks Documentation](documentation/guide-hooks.md) for details and configuration.
 
-### 🤖 **Sub-agents**
-Create specialized AI assistants with built-in best practices from your dependencies.
-
-→ See [Sub-Agents Documentation](documentation/guide-subagents.md) for details and examples.
-
 ### 🔌 **MCP Server Support**
 Integrate with Phoenix development tools via Tidewave. MCP servers are configured in `.claude.exs` and synced to `.mcp.json` when you run `mix claude.install`.
 
@@ -108,7 +103,7 @@ This will:
 1. Add `claude` to your dependencies
 2. Generate `.claude.exs` configuration file
 3. Configure hooks in `.claude/settings.json`
-4. Generate sub-agents in `.claude/agents/`
+4. Generate hooks in `.claude/hooks/`
 5. Install bundled slash commands in `.claude/commands/`
 6. Sync usage rules to `CLAUDE.md`
 7. Create `.mcp.json` for MCP servers (if configured)
@@ -124,7 +119,6 @@ All Claude settings are managed through `.claude.exs`:
     pre_tool_use: [:compile, :format, :unused_deps]
   },
   mcp_servers: [:tidewave],  # For Phoenix projects
-  subagents: [...]            # Specialized AI assistants
 }
 ```
 
@@ -145,11 +139,9 @@ Additional validation runs before git commits to ensure clean code is committed.
 
 - [Quickstart Guide](documentation/guide-quickstart.md) - Get started quickly with examples
 - [Hooks Reference](documentation/guide-hooks.md) - Available hooks and configuration
-- [Sub-Agents Reference](documentation/guide-subagents.md) - Creating specialized AI assistants
 - [MCP Servers Guide](documentation/guide-mcp.md) - Model Context Protocol integration
 - [Usage Rules Guide](documentation/guide-usage-rules.md) - Best practices integration
 - [Anthropic's Code Hooks Guide](https://docs.anthropic.com/en/docs/claude-code/hooks)
-- [Anthropic's Subagents Guide](https://docs.anthropic.com/en/docs/claude-code/sub-agents)
 
 ## Contributing
 
@@ -175,13 +167,6 @@ mix compile --warnings-as-errors
 
 ### ✅ Recently Added
 
-**Mix Task Generator**
-- `mix claude.gen.subagent` - Interactive generator for new sub-agents with:
-  - Name validation and formatting
-  - Tool selection with warnings
-  - Multi-line prompt support
-  - Automatic `.claude.exs` integration
-
 **Nested Memories**
 - Directory-specific CLAUDE.md files (e.g., `lib/my_app_web/CLAUDE.md` for Phoenix)
 - Configure via `nested_memories` in `.claude.exs`
@@ -201,8 +186,6 @@ mix compile --warnings-as-errors
 - Testing and documentation servers
 - Auto-configuration based on project dependencies
 
-**Dynamic Sub-agents**
-- Generate sub-agents for each dependency with context automatically
 - Common workflow templates (LiveView, GraphQL, Testing)
 
 Want to contribute? Open an issue on [GitHub](https://github.com/bradleygolden/claude/issues)!

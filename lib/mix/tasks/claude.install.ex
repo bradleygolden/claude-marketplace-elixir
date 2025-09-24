@@ -14,9 +14,8 @@ defmodule Mix.Tasks.Claude.Install do
   2. Installing all Claude hooks for auto-formatting and compilation checking
   3. Adding usage_rules dependency for better LLM integration
   4. Syncing usage rules to CLAUDE.md for enhanced code assistance
-  5. Generating any configured subagents for specialized assistance
-  6. Configuring MCP servers (like Tidewave for Phoenix projects)
-  7. Ensuring your project is properly configured for Claude Code integration
+  5. Configuring MCP servers (like Tidewave for Phoenix projects)
+  6. Ensuring your project is properly configured for Claude Code integration
 
   ## Example
 
@@ -30,23 +29,6 @@ defmodule Mix.Tasks.Claude.Install do
   alias Claude.MCP.Config
 
   @usage_rules_version "~> 0.1"
-
-  @tool_atom_to_string %{
-    bash: "Bash",
-    edit: "Edit",
-    glob: "Glob",
-    grep: "Grep",
-    ls: "LS",
-    multi_edit: "MultiEdit",
-    notebook_edit: "NotebookEdit",
-    notebook_read: "NotebookRead",
-    read: "Read",
-    task: "Task",
-    todo_write: "TodoWrite",
-    web_fetch: "WebFetch",
-    web_search: "WebSearch",
-    write: "Write"
-  }
 
   @impl Igniter.Mix.Task
   def info(_argv, _composing_task) do
@@ -68,7 +50,6 @@ defmodule Mix.Tasks.Claude.Install do
     |> copy_wrapper_script()
     |> sync_usage_rules()
     |> generate_nested_memories()
-    |> generate_subagents()
     |> install_commands()
     |> setup_tidewave_if_configured()
     |> add_claude_exs_to_formatter()
@@ -85,7 +66,6 @@ defmodule Mix.Tasks.Claude.Install do
       |> ensure_ash_plugin(path)
       |> ensure_credo_plugin(path)
       |> ensure_dialyzer_plugin(path)
-      |> check_meta_agent_and_notify(path)
     else
       Igniter.create_new_file(
         igniter,
@@ -830,371 +810,6 @@ defmodule Mix.Tasks.Claude.Install do
     Claude.NestedMemories.generate(igniter)
   end
 
-  defp generate_subagents(igniter) do
-    claude_exs_path = ".claude.exs"
-
-    if Igniter.exists?(igniter, claude_exs_path) do
-      case read_config_with_plugins(igniter, claude_exs_path) do
-        {:ok, config} when is_map(config) ->
-          subagents = Map.get(config, :subagents, [])
-
-          if is_list(subagents) and subagents != [] do
-            process_subagents_directly(igniter, subagents)
-          else
-            igniter
-          end
-
-        {:ok, _} ->
-          igniter
-
-        {:error, reason} ->
-          igniter
-          |> Igniter.add_warning("Failed to load .claude.exs: #{reason}")
-      end
-    else
-      igniter
-    end
-  end
-
-  defp process_subagents_directly(igniter, subagent_configs) do
-    results =
-      Enum.map(subagent_configs, fn config ->
-        case validate_and_generate_subagent(config) do
-          {:ok, {name, path, content}} ->
-            {:ok, {name, path, content, config}}
-
-          {:error, reason} ->
-            {:error, {config[:name] || "Unknown", reason}}
-        end
-      end)
-
-    errors = Enum.filter(results, &match?({:error, _}, &1))
-
-    if errors == [] do
-      successful = Enum.map(results, fn {:ok, result} -> result end)
-
-      {updated_igniter, changed_files} = add_generated_files_with_tracking(igniter, successful)
-
-      final_igniter = add_usage_rules_to_subagents(updated_igniter, successful)
-
-      if changed_files != [] do
-        final_igniter
-        |> Igniter.add_notice(format_subagents_success_message(changed_files))
-      else
-        final_igniter
-      end
-    else
-      igniter
-      |> Igniter.add_warning(format_subagents_error_message(errors))
-    end
-  end
-
-  defp validate_and_generate_subagent(config) do
-    with :ok <- validate_subagent_config(config),
-         {:ok, enhanced_prompt} <- maybe_add_usage_rules(config),
-         {:ok, final_prompt} <- maybe_add_memories_using_claude_md_logic(enhanced_prompt, config) do
-      name = config.name
-      filename = subagent_filename(name)
-      relative_path = Path.join([".claude", "agents", filename])
-
-      content =
-        generate_subagent_markdown(%{
-          name: name,
-          description: config.description,
-          prompt: final_prompt,
-          tools: config[:tools] || []
-        })
-
-      {:ok, {name, relative_path, content}}
-    end
-  end
-
-  defp validate_subagent_config(config) do
-    required_keys = [:name, :description, :prompt]
-    missing_keys = required_keys -- Map.keys(config)
-
-    if missing_keys == [] do
-      with :ok <- validate_tools(config[:tools]),
-           :ok <- validate_nested_memories(config[:nested_memories]),
-           :ok <- validate_memories(config[:memories]) do
-        :ok
-      end
-    else
-      {:error, "Missing required keys: #{inspect(missing_keys)}"}
-    end
-  end
-
-  defp validate_tools(nil), do: :ok
-
-  defp validate_tools(tools) when is_list(tools) do
-    if Enum.all?(tools, &is_atom/1) do
-      :ok
-    else
-      {:error, "Tools must be a list of atoms"}
-    end
-  end
-
-  defp validate_tools(_), do: {:error, "Tools must be a list"}
-
-  defp validate_nested_memories(nil), do: :ok
-
-  defp validate_nested_memories(memories) when is_list(memories) do
-    valid_memory? = fn
-      {:url, _} -> true
-      {:url, _, _} -> true
-      {:file, _} -> true
-      {:file, _, _} -> true
-      item when is_atom(item) or is_binary(item) -> true
-      _ -> false
-    end
-
-    if Enum.all?(memories, valid_memory?) do
-      :ok
-    else
-      {:error,
-       "nested_memories must use CLAUDE.md nested memory format: strings, atoms, {:url, url} or {:url, url, opts}"}
-    end
-  end
-
-  defp validate_nested_memories(_), do: {:error, "nested_memories must be a list"}
-
-  defp validate_memories(nil), do: :ok
-
-  defp validate_memories(memories) when is_list(memories) do
-    valid_memory? = fn
-      {:url, _} -> true
-      {:url, _, _} -> true
-      {:file, _} -> true
-      {:file, _, _} -> true
-      item when is_atom(item) or is_binary(item) -> true
-      _ -> false
-    end
-
-    if Enum.all?(memories, valid_memory?) do
-      :ok
-    else
-      {:error,
-       "memories must use CLAUDE.md nested memory format: strings, atoms, {:url, url} or {:url, url, opts}"}
-    end
-  end
-
-  defp validate_memories(_), do: {:error, "memories must be a list"}
-
-  defp maybe_add_usage_rules(config) do
-    case config[:usage_rules] do
-      nil ->
-        {:ok, config.prompt}
-
-      rules when is_list(rules) ->
-        {:ok, config.prompt}
-
-      _ ->
-        {:error, "usage_rules must be a list"}
-    end
-  end
-
-  defp maybe_add_memories_using_claude_md_logic(prompt, config) do
-    memories = config[:nested_memories] || config[:memories]
-
-    case memories do
-      nil ->
-        {:ok, prompt}
-
-      memories when is_list(memories) ->
-        case process_memories_using_claude_md_logic(memories) do
-          {:ok, processed_content} ->
-            if processed_content == "" do
-              {:ok, prompt}
-            else
-              enhanced_prompt = prompt <> "\n\n## Additional Context\n\n" <> processed_content
-              {:ok, enhanced_prompt}
-            end
-
-          {:error, reason} ->
-            {:error, reason}
-        end
-
-      _ ->
-        {:error, "memories/nested_memories must be a list"}
-    end
-  end
-
-  defp process_memories_using_claude_md_logic(memories) do
-    try do
-      {_rules, docs} = partition_memory_items_for_subagent(memories)
-
-      rules_content = ""
-
-      docs_content =
-        if docs != [] do
-          Claude.Documentation.process_references("", docs)
-        else
-          ""
-        end
-
-      combined_content =
-        [rules_content, docs_content]
-        |> Enum.reject(&(&1 == ""))
-        |> Enum.join("\n\n")
-
-      {:ok, combined_content}
-    rescue
-      error ->
-        {:error, "Failed to process memories: #{Exception.message(error)}"}
-    end
-  end
-
-  defp partition_memory_items_for_subagent(items) do
-    Enum.split_with(items, fn
-      {:url, _} -> false
-      {:url, _, _} -> false
-      {:file, _} -> false
-      {:file, _, _} -> false
-      item when is_atom(item) or is_binary(item) -> true
-      _ -> false
-    end)
-  end
-
-  defp subagent_filename(name) do
-    name
-    |> String.downcase()
-    |> String.replace(~r/[^a-z0-9]+/, "-")
-    |> String.trim("-")
-    |> Kernel.<>(".md")
-  end
-
-  defp generate_subagent_markdown(subagent) do
-    frontmatter = generate_frontmatter(subagent)
-
-    """
-    #{frontmatter}
-
-    #{subagent.prompt}
-    """
-    |> String.trim()
-    |> Kernel.<>("\n")
-  end
-
-  defp generate_frontmatter(subagent) do
-    name =
-      subagent.name
-      |> String.downcase()
-      |> String.replace(~r/[^a-z0-9]+/, "-")
-      |> String.trim("-")
-
-    lines = [
-      "---",
-      "name: #{name}",
-      "description: #{subagent.description}"
-    ]
-
-    lines =
-      if subagent.tools != [] do
-        tools_line =
-          subagent.tools
-          |> Enum.map(&tool_to_string/1)
-          |> Enum.join(", ")
-
-        lines ++ ["tools: #{tools_line}"]
-      else
-        lines
-      end
-
-    (lines ++ ["---"])
-    |> Enum.join("\n")
-  end
-
-  defp add_generated_files_with_tracking(igniter, results) do
-    {final_igniter, changed_files} =
-      Enum.reduce(results, {igniter, []}, fn {_name, relative_path, content, _config} = result,
-                                             {acc, changed} ->
-        case Rewrite.source(acc.rewrite, relative_path) do
-          {:ok, existing_source} ->
-            existing_content = Rewrite.Source.get(existing_source, :content)
-
-            if existing_content == content do
-              {acc, changed}
-            else
-              updated =
-                Igniter.update_file(acc, relative_path, fn source ->
-                  Rewrite.Source.update(source, :content, content)
-                end)
-
-              {updated, [result | changed]}
-            end
-
-          {:error, _} ->
-            if File.exists?(relative_path) do
-              {:ok, existing_content} = File.read(relative_path)
-
-              if existing_content == content do
-                included = Igniter.include_existing_file(acc, relative_path)
-                {included, changed}
-              else
-                updated =
-                  Igniter.create_or_update_file(acc, relative_path, content, fn source ->
-                    Rewrite.Source.update(source, :content, content)
-                  end)
-
-                {updated, [result | changed]}
-              end
-            else
-              created = Igniter.create_new_file(acc, relative_path, content)
-              {created, [result | changed]}
-            end
-        end
-      end)
-
-    {final_igniter, Enum.reverse(changed_files)}
-  end
-
-  defp add_usage_rules_to_subagents(igniter, results) do
-    Enum.reduce(results, igniter, fn {_name, relative_path, _content, config}, acc ->
-      case config[:usage_rules] do
-        rules when is_list(rules) and rules != [] ->
-          rule_strings =
-            Enum.map(rules, fn
-              rule when is_atom(rule) -> Atom.to_string(rule)
-              rule when is_binary(rule) -> rule
-            end)
-
-          args =
-            [relative_path] ++
-              rule_strings ++ ["--link-to-folder", "deps", "--link-style", "at", "--yes"]
-
-          Igniter.compose_task(acc, "usage_rules.sync", args)
-
-        _ ->
-          acc
-      end
-    end)
-  end
-
-  defp format_subagents_success_message(results) do
-    lines = [
-      "Generated #{length(results)} subagent(s):",
-      ""
-    ]
-
-    result_lines =
-      Enum.map(results, fn {name, relative_path, _content, _config} ->
-        "• #{name} → #{relative_path}"
-      end)
-
-    (lines ++ result_lines ++ ["", "Subagents are now available in Claude Code."])
-    |> Enum.join("\n")
-  end
-
-  defp format_subagents_error_message(errors) do
-    error_lines =
-      Enum.map(errors, fn {:error, {name, reason}} ->
-        "• #{name}: #{inspect(reason)}"
-      end)
-
-    (["Failed to generate some subagents:"] ++ error_lines)
-    |> Enum.join("\n")
-  end
-
   defp install_commands(igniter) do
     Claude.CommandInstaller.install(igniter)
   end
@@ -1321,14 +936,6 @@ defmodule Mix.Tasks.Claude.Install do
       e in [CompileError, SyntaxError] ->
         {:error, inspect(e)}
     end
-  end
-
-  defp check_meta_agent_and_notify(igniter, _path) do
-    igniter
-  end
-
-  defp tool_to_string(tool) when is_atom(tool) do
-    Map.get(@tool_atom_to_string, tool, Atom.to_string(tool))
   end
 
   @impl Igniter.Mix.Task
