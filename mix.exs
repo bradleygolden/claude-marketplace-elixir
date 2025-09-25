@@ -15,7 +15,8 @@ defmodule Claude.MixProject do
       description: @description,
       package: package(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      docs: docs()
+      docs: docs(),
+      dialyzer: dialyzer()
     ]
   end
 
@@ -56,6 +57,12 @@ defmodule Claude.MixProject do
       maintainers: ["Bradley Golden"],
       files:
         ~w(lib priv .formatter.exs mix.exs documentation/guide-quickstart.md documentation/guide-hooks.md documentation/guide-mcp.md documentation/guide-usage-rules.md README.md LICENSE CHANGELOG.md usage-rules.md usage-rules)
+    ]
+  end
+
+  defp dialyzer do
+    [
+      plt_add_apps: [:mix, :ex_unit]
     ]
   end
 
