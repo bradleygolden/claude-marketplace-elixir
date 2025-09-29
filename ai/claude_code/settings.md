@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/settings.md
-cached_at: 2025-09-24T20:18:03.666785Z
+cached_at: 2025-09-29T09:26:18.329126Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
