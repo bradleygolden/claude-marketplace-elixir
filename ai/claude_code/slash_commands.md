@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/slash-commands.md
-cached_at: 2025-09-24T20:18:02.849709Z
+cached_at: 2025-10-06T09:26:30.435146Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -17,7 +17,7 @@ cached_at: 2025-09-24T20:18:02.849709Z
 | `/bug`                    | Report bugs (sends conversation to Anthropic)                                                                                                |
 | `/clear`                  | Clear conversation history                                                                                                                   |
 | `/compact [instructions]` | Compact conversation with optional focus instructions                                                                                        |
-| `/config`                 | View/modify configuration                                                                                                                    |
+| `/config`                 | Open the Settings interface (Config tab)                                                                                                     |
 | `/cost`                   | Show token usage statistics (see [cost tracking guide](/en/docs/claude-code/costs#using-the-cost-command) for subscription-specific details) |
 | `/doctor`                 | Checks the health of your Claude Code installation                                                                                           |
 | `/help`                   | Get usage help                                                                                                                               |
@@ -30,8 +30,10 @@ cached_at: 2025-09-24T20:18:02.849709Z
 | `/permissions`            | View or update [permissions](/en/docs/claude-code/iam#configuring-permissions)                                                               |
 | `/pr_comments`            | View pull request comments                                                                                                                   |
 | `/review`                 | Request code review                                                                                                                          |
-| `/status`                 | View account and system statuses                                                                                                             |
+| `/rewind`                 | Rewind the conversation and/or code                                                                                                          |
+| `/status`                 | Open the Settings interface (Status tab) showing version, model, account, and connectivity                                                   |
 | `/terminal-setup`         | Install Shift+Enter key binding for newlines (iTerm2 and VSCode only)                                                                        |
+| `/usage`                  | Show plan usage limits and rate limit status (subscription plans only)                                                                       |
 | `/vim`                    | Enter vim mode for alternating insert and command modes                                                                                      |
 
 ## Custom slash commands
@@ -179,7 +181,6 @@ Command files support frontmatter, useful for specifying metadata about the comm
 | Frontmatter                | Purpose                                                                                                                                                                               | Default                             |
 | :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------- |
 | `allowed-tools`            | List of tools the command can use                                                                                                                                                     | Inherits from the conversation      |
-| `argument-hint`            | The arguments expected for the slash command. Example: `argument-hint: add [tagId] \| remove [tagId] \| list`. This hint is shown to the user when auto-completing the slash command. | None                                |
-| `description`              | Brief description of the command                                                                                                                                                      | Uses the first li
+| `argument-hint`            | The arguments expected for the slash command. Example: `argument-hint: add [tagId] \| remove [tagId] \| list
 
 [Content truncated due to length]
