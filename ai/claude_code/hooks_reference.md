@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/hooks.md
-cached_at: 2025-09-24T20:18:02.632731Z
+cached_at: 2025-10-20T09:26:40.309442Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -25,7 +25,7 @@ Claude Code hooks are configured in your [settings files](/en/docs/claude-code/s
 
 Hooks are organized by matchers, where each matcher can have multiple hooks:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "EventName": [
@@ -59,7 +59,7 @@ Hooks are organized by matchers, where each matcher can have multiple hooks:
 For events like `UserPromptSubmit`, `Notification`, `Stop`, and `SubagentStop`
 that don't use matchers, you can omit the matcher field:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "UserPromptSubmit": [
@@ -82,7 +82,7 @@ You can use the environment variable `CLAUDE_PROJECT_DIR` (only available when
 Claude Code spawns the hook command) to reference scripts stored in your project,
 ensuring they work regardless of Claude's current directory:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "PostToolUse": [
@@ -100,6 +100,55 @@ ensuring they work regardless of Claude's current directory:
 }
 ```
 
+### Plugin hooks
+
+[Plugins](/en/docs/claude-code/plugins) can provide hooks that integrate seamlessly with your user and project hooks. Plugin hooks are automatically merged with your configuration when plugins are enabled.
+
+**How plugin hooks work**:
+
+* Plugin hooks are defined in the plugin's `hooks/hooks.json` file or in a file given by a custom path to the `hooks` field.
+* When a plugin is enabled, its hooks are merged with user and project hooks
+* Multiple hooks from different sources can respond to the same event
+* Plugin hooks use the `${CLAUDE_PLUGIN_ROOT}` environment variable to reference plugin files
+
+**Example plugin hook configuration**:
+
+```json  theme={null}
+{
+  "description": "Automatic code formatting",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/format.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+<Note>
+  Plugin hooks use the same format as regular hooks with an optional `description` field to explain the hook's purpose.
+</Note>
+
+<Note>
+  Plugin hooks run alongside your custom hooks. If multiple hooks match an event, they all execute in parallel.
+</Note>
+
+**Environment variables for plugins**:
+
+* `${CLAUDE_PLUGIN_ROOT}`: Absolute path to the plugin directory
+* `${CLAUDE_PROJECT_DIR}`: Project root directory (same as for project hooks)
+* All standard environment variables are available
+
+See the [plugin components reference](/en/docs/claude-code/plugins-reference#hooks) for details on creating plugin hooks.
+
 ## Hook Events
 
 ### PreToolUse
@@ -113,7 +162,7 @@ Runs after Claude creates tool parameters and before processing the tool call.
 * `Glob` - File pattern matching
 * `Grep` - Content search
 * `Read` - File reading
-* `Edit`, `MultiEdit` - File editing
+* `Edit` - File editing
 * `Write` - File writing
 * `WebFetch`, `WebSearch` - Web operations
 
@@ -186,7 +235,7 @@ The `reason` field in the hook input will be one of:
 Hooks receive JSON data via stdin containing session information and
 event-specific data:
 
-```typescript
+```typescript  theme={null}
 {
   // Common fields
   session_id: string
@@ -203,7 +252,7 @@ event-specific data:
 
 The exact schema for `tool_input` depends on the tool.
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -221,7 +270,7 @@ The exact schema for `tool_input` depends on the tool.
 
 The exact schema for `tool_input` and `tool_response` depends on the tool.
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -241,7 +290,7 @@ The exact schema for `tool_input` and `tool_response` depends on the tool.
 
 ### Notification Input
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -253,7 +302,7 @@ The exact schema for `tool_input` and `tool_response` depends on the tool.
 
 ### UserPromptSubmit Input
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "/Users/.../.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -269,7 +318,7 @@ The exact schema for `tool_input` and `tool_response` depends on the tool.
 a stop hook. Check this value or process the transcript to prevent Claude Code
 from running indefinitely.
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "~/.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -283,7 +332,7 @@ from running indefinitely.
 For `manual`, `custom_instructions` comes from what the user passes into
 `/compact`. For `auto`, `custom_instructions` is empty.
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "~/.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -295,7 +344,7 @@ For `manual`, `custom_instructions` comes from what the user passes into
 
 ### SessionStart Input
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "~/.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -306,7 +355,7 @@ For `manual`, `custom_instructions` comes from what the user passes into
 
 ### SessionEnd Input
 
-```json
+```json  theme={null}
 {
   "session_id": "abc123",
   "transcript_path": "~/.claude/projects/.../00893aaf-19fa-41d2-8238-13269b9b3ca0.jsonl",
@@ -327,43 +376,6 @@ and the user.
 Hooks communicate status through exit codes, stdout, and stderr:
 
 * **Exit code 0**: Success. `stdout` is shown to the user in transcript mode
-  (CTRL-R), except for `UserPromptSubmit` and `SessionStart`, where stdout is
-  added to the context.
-* **Exit code 2**: Blocking error. `stderr` is fed back to Claude to process
-  automatically. See per-hook-event behavior below.
-* **Other exit codes**: Non-blocking error. `stderr` is shown to the user and
-  execution continues.
-
-<Warning>
-  Reminder: Claude Code does not see stdout if the exit code is 0, except for
-  the `UserPromptSubmit` hook where stdout is injected as context.
-</Warning>
-
-#### Exit Code 2 Behavior
-
-| Hook Event         | Behavior                                                           |
-| ------------------ | ------------------------------------------------------------------ |
-| `PreToolUse`       | Blocks the tool call, shows stderr to Claude                       |
-| `PostToolUse`      | Shows stderr to Claude (tool already ran)                          |
-| `Notification`     | N/A, shows stderr to user only                                     |
-| `UserPromptSubmit` | Blocks prompt processing, erases prompt, shows stderr to user only |
-| `Stop`             | Blocks stoppage, shows stderr to Claude                            |
-| `SubagentStop`     | Blocks stoppage, shows stderr to Claude subagent                   |
-| `PreCompact`       | N/A, shows stderr to user only                                     |
-| `SessionStart`     | N/A, shows stderr to user only                                     |
-| `SessionEnd`       | N/A, shows stderr to user only                                     |
-
-### Advanced: JSON Output
-
-Hooks can return structured JSON in `stdout` for more sophisticated control:
-
-#### Common JSON Fields
-
-All hook types can include these optional fields:
-
-```json
-{
-  "continue": true, // Whether Claude should continue after hook execution (default: true)
-  "stopReason": "string", 
+  (CTRL-R), except for `UserPromptSubmit` and `SessionStart`, whe
 
 [Content truncated due to length]

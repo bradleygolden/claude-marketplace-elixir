@@ -1,6 +1,6 @@
 <!-- CACHE-METADATA
 source_url: https://docs.anthropic.com/en/docs/claude-code/hooks-guide.md
-cached_at: 2025-09-24T20:18:03.220647Z
+cached_at: 2025-10-20T09:26:40.726373Z
 -->
 
 <!-- Content fetched and converted by MarkItDown -->
@@ -87,7 +87,7 @@ Type `Bash` for the matcher.
 
 Select `+ Add new hook…` and enter this command:
 
-```bash
+```bash  theme={null}
 jq -r '"\(.tool_input.command) - \(.tool_input.description // "No description")"' >> ~/.claude/bash-command-log.txt
 ```
 
@@ -103,7 +103,7 @@ Then press Esc until you return to the REPL. Your hook is now registered!
 
 Run `/hooks` again or check `~/.claude/settings.json` to see your configuration:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "PreToolUse": [
@@ -125,7 +125,7 @@ Run `/hooks` again or check `~/.claude/settings.json` to see your configuration:
 
 Ask Claude to run a simple command like `ls` and check your log file:
 
-```bash
+```bash  theme={null}
 cat ~/.claude/bash-command-log.txt
 ```
 
@@ -145,12 +145,12 @@ ls - Lists files and directories
 
 Automatically format TypeScript files after editing:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Edit|MultiEdit|Write",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
@@ -167,12 +167,12 @@ Automatically format TypeScript files after editing:
 
 Automatically fix missing language tags and formatting issues in markdown files:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Edit|MultiEdit|Write",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
@@ -187,7 +187,7 @@ Automatically fix missing language tags and formatting issues in markdown files:
 
 Create `.claude/hooks/markdown_formatter.py` with this content:
 
-````python
+````python  theme={null}
 #!/usr/bin/env python3
 """
 Markdown formatter for Claude Code output.
@@ -275,7 +275,7 @@ except Exception as e:
 
 Make the script executable:
 
-```bash
+```bash  theme={null}
 chmod +x .claude/hooks/markdown_formatter.py
 ```
 
@@ -290,7 +290,7 @@ This hook automatically:
 
 Get desktop notifications when Claude needs input:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "Notification": [
@@ -312,12 +312,12 @@ Get desktop notifications when Claude needs input:
 
 Block edits to sensitive files:
 
-```json
+```json  theme={null}
 {
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|MultiEdit|Write",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
