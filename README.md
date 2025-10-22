@@ -182,3 +182,4 @@ MIT - see [LICENSE](LICENSE) for details.
   Made with ❤️ by the Elixir community
 </p>
 # Test change
+# Testing hook functionality
