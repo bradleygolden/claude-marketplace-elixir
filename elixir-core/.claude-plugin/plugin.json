@@ -1,0 +1,15 @@
+{
+  "name": "elixir-core",
+  "version": "2.0.0",
+  "description": "Essential Elixir development support with automatic formatting and compilation checks",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bradleygolden/claude"
+  },
+  "license": "MIT",
+  "keywords": ["elixir", "erlang", "beam", "otp", "functional"]
+}
