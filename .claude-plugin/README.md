@@ -14,7 +14,7 @@ This marketplace provides plugins that extend Claude Code with Elixir-specific c
 ### elixir-core
 Essential Elixir development support for all Elixir projects.
 
-**Location:** `./elixir-core`
+**Location:** `./plugins/elixir-core`
 
 **Includes:**
 - Core Elixir language patterns and idioms
@@ -43,9 +43,9 @@ claude
 
 When adding a new plugin to this marketplace:
 
-1. Create plugin directory (e.g., `elixir-phoenix/`)
-2. Add plugin manifest: `elixir-phoenix/.claude-plugin/plugin.json`
-3. Update `marketplace.json` to include the new plugin
+1. Create plugin directory (e.g., `plugins/elixir-phoenix/`)
+2. Add plugin manifest: `plugins/elixir-phoenix/.claude-plugin/plugin.json`
+3. Update `marketplace.json` to include the new plugin with source `./plugins/elixir-phoenix`
 4. Add plugin components (skills, commands, hooks)
 
 ## Marketplace Structure
@@ -55,9 +55,10 @@ claude/
 ├── .claude-plugin/
 │   ├── marketplace.json    # This file defines the marketplace
 │   └── README.md           # This documentation
-├── elixir-core/            # Base Elixir plugin
-├── elixir-phoenix/         # Phoenix plugin (future)
-└── elixir-ash/             # Ash plugin (future)
+└── plugins/                # All plugins organized here
+    ├── elixir-core/        # Base Elixir plugin
+    ├── elixir-phoenix/     # Phoenix plugin (future)
+    └── elixir-ash/         # Ash plugin (future)
 ```
 
 ## Documentation

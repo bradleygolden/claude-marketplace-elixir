@@ -12,7 +12,7 @@
   "plugins": [
     {
       "name": "elixir-core",
-      "source": "./elixir-core",
+      "source": "./plugins/elixir-core",
       "description": "Essential Elixir development support - hooks, commands, and core language patterns",
       "tags": ["elixir", "erlang", "beam", "functional", "otp"]
     }
