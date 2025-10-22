@@ -1,0 +1,20 @@
+{
+  "name": "claude",
+  "description": "Official Elixir and BEAM ecosystem development tools for Claude Code",
+  "owner": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bradleygolden/claude"
+  },
+  "plugins": [
+    {
+      "name": "elixir-core",
+      "source": "./elixir-core",
+      "description": "Essential Elixir development support - hooks, commands, and core language patterns",
+      "tags": ["elixir", "erlang", "beam", "functional", "otp"]
+    }
+  ]
+}
