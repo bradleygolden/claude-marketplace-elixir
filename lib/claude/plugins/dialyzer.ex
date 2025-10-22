@@ -38,6 +38,10 @@ defmodule Claude.Plugins.Dialyzer do
   @behaviour Claude.Plugin
 
   @impl Claude.Plugin
+  def detect(nil), do: Code.ensure_loaded?(Dialyzer)
+  def detect(igniter), do: Igniter.Project.Deps.has_dep?(igniter, :dialyxir)
+
+  @impl Claude.Plugin
   def config(opts) do
     hooks = %{}
 

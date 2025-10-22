@@ -186,7 +186,10 @@ defmodule Claude.Plugins.Webhook do
 
   @behaviour Claude.Plugin
 
-  @impl true
+  @impl Claude.Plugin
+  def detect(_igniter), do: true
+
+  @impl Claude.Plugin
   def config(opts) do
     enabled? = Keyword.get(opts, :enabled, true)
 

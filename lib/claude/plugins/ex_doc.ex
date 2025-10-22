@@ -19,6 +19,10 @@ defmodule Claude.Plugins.ExDoc do
   @behaviour Claude.Plugin
 
   @impl Claude.Plugin
+  def detect(nil), do: Code.ensure_loaded?(ExDoc)
+  def detect(igniter), do: Igniter.Project.Deps.has_dep?(igniter, :ex_doc)
+
+  @impl Claude.Plugin
   def config(_opts) do
     %{
       hooks: %{

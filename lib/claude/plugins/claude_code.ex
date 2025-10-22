@@ -24,6 +24,9 @@ defmodule Claude.Plugins.ClaudeCode do
 
   @behaviour Claude.Plugin
 
+  @impl Claude.Plugin
+  def detect(_igniter), do: true
+
   @doc "Get the standard set of Claude Code documentation memories"
   def claude_code_memories do
     [
@@ -40,6 +43,7 @@ defmodule Claude.Plugins.ClaudeCode do
     ]
   end
 
+  @impl Claude.Plugin
   def config(_opts) do
     %{
       nested_memories: %{

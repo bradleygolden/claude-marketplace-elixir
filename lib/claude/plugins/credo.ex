@@ -31,6 +31,10 @@ defmodule Claude.Plugins.Credo do
   @behaviour Claude.Plugin
 
   @impl Claude.Plugin
+  def detect(nil), do: Code.ensure_loaded?(Credo)
+  def detect(igniter), do: Igniter.Project.Deps.has_dep?(igniter, :credo)
+
+  @impl Claude.Plugin
   def config(opts) do
     opts
     |> build_credo_command()

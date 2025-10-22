@@ -43,80 +43,71 @@ defmodule Claude.Plugins.Ash do
 
   @behaviour Claude.Plugin
 
-  def config(opts) do
-    igniter = Keyword.get(opts, :igniter)
+  @impl Claude.Plugin
+  def detect(nil), do: true  # At runtime, assume Ash is present
+  def detect(igniter), do: Igniter.Project.Deps.has_dep?(igniter, :ash)
 
-    if detect_ash_project?(igniter) do
-      app_name = get_app_name(igniter)
+  @impl Claude.Plugin
+  def config(_opts) do
+    app_name = get_app_name()
 
-      %{
-        hooks: %{
-          post_tool_use: [
-            {"ash.codegen --check", when: [:write, :edit, :multi_edit]}
-          ]
-        },
-        nested_memories: build_nested_memories(igniter, app_name),
-        inline_usage_rules: ["ash"]
-      }
-    else
-      %{}
-    end
+    %{
+      hooks: %{
+        post_tool_use: [
+          {"ash.codegen --check", when: [:write, :edit, :multi_edit]}
+        ]
+      },
+      nested_memories: build_nested_memories(app_name),
+      inline_usage_rules: ["ash"]
+    }
   end
 
-  defp detect_ash_project?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :ash)
+  defp detect_ash_postgres? do
+    Code.ensure_loaded?(AshPostgres)
   end
 
-  defp detect_ash_postgres?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :ash_postgres)
+  defp detect_ash_phoenix? do
+    Code.ensure_loaded?(AshPhoenix)
   end
 
-  defp detect_ash_phoenix?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :ash_phoenix)
+  defp detect_ash_ai? do
+    Code.ensure_loaded?(AshAi)
   end
 
-  defp detect_ash_ai?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :ash_ai)
+  defp detect_ash_oban? do
+    Code.ensure_loaded?(AshOban)
   end
 
-  defp detect_ash_oban?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :ash_oban)
+  defp detect_ash_json_api? do
+    Code.ensure_loaded?(AshJsonApi)
   end
 
-  defp detect_ash_json_api?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :ash_json_api)
+  defp get_app_name do
+    Mix.Project.config()[:app] |> to_string()
   end
 
-  defp get_app_name(igniter) do
-    igniter
-    |> Igniter.Project.Module.module_name_prefix()
-    |> Module.split()
-    |> List.last()
-    |> Macro.underscore()
-  end
-
-  defp build_nested_memories(igniter, app_name) do
+  defp build_nested_memories(app_name) do
     base_memories = %{
-      "lib/#{app_name}" => build_app_memories(igniter),
+      "lib/#{app_name}" => build_app_memories(),
       "test" => ["ash"]
     }
 
     base_memories
-    |> maybe_add_web_memories(igniter, app_name)
-    |> maybe_add_migration_memories(igniter)
+    |> maybe_add_web_memories(app_name)
+    |> maybe_add_migration_memories()
   end
 
-  defp build_app_memories(igniter) do
+  defp build_app_memories do
     base_rules = ["ash"]
 
     base_rules
-    |> maybe_add_postgres_rules(igniter)
-    |> maybe_add_ai_rules(igniter)
-    |> maybe_add_oban_rules(igniter)
+    |> maybe_add_postgres_rules()
+    |> maybe_add_ai_rules()
+    |> maybe_add_oban_rules()
   end
 
-  defp maybe_add_web_memories(memories, igniter, app_name) do
-    web_rules = build_web_memories(igniter)
+  defp maybe_add_web_memories(memories, app_name) do
+    web_rules = build_web_memories()
 
     if Enum.empty?(web_rules) do
       memories
@@ -125,54 +116,54 @@ defmodule Claude.Plugins.Ash do
     end
   end
 
-  defp build_web_memories(igniter) do
+  defp build_web_memories do
     []
-    |> maybe_add_phoenix_rules(igniter)
-    |> maybe_add_json_api_rules(igniter)
+    |> maybe_add_phoenix_rules()
+    |> maybe_add_json_api_rules()
   end
 
-  defp maybe_add_migration_memories(memories, igniter) do
-    if detect_ash_postgres?(igniter) do
+  defp maybe_add_migration_memories(memories) do
+    if detect_ash_postgres?() do
       Map.put(memories, "priv/repo/migrations", ["ash_postgres"])
     else
       memories
     end
   end
 
-  defp maybe_add_postgres_rules(rules, igniter) do
-    if detect_ash_postgres?(igniter) do
+  defp maybe_add_postgres_rules(rules) do
+    if detect_ash_postgres?() do
       rules ++ ["ash_postgres"]
     else
       rules
     end
   end
 
-  defp maybe_add_phoenix_rules(rules, igniter) do
-    if detect_ash_phoenix?(igniter) do
+  defp maybe_add_phoenix_rules(rules) do
+    if detect_ash_phoenix?() do
       rules ++ ["ash_phoenix"]
     else
       rules
     end
   end
 
-  defp maybe_add_ai_rules(rules, igniter) do
-    if detect_ash_ai?(igniter) do
+  defp maybe_add_ai_rules(rules) do
+    if detect_ash_ai?() do
       rules ++ ["ash_ai"]
     else
       rules
     end
   end
 
-  defp maybe_add_oban_rules(rules, igniter) do
-    if detect_ash_oban?(igniter) do
+  defp maybe_add_oban_rules(rules) do
+    if detect_ash_oban?() do
       rules ++ ["ash_oban"]
     else
       rules
     end
   end
 
-  defp maybe_add_json_api_rules(rules, igniter) do
-    if detect_ash_json_api?(igniter) do
+  defp maybe_add_json_api_rules(rules) do
+    if detect_ash_json_api?() do
       rules ++ ["ash_json_api"]
     else
       rules

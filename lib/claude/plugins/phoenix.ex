@@ -49,15 +49,18 @@ defmodule Claude.Plugins.Phoenix do
 
   @behaviour Claude.Plugin
 
+  @impl Claude.Plugin
+  def detect(nil), do: true  # At runtime, assume Phoenix is present
+  def detect(igniter), do: Igniter.Project.Deps.has_dep?(igniter, :phoenix)
+
+  @impl Claude.Plugin
   def config(opts) do
-    igniter = Keyword.get(opts, :igniter)
     include_daisyui? = Keyword.get(opts, :include_daisyui?, true)
     port = Keyword.get(opts, :port, 4000)
     tidewave_enabled? = Keyword.get(opts, :tidewave_enabled?, true)
     server_check = Keyword.get(opts, :server_check, false)
 
-    if detect_phoenix_project?(igniter) do
-      app_name = get_app_name(igniter)
+    app_name = get_app_name()
       phoenix_version = get_phoenix_version()
 
       base_config = %{}
@@ -73,30 +76,19 @@ defmodule Claude.Plugins.Phoenix do
         base_config
         |> Map.put(
           :nested_memories,
-          build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?)
+          build_nested_memories(app_name, phoenix_version, include_daisyui?)
         )
         |> Map.put(:inline_usage_rules, ["phoenix"])
 
-      if server_check do
-        Map.put(base_config, :hooks, build_server_check_hooks(server_check))
-      else
-        base_config
-      end
+    if server_check do
+      Map.put(base_config, :hooks, build_server_check_hooks(server_check))
     else
-      %{}
+      base_config
     end
   end
 
-  defp detect_phoenix_project?(igniter) do
-    Igniter.Project.Deps.has_dep?(igniter, :phoenix)
-  end
-
-  defp get_app_name(igniter) do
-    igniter
-    |> Igniter.Project.Module.module_name_prefix()
-    |> Module.split()
-    |> List.last()
-    |> Macro.underscore()
+  defp get_app_name do
+    Mix.Project.config()[:app] |> to_string()
   end
 
   defp get_phoenix_version do
@@ -127,11 +119,11 @@ defmodule Claude.Plugins.Phoenix do
     Version.match?(version, ">= 1.8.0")
   end
 
-  defp build_nested_memories(igniter, app_name, phoenix_version, include_daisyui?) do
+  defp build_nested_memories(app_name, phoenix_version, include_daisyui?) do
     %{
       "test" => build_test_memories(phoenix_version),
-      "lib/#{app_name}" => build_app_memories(igniter, phoenix_version),
-      "lib/#{app_name}_web" => build_web_memories(igniter, phoenix_version, include_daisyui?)
+      "lib/#{app_name}" => build_app_memories(phoenix_version),
+      "lib/#{app_name}_web" => build_web_memories(phoenix_version, include_daisyui?)
     }
   end
 
@@ -139,12 +131,12 @@ defmodule Claude.Plugins.Phoenix do
     ["usage_rules:elixir", "usage_rules:otp"]
   end
 
-  defp build_app_memories(igniter, _phoenix_version) do
+  defp build_app_memories(_phoenix_version) do
     base_rules = ["usage_rules:elixir", "usage_rules:otp"]
-    base_rules ++ maybe_ecto_rules(igniter)
+    base_rules ++ maybe_ecto_rules()
   end
 
-  defp build_web_memories(igniter, phoenix_version, include_daisyui?) do
+  defp build_web_memories(phoenix_version, include_daisyui?) do
     daisyui_docs = maybe_daisyui_docs(include_daisyui?)
     base_rules = ["usage_rules:elixir", "usage_rules:otp"]
 
@@ -156,7 +148,7 @@ defmodule Claude.Plugins.Phoenix do
       end
 
     daisyui_docs ++
-      base_rules ++ phoenix_rules ++ maybe_liveview_rules(igniter) ++ maybe_ecto_rules(igniter)
+      base_rules ++ phoenix_rules ++ maybe_liveview_rules() ++ maybe_ecto_rules()
   end
 
   defp maybe_daisyui_docs(include_daisyui?) do
@@ -170,17 +162,18 @@ defmodule Claude.Plugins.Phoenix do
     end
   end
 
-  defp maybe_ecto_rules(igniter) do
-    if Igniter.Project.Deps.has_dep?(igniter, :ecto) or
-         Igniter.Project.Deps.has_dep?(igniter, :ecto_sql) do
+  defp maybe_ecto_rules do
+    # Check if Ecto is available in the runtime
+    if Code.ensure_loaded?(Ecto) or Code.ensure_loaded?(Ecto.Repo) do
       ["phoenix:ecto"]
     else
       []
     end
   end
 
-  defp maybe_liveview_rules(igniter) do
-    if Igniter.Project.Deps.has_dep?(igniter, :phoenix_live_view) do
+  defp maybe_liveview_rules do
+    # Check if LiveView is available in the runtime
+    if Code.ensure_loaded?(Phoenix.LiveView) do
       ["phoenix:liveview"]
     else
       []

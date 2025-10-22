@@ -1,7 +1,14 @@
 defmodule TestPlugins do
+  @moduledoc "Test plugins for Claude configuration testing."
+
   defmodule Simple do
+    @moduledoc "Simple test plugin."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       %{
         hooks: %{
@@ -13,8 +20,13 @@ defmodule TestPlugins do
   end
 
   defmodule WithOptions do
+    @moduledoc "Test plugin with configurable options."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(opts) do
       mode = Keyword.get(opts, :mode, :default)
 
@@ -33,8 +45,13 @@ defmodule TestPlugins do
   end
 
   defmodule Hooks do
+    @moduledoc "Test plugin that provides additional hooks."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       %{
         hooks: %{
@@ -47,8 +64,13 @@ defmodule TestPlugins do
   end
 
   defmodule Subagents do
+    @moduledoc "Test plugin that provides subagents."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       %{
         subagents: [
@@ -70,8 +92,13 @@ defmodule TestPlugins do
   end
 
   defmodule Complex do
+    @moduledoc "Complex test plugin with multiple configuration types."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       %{
         hooks: %{
@@ -98,22 +125,34 @@ defmodule TestPlugins do
   end
 
   defmodule Invalid do
+    @moduledoc "Invalid test plugin missing @behaviour."
+
     def config(_opts) do
       %{test: :invalid}
     end
   end
 
   defmodule Failing do
+    @moduledoc "Test plugin that intentionally fails."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       raise "Intentional failure for testing"
     end
   end
 
   defmodule WithReporters do
+    @moduledoc "Test plugin that configures reporters."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       %{
         reporters: [
@@ -127,8 +166,13 @@ defmodule TestPlugins do
   end
 
   defmodule WithMemories do
+    @moduledoc "Test plugin that configures nested memories."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       %{
         nested_memories: %{
@@ -149,8 +193,13 @@ defmodule TestPlugins do
   end
 
   defmodule WithSubagentMemories do
+    @moduledoc "Test plugin that configures subagents with memories."
     @behaviour Claude.Plugin
 
+    @impl Claude.Plugin
+    def detect(_igniter), do: true
+
+    @impl Claude.Plugin
     def config(_opts) do
       %{
         subagents: [

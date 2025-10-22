@@ -3,6 +3,10 @@ defmodule Claude.Plugins.Base do
 
   @behaviour Claude.Plugin
 
+  @impl Claude.Plugin
+  def detect(_igniter), do: true
+
+  @impl Claude.Plugin
   def config(_opts) do
     %{
       hooks: %{

@@ -1,7 +1,10 @@
 defmodule Claude.Plugin do
   @moduledoc "Support for Claude configuration plugins."
 
-  @doc "Callback for plugins to provide their configuration."
+  @doc "Detect if this plugin should be active for the current project."
+  @callback detect(igniter :: Igniter.t() | nil) :: boolean()
+
+  @doc "Generate configuration for this plugin."
   @callback config(opts :: keyword()) :: map()
 
   @doc "Load a single plugin and return its configuration."
@@ -15,22 +18,24 @@ defmodule Claude.Plugin do
 
   def load_plugin(module, opts) when is_atom(module) and is_list(opts) do
     if Code.ensure_loaded?(module) do
-      if function_exported?(module, :config, 1) do
-        behaviours = module.module_info(:attributes)[:behaviour] || []
+      behaviours = module.module_info(:attributes)[:behaviour] || []
 
-        if Claude.Plugin in behaviours do
-          try do
-            config = module.config(opts)
+      if Claude.Plugin in behaviours do
+        try do
+          igniter = Keyword.get(opts, :igniter)
+
+          if module.detect(igniter) do
+            config = module.config(Keyword.delete(opts, :igniter))
             {:ok, config}
-          rescue
-            error ->
-              {:error, "Plugin #{inspect(module)} failed to load: #{Exception.message(error)}"}
+          else
+            {:ok, %{}}
           end
-        else
-          {:error, "Plugin #{inspect(module)} does not implement Claude.Plugin behaviour"}
+        rescue
+          error ->
+            {:error, "Plugin #{inspect(module)} failed to load: #{Exception.message(error)}"}
         end
       else
-        {:error, "Plugin #{inspect(module)} does not export config/1"}
+        {:error, "Plugin #{inspect(module)} does not implement Claude.Plugin behaviour"}
       end
     else
       {:error, "Plugin module #{inspect(module)} not found"}
