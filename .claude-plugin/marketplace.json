@@ -1,6 +1,6 @@
 {
   "name": "claude",
-  "description": "Official Elixir and BEAM ecosystem development tools for Claude Code",
+  "description": "Elixir and BEAM ecosystem development tools for Claude Code",
   "owner": {
     "name": "Bradley Golden",
     "url": "https://github.com/bradleygolden"
