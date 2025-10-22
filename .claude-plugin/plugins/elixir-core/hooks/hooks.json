@@ -6,11 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if echo '{{tool_input.file_path}}' | grep -qE '\\.(ex|exs)$'; then mix format '{{tool_input.file_path}}'; fi"
+            "command": "FILE_PATH=$(jq -r '.tool_input.file_path'); if echo \"$FILE_PATH\" | grep -qE '\\.(ex|exs)$'; then mix format \"$FILE_PATH\"; fi"
           },
           {
             "type": "command",
-            "command": "if echo '{{tool_input.file_path}}' | grep -qE '\\.(ex|exs)$'; then mix compile --warnings-as-errors 2>&1 | head -50; fi"
+            "command": "FILE_PATH=$(jq -r '.tool_input.file_path'); if echo \"$FILE_PATH\" | grep -qE '\\.(ex|exs)$'; then mix compile --warnings-as-errors 2>&1 | head -50; fi"
           }
         ]
       }
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if echo '{{tool_input.command}}' | grep -q 'git commit'; then mix format --check-formatted && mix compile --warnings-as-errors && mix deps.unlock --check-unused; fi"
+            "command": "COMMAND=$(jq -r '.tool_input.command'); if echo \"$COMMAND\" | grep -q 'git commit'; then if ! (mix format --check-formatted && mix compile --warnings-as-errors && mix deps.unlock --check-unused); then exit 2; fi; fi"
           }
         ]
       }
