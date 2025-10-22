@@ -44,7 +44,8 @@ defmodule Claude.Plugins.Ash do
   @behaviour Claude.Plugin
 
   @impl Claude.Plugin
-  def detect(nil), do: true  # At runtime, assume Ash is present
+  # At runtime, assume Ash is present
+  def detect(nil), do: true
   def detect(igniter), do: Igniter.Project.Deps.has_dep?(igniter, :ash)
 
   @impl Claude.Plugin

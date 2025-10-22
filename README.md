@@ -183,3 +183,4 @@ MIT - see [LICENSE](LICENSE) for details.
 </p>
 # Test change
 # Testing hook functionality
+# Testing hook with jq parsing

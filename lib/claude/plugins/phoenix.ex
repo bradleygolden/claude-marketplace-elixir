@@ -50,7 +50,8 @@ defmodule Claude.Plugins.Phoenix do
   @behaviour Claude.Plugin
 
   @impl Claude.Plugin
-  def detect(nil), do: true  # At runtime, assume Phoenix is present
+  # At runtime, assume Phoenix is present
+  def detect(nil), do: true
   def detect(igniter), do: Igniter.Project.Deps.has_dep?(igniter, :phoenix)
 
   @impl Claude.Plugin
@@ -61,24 +62,24 @@ defmodule Claude.Plugins.Phoenix do
     server_check = Keyword.get(opts, :server_check, false)
 
     app_name = get_app_name()
-      phoenix_version = get_phoenix_version()
+    phoenix_version = get_phoenix_version()
 
-      base_config = %{}
+    base_config = %{}
 
-      base_config =
-        if tidewave_enabled? do
-          Map.put(base_config, :mcp_servers, tidewave: [port: "${PORT:-#{port}}"])
-        else
-          base_config
-        end
-
-      base_config =
+    base_config =
+      if tidewave_enabled? do
+        Map.put(base_config, :mcp_servers, tidewave: [port: "${PORT:-#{port}}"])
+      else
         base_config
-        |> Map.put(
-          :nested_memories,
-          build_nested_memories(app_name, phoenix_version, include_daisyui?)
-        )
-        |> Map.put(:inline_usage_rules, ["phoenix"])
+      end
+
+    base_config =
+      base_config
+      |> Map.put(
+        :nested_memories,
+        build_nested_memories(app_name, phoenix_version, include_daisyui?)
+      )
+      |> Map.put(:inline_usage_rules, ["phoenix"])
 
     if server_check do
       Map.put(base_config, :hooks, build_server_check_hooks(server_check))
