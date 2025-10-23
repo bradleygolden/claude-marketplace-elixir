@@ -2,6 +2,7 @@
 > This repository has changed significantly and may look quite different from before.
 > With the release of Claude Plugins, the previous implementation is now mostly irrelevant.
 > This new version adapts the earlier approach to align with the latest plugin architecture and conventions.
+> If you're looking for the previous version, please visit see version [v0.5.3](https://github.com/bradleygolden/claude/releases/tag/v0.5.3).
 
 # Claude Code Plugins for Elixir
 
@@ -19,7 +20,7 @@ This is a [**Claude Code plugin marketplace**](https://docs.claude.com/en/docs/c
 
 ```bash
 claude
-/plugin marketplace add github:bradleygolden/claude-marketplace-elixir
+/plugin marketplace add bradleygolden/claude-marketplace-elixir
 ```
 
 ### Install Plugins

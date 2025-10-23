@@ -4,17 +4,8 @@ Essential Elixir development support plugin for Claude Code.
 
 ## Installation
 
-### From GitHub
 ```bash
 claude
-/plugin marketplace add github:bradleygolden/claude-marketplace-elixir
-/plugin install core@elixir
-```
-
-### Local Development
-```bash
-claude
-/plugin marketplace add /path/to/claude-marketplace-elixir
 /plugin install core@elixir
 ```
 
