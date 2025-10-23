@@ -1,6 +1,6 @@
 {
   "name": "elixir-core",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "Essential Elixir development support with automatic formatting and compilation checks",
   "author": {
     "name": "Bradley Golden",
