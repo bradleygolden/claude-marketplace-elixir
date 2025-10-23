@@ -1,4 +1,4 @@
-# elixir-core
+# core
 
 Essential Elixir development support plugin for Claude Code.
 
@@ -7,15 +7,15 @@ Essential Elixir development support plugin for Claude Code.
 ### From GitHub
 ```bash
 claude
-/plugin marketplace add github:bradleygolden/claude
-/plugin install elixir-core@claude
+/plugin marketplace add github:bradleygolden/claude-marketplace-elixir
+/plugin install core@elixir
 ```
 
 ### Local Development
 ```bash
 claude
-/plugin marketplace add /path/to/claude
-/plugin install elixir-core@claude
+/plugin marketplace add /path/to/claude-marketplace-elixir
+/plugin install core@elixir
 ```
 
 ## Requirements

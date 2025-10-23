@@ -1,12 +1,12 @@
 {
-  "name": "elixir-core",
+  "name": "core",
   "version": "1.0.0",
-  "description": "Essential Elixir development support with automatic formatting and compilation checks",
+  "description": "Essential Elixir development support",
   "author": {
     "name": "Bradley Golden",
     "url": "https://github.com/bradleygolden"
   },
-  "repository": "https://github.com/bradleygolden/claude",
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
   "license": "MIT",
   "keywords": ["elixir", "erlang", "beam", "otp", "functional"],
   "hooks": "./hooks/hooks.json"

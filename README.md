@@ -11,7 +11,7 @@ Unofficial Claude Code plugin marketplace for Elixir and BEAM ecosystem developm
 
 ## What is this?
 
-This is a **Claude Code plugin marketplace** that provides development tools and knowledge for Elixir.
+This is a [**Claude Code plugin marketplace**](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces) that provides development tools and knowledge for Elixir.
 
 ## Quick Start
 
@@ -19,18 +19,18 @@ This is a **Claude Code plugin marketplace** that provides development tools and
 
 ```bash
 claude
-/plugin marketplace add github:bradleygolden/claude
+/plugin marketplace add github:bradleygolden/claude-marketplace-elixir
 ```
 
 ### Install Plugins
 
 ```bash
-/plugin install elixir-core@claude
+/plugin install core@elixir
 ```
 ## Available Plugins
 
 
-* [elixir-core](./.claude-plugin/plugins/elixir-core/README.md) - Universal elixir needs for any elixir project
+* [core](./.claude-plugin/plugins/core/README.md) - Universal elixir needs for any elixir project
 
 ## License
 
@@ -38,8 +38,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/bradleygolden/claude/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/bradleygolden/claude/discussions)
+- **Issues**: [GitHub Issues](https://github.com/bradleygolden/claude-marketplace-elixir/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/bradleygolden/claude-marketplace-elixir/discussions)
 
 ---
 
