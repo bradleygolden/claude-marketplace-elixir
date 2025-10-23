@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(jq -r '.tool_input.file_path'); if echo \"$FILE_PATH\" | grep -qE '\\.(ex|exs)$'; then mix format \"$FILE_PATH\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(jq -r '.tool_input.file_path'); if echo \"$FILE_PATH\" | grep -qE '\\.(ex|exs)$'; then mix compile --warnings-as-errors 2>&1 | head -50; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "COMMAND=$(jq -r '.tool_input.command'); if echo \"$COMMAND\" | grep -q 'git commit'; then if ! (mix format --check-formatted && mix compile --warnings-as-errors && mix deps.unlock --check-unused); then exit 2; fi; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
