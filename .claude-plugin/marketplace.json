@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0",
+    "version": "1.0.0-rc.1",
     "pluginRoot": "./plugins"
   },
   "plugins": [
