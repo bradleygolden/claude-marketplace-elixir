@@ -17,6 +17,15 @@
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "phoenix",
+      "source": "./phoenix",
+      "description": "Phoenix framework support with Tidewave MCP server integration",
+      "keywords": ["phoenix", "tidewave", "mcp", "liveview", "ecto", "web"],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
     }
   ]
 }

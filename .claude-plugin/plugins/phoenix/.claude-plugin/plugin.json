@@ -1,0 +1,19 @@
+{
+  "name": "phoenix",
+  "version": "1.0.0-rc.1",
+  "description": "Phoenix framework support with Tidewave MCP server integration for runtime intelligence",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "license": "MIT",
+  "keywords": ["phoenix", "tidewave", "mcp", "liveview", "ecto", "web"],
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": {
+    "tidewave": {
+      "transport": "http",
+      "url": "http://localhost:${PORT-4000}/tidewave/mcp"
+    }
+  }
+}
