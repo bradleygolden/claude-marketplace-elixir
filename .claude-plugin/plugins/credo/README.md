@@ -42,6 +42,7 @@ When you edit an Elixir file:
 2. **If issues are found**:
    - Outputs JSON with `hookSpecificOutput.additionalContext`
    - Exit code 0 (non-blocking)
+   - Output truncated to 30 lines (with note about full output command)
    - Claude sees the credo output in its context
    - Claude can address issues automatically or inform you
 3. **If no issues**:
@@ -52,6 +53,11 @@ When you edit an Elixir file:
 - Exit 0 with JSON output = Claude sees context, no blocking
 - This is different from exit 2 which would block and require fixing
 
+**Output truncation:**
+- Output limited to 30 lines to avoid overwhelming context
+- When truncated, shows: "[Output truncated: showing 30 of N lines]"
+- Provides command to see full output: `mix credo "file_path"`
+
 ### PreToolUse Hook Behavior (.claude-plugin/plugins/credo/scripts/pre-commit-check.sh:1)
 
 Before git commits:
@@ -59,6 +65,7 @@ Before git commits:
 1. **Credo runs** in strict mode
 2. **By default** (non-blocking):
    - Outputs to stdout with exit code 0
+   - Output truncated to 30 lines (with note about full output command)
    - Shows in transcript mode (Ctrl-R) for user visibility
    - Does NOT inform Claude (PreToolUse limitation)
    - Commit proceeds normally
@@ -71,6 +78,11 @@ Before git commits:
 - PreToolUse hooks cannot add context without blocking (no `additionalContext` field)
 - Options are: allow, deny, or ask - no "inform without blocking"
 - Default is non-blocking to match the plugin's design philosophy
+
+**Output truncation:**
+- Output limited to 30 lines to avoid overwhelming the transcript
+- When truncated, shows: "[Output truncated: showing 30 of N lines]"
+- Provides command to see full output: `mix credo --strict`
 
 ## Customization
 

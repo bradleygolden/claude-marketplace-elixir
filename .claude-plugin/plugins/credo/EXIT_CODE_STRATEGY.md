@@ -40,9 +40,14 @@ exit 0
 **What happens:**
 1. You edit a file
 2. Credo runs automatically
-3. If issues found → Claude sees them in context
+3. If issues found → Claude sees them in context (truncated to 30 lines)
 4. Claude may auto-fix issues on next action
 5. Your work continues uninterrupted
+
+**Output management:**
+- Truncates to 30 lines max to avoid context overflow
+- Shows truncation notice with full output command
+- Example: "[Output truncated: showing 30 of 150 lines] Run 'mix credo "file.ex"' to see the full output."
 
 ### PreToolUse Hook (Before Commits)
 
@@ -59,6 +64,7 @@ exit 0
 - Exit code 0 = no blocking
 - stdout output = shown in transcript mode (Ctrl-R)
 - Commit proceeds normally
+- Output truncated to 30 lines to avoid transcript clutter
 
 **Limitation:**
 - PreToolUse hooks cannot add context to Claude without blocking

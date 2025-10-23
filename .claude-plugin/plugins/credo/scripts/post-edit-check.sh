@@ -12,14 +12,34 @@ if ! echo "$FILE_PATH" | grep -qE '\.(ex|exs)$'; then
   exit 0
 fi
 
-# Run credo on the file
-CREDO_OUTPUT=$(mix credo "$FILE_PATH" 2>&1 | head -50)
+# Run credo on the file and capture full output
+CREDO_OUTPUT=$(mix credo "$FILE_PATH" 2>&1)
+CREDO_EXIT_CODE=$?
 
 # Check if there are any issues
-if echo "$CREDO_OUTPUT" | grep -qE '(issues|warnings|errors)'; then
+if [ $CREDO_EXIT_CODE -ne 0 ] || echo "$CREDO_OUTPUT" | grep -qE '(issues|warnings|errors)'; then
+  # Count total lines
+  TOTAL_LINES=$(echo "$CREDO_OUTPUT" | wc -l)
+  MAX_LINES=30
+
+  # Truncate output if needed
+  if [ "$TOTAL_LINES" -gt "$MAX_LINES" ]; then
+    TRUNCATED_OUTPUT=$(echo "$CREDO_OUTPUT" | head -n $MAX_LINES)
+    CONTEXT="Credo analysis for $FILE_PATH:
+
+$TRUNCATED_OUTPUT
+
+[Output truncated: showing $MAX_LINES of $TOTAL_LINES lines]
+Run 'mix credo \"$FILE_PATH\"' to see the full output."
+  else
+    CONTEXT="Credo analysis for $FILE_PATH:
+
+$CREDO_OUTPUT"
+  fi
+
   # Output JSON with additionalContext to inform Claude
   jq -n \
-    --arg context "Credo analysis for $FILE_PATH:\n$CREDO_OUTPUT" \
+    --arg context "$CONTEXT" \
     '{
       "hookSpecificOutput": {
         "hookEventName": "PostToolUse",
