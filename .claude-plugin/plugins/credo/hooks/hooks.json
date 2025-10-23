@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(jq -r '.tool_input.file_path'); if echo \"$FILE_PATH\" | grep -qE '\\.(ex|exs)$'; then mix credo \"$FILE_PATH\" 2>&1 | head -50; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "COMMAND=$(jq -r '.tool_input.command'); if echo \"$COMMAND\" | grep -q 'git commit'; then mix credo --strict 2>&1 | head -50; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

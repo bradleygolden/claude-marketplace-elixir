@@ -17,6 +17,15 @@
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "credo",
+      "source": "./credo",
+      "description": "Credo static code analysis for Elixir projects",
+      "keywords": ["elixir", "credo", "linting", "code-quality", "static-analysis"],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
     }
   ]
 }

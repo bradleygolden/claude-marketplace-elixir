@@ -1,0 +1,13 @@
+{
+  "name": "credo",
+  "version": "1.0.0-rc.1",
+  "description": "Credo static code analysis for Elixir projects",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "license": "MIT",
+  "keywords": ["elixir", "credo", "linting", "code-quality", "static-analysis"],
+  "hooks": "./hooks/hooks.json"
+}
