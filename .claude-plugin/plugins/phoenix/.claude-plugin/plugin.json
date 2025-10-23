@@ -8,8 +8,7 @@
   },
   "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
   "license": "MIT",
-  "keywords": ["phoenix", "tidewave", "mcp", "liveview", "ecto", "web"],
-  "hooks": "./hooks/hooks.json",
+  "keywords": ["phoenix", "tidewave", "mcp", "liveview", "web"],
   "mcpServers": {
     "tidewave": {
       "transport": "http",
