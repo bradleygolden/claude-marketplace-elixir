@@ -1,4 +1,5 @@
 {
+  "description": "Credo static code analysis with context-aware feedback",
   "hooks": {
     "PostToolUse": [
       {
@@ -6,7 +7,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE_PATH=$(jq -r '.tool_input.file_path'); if echo \"$FILE_PATH\" | grep -qE '\\.(ex|exs)$'; then mix credo \"$FILE_PATH\" 2>&1 | head -50; fi"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/post-edit-check.sh",
+            "timeout": 30
           }
         ]
       }
@@ -17,7 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "COMMAND=$(jq -r '.tool_input.command'); if echo \"$COMMAND\" | grep -q 'git commit'; then mix credo --strict 2>&1 | head -50; fi"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pre-commit-check.sh",
+            "timeout": 30
           }
         ]
       }

@@ -1,6 +1,6 @@
 # credo
 
-Credo static code analysis plugin for Claude Code.
+Credo static code analysis plugin for Claude Code with **context-aware feedback**.
 
 ## Installation
 
@@ -21,28 +21,80 @@ claude
 ### Automatic Hooks
 
 **PostToolUse - After file edits:**
-- Automatically runs `mix credo` on edited .ex/.exs files to check code quality
+- Automatically runs `mix credo` on edited .ex/.exs files
+- **Informs Claude via context** - Claude sees the output and can address issues automatically
+- Non-blocking - work continues while Claude considers the feedback
 
 **PreToolUse - Before git commits:**
-- Runs `mix credo --strict` to ensure code passes all quality checks before committing
+- Runs `mix credo --strict` before any `git commit`
+- Shows output in transcript mode for user visibility
+- Non-blocking by default (can be configured to block on critical issues)
 
-## Hooks Behavior
+## How It Works: Context-Aware Feedback
 
-### Credo Check (Non-blocking after edits)
-```bash
-mix credo {{file_path}}
-```
-- Runs automatically after editing .ex or .exs files
-- Non-blocking - provides feedback but allows work to continue
-- Fast - only analyzes the changed file
-- Output truncated to 50 lines to avoid overwhelming context
+This plugin uses **JSON output with `additionalContext`** to inform Claude Code about code quality issues without blocking your workflow.
 
-### Pre-commit Credo Validation (Non-blocking suggestions)
-```bash
-mix credo --strict
-```
-- Runs before any `git commit` command (including `git add && git commit`)
-- Provides suggestions without blocking the commit
-- Uses strict mode for comprehensive checks
-- Output truncated to 50 lines to avoid overwhelming context
-- Helps ensure code quality but allows commits to proceed
+### PostToolUse Hook Behavior (.claude-plugin/plugins/credo/scripts/post-edit-check.sh:1)
+
+When you edit an Elixir file:
+
+1. **Credo runs** on the modified file
+2. **If issues are found**:
+   - Outputs JSON with `hookSpecificOutput.additionalContext`
+   - Exit code 0 (non-blocking)
+   - Claude sees the credo output in its context
+   - Claude can address issues automatically or inform you
+3. **If no issues**:
+   - Suppresses output (`suppressOutput: true`)
+   - No noise in your workflow
+
+**Exit code behavior:**
+- Exit 0 with JSON output = Claude sees context, no blocking
+- This is different from exit 2 which would block and require fixing
+
+### PreToolUse Hook Behavior (.claude-plugin/plugins/credo/scripts/pre-commit-check.sh:1)
+
+Before git commits:
+
+1. **Credo runs** in strict mode
+2. **By default** (non-blocking):
+   - Outputs to stdout with exit code 0
+   - Shows in transcript mode (Ctrl-R) for user visibility
+   - Does NOT inform Claude (PreToolUse limitation)
+   - Commit proceeds normally
+3. **Optional blocking mode** (commented in script):
+   - Uncomment the blocking code to use `permissionDecision: "deny"`
+   - This shows credo output to Claude and blocks the commit
+   - Claude must address issues before commit can proceed
+
+**Why different from PostToolUse?**
+- PreToolUse hooks cannot add context without blocking (no `additionalContext` field)
+- Options are: allow, deny, or ask - no "inform without blocking"
+- Default is non-blocking to match the plugin's design philosophy
+
+## Customization
+
+To **enable blocking on commits** when credo finds issues:
+
+1. Edit `.claude-plugin/plugins/credo/scripts/pre-commit-check.sh`
+2. Comment out the non-blocking section (lines with `echo` and `exit 0`)
+3. Uncomment the blocking section (the `jq -n` command with `permissionDecision: "deny"`)
+4. Restart your Claude Code session for changes to take effect
+
+## Technical Details
+
+**PostToolUse hook:**
+- Uses JSON output format
+- Field: `hookSpecificOutput.additionalContext`
+- Exit code: 0 (success, non-blocking)
+- Result: Claude sees output in its context window
+
+**PreToolUse hook:**
+- Uses stdout output for transcript mode
+- Exit code: 0 (success, non-blocking)
+- Result: User sees output with Ctrl-R, Claude does not
+
+**Script location:**
+- Scripts use `${CLAUDE_PLUGIN_ROOT}` environment variable
+- Timeout: 30 seconds per hook
+- Runs in parallel with other hooks
