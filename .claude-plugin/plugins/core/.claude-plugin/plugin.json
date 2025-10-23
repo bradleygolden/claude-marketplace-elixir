@@ -1,7 +1,7 @@
 {
   "name": "core",
   "version": "1.0.0",
-  "description": "Essential Elixir development support",
+  "description": "Essential Elixir development support with hooks and automation",
   "author": {
     "name": "Bradley Golden",
     "url": "https://github.com/bradleygolden"
