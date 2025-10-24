@@ -16,7 +16,7 @@ This directory contains automated tests for the ash plugin hooks.
 
 ### Via Claude Code slash command:
 ```
-/test-marketplace ash
+/qa test ash
 ```
 
 ## Test Projects

@@ -9,6 +9,8 @@
   },
   "enabledPlugins": {
     "core@elixir": true,
-    "credo@elixir": true
+    "credo@elixir": true,
+    "ash@elixir": true,
+    "dialyzer@elixir": true
   }
 }

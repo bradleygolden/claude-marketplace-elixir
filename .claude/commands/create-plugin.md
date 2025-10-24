@@ -465,12 +465,12 @@ Test patterns you saw:
 Once implemented:
 ```bash
 # Validate your implementation
-/validate-plugin <plugin-name>
+/qa validate <plugin-name>
 
 # Test it
 /plugin marketplace reload
 /plugin install <plugin-name>@elixir
-/test-marketplace <plugin-name>
+/qa test <plugin-name>
 ```
 
 ---

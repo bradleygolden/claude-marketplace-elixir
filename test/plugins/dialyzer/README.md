@@ -25,7 +25,7 @@ dialyzer/
 ./test/run-all-tests.sh
 
 # Run via Claude Code slash command
-/test-marketplace dialyzer
+/qa test dialyzer
 ```
 
 ## Test Cases

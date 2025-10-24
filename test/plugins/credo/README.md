@@ -16,7 +16,7 @@ This directory contains automated tests for the credo plugin hooks.
 
 ### Via Claude Code slash command:
 ```
-/test-marketplace credo
+/qa test credo
 ```
 
 ## Test Projects
