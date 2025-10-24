@@ -24,11 +24,10 @@ User: "What does Jason.decode!/1 do?"
 
 ### 1. Local Dependencies Search (deps/)
 
-Uses Grep and Glob tools to search installed packages:
-- Finds module definitions
-- Searches for function implementations
-- Reads `@moduledoc` and `@doc` annotations
-- Provides source code context
+Uses Grep and Glob tools to search installed packages for BOTH code and docs:
+- **Source code**: Finds module definitions, function implementations, and `@moduledoc`/`@doc` annotations
+- **Generated docs**: Checks for HTML documentation in `deps/*/doc/` directories
+- Provides full context from whichever source is most helpful
 
 **Advantage**: Matches the exact version used in the project
 

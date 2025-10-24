@@ -21,7 +21,7 @@ Use this skill when you need to:
 
 This skill implements a **cascading search** that prioritizes local and contextual information:
 
-1. **Local dependencies** - Search installed packages in `deps/` directory
+1. **Local dependencies** - Search installed packages in `deps/` directory (both source code AND generated docs)
 2. **Codebase usage** - Find how packages are used in the current project
 3. **HexDocs API** - Search official documentation on hexdocs.pm
 4. **Web search** - Fallback to general web search
@@ -39,7 +39,7 @@ Examples:
 
 ### Step 2: Search local dependencies
 
-Use the **Glob** and **Grep** tools to search the `deps/` directory:
+Use the **Glob** and **Grep** tools to search the `deps/` directory for BOTH code and documentation:
 
 1. **Find the package directory**:
    ```
@@ -48,22 +48,32 @@ Use the **Glob** and **Grep** tools to search the `deps/` directory:
 
    If no results, the package isn't installed locally. Skip to Step 4.
 
-2. **Search for module definition**:
+2. **Search for module definition in source code**:
    ```
    Use Grep: pattern="defmodule <ModuleName>", path="deps/<package_name>/lib"
    ```
 
-3. **Search for function definition** (if looking for specific function):
+3. **Search for function definition in source code** (if looking for specific function):
    ```
    Use Grep: pattern="def <function_name>", path="deps/<package_name>/lib", output_mode="content", -A=5
    ```
 
-4. **Find documentation**:
+4. **Find documentation in source code** (@moduledoc/@doc annotations):
    ```
    Use Grep: pattern="@moduledoc|@doc", path="deps/<package_name>/lib", output_mode="content", -A=10
    ```
 
-5. **Read the relevant file** using the Read tool to get the full context.
+5. **Check for generated HTML documentation** (if available):
+   ```
+   Use Glob: pattern="deps/<package_name>/doc/**/*.html"
+   ```
+
+   If HTML docs exist, search them for relevant content:
+   ```
+   Use Grep: pattern="<ModuleName>|<function_name>", path="deps/<package_name>/doc"
+   ```
+
+6. **Read the relevant files** using the Read tool to get full context from either source or HTML docs.
 
 ### Step 3: Search codebase usage
 
@@ -167,11 +177,12 @@ Searching web for <package_name> documentation:
 **User asks**: "How do I use Phoenix.LiveView mount/3?"
 
 **Search process**:
-1. Check `deps/phoenix_live_view/`
-2. Search for `def mount` in `lib/phoenix_live_view.ex`
-3. Read the `@doc` for `mount/3`
-4. Search project for `mount` implementations in `lib/*/live/*.ex`
-5. Show examples from the codebase
+1. Check `deps/phoenix_live_view/` exists
+2. Search for `def mount` in `deps/phoenix_live_view/lib/` (source code)
+3. Read the `@doc` annotation for `mount/3` from source
+4. Check for HTML docs in `deps/phoenix_live_view/doc/` and read if available
+5. Search project for `mount` implementations in `lib/*/live/*.ex` (usage examples)
+6. Show documentation and examples from both deps and codebase
 
 ### Example 2: Looking up Ecto.Query
 
