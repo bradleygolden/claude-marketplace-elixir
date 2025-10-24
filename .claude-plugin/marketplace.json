@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0-rc.5"
+    "version": "1.0.0-rc.6"
   },
   "pluginRoot": "../plugins",
   "plugins": [
@@ -67,6 +67,22 @@
         "security",
         "static-analysis",
         "vulnerability-scanning"
+      ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "ex_doc",
+      "source": "./plugins/ex_doc",
+      "description": "ExDoc documentation validation plugin that checks for documentation issues before commits",
+      "keywords": [
+        "elixir",
+        "exdoc",
+        "documentation",
+        "validation",
+        "quality",
+        "pre-commit"
       ],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",

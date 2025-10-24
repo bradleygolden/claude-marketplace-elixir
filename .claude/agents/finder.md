@@ -1,7 +1,7 @@
 ---
 name: finder
 description: Locates files and shows implementation patterns with code examples from across the repository
-tools: Grep, Glob, Read, Bash
+allowed-tools: Grep, Glob, Read, Bash, Skill
 model: haiku
 ---
 
@@ -222,6 +222,19 @@ Combine both formats when appropriate - show organized file locations followed b
 - File counting
 - Directory navigation
 - Finding nested structures
+
+### Use Skill For
+- Package and framework documentation (core:hex-docs-search)
+- Official Hex package docs (Phoenix, Ecto, Ash, Credo, Sobelow, etc.)
+- Module and function documentation from packages
+- Framework-specific patterns and conventions
+
+**When to use Skill vs code search**:
+- **Skill**: For understanding how packages are meant to be used (official docs)
+- **Grep/Glob**: For finding how code actually uses those packages (implementation)
+- **Combined**: Use Skill to understand the package, then use Grep/Glob to find usage examples in code
+
+**Example**: To research Phoenix controllers, use Skill (core:hex-docs-search) to understand Phoenix.Controller documentation, then use Grep to find controller implementations in the codebase.
 
 ## Example Queries You Handle
 

@@ -1,7 +1,7 @@
 ---
 description: Conduct comprehensive research across the repository to answer user questions
 argument-hint: [research-query]
-allowed-tools: Read, Grep, Glob, Task, Bash, TodoWrite, Write
+allowed-tools: Read, Grep, Glob, Task, Bash, TodoWrite, Write, Skill
 ---
 
 # Research
@@ -15,16 +15,9 @@ You are tasked with conducting comprehensive research across the repository to a
 - ONLY describe what exists, where it exists, how it works, and how components interact
 - You are creating technical documentation of the existing codebase
 
-## Initial Setup:
+## Steps to Execute:
 
-When this command is invoked, respond with:
-```
-I'm ready to research the codebase. Please provide your research question or area of interest (e.g., "How does authentication work?", "Where are API endpoints defined?", "How is configuration loaded?"), and I'll analyze it thoroughly by exploring relevant components and patterns.
-```
-
-Then wait for the user's research query.
-
-## Steps to follow after receiving the research query:
+When this command is invoked, the user provides their research query as an argument (e.g., `/research How does authentication work?`). Begin research immediately.
 
 1. **Read any directly mentioned files first:**
    - If the user mentions specific files, read them FULLY first
@@ -36,6 +29,14 @@ Then wait for the user's research query.
    - Break down the user's query into composable research areas
    - Identify specific components, patterns, or concepts to investigate
    - Create a research plan using TodoWrite to track all subtasks
+   - Use concrete TodoWrite structure:
+     ```
+     1. [in_progress] Identify relevant components
+     2. [pending] Research component A with finder agent
+     3. [pending] Analyze component B with analyzer agent
+     4. [pending] Synthesize findings
+     5. [pending] Write research document
+     ```
    - Consider which components are relevant:
      - Configuration files (JSON, YAML, TOML, etc.)
      - Source code (application logic, modules, classes)
@@ -62,6 +63,15 @@ Then wait for the user's research query.
      - Explain step-by-step processing
      - Example prompt: "Analyze how the authentication middleware works, tracing the complete flow from request to response"
 
+   **For package and framework documentation:**
+   - Use the **Skill** tool (core:hex-docs-search) to:
+     - Research Hex packages (Phoenix, Ecto, Ash, Credo, Sobelow, etc.)
+     - Find module and function documentation
+     - Understand integration patterns
+     - Example: "Research Phoenix.Router plug pipelines in hex docs"
+   - Use Skill when you need official package documentation vs code search
+   - Combine Skill research with finder/analyzer for comprehensive understanding
+
    **IMPORTANT**: All agents are documentarians, not critics. They will describe what exists without suggesting improvements or identifying issues.
 
    **Key principles:**
@@ -79,17 +89,24 @@ Then wait for the user's research query.
    - Highlight patterns, connections, and implementation decisions
    - Answer the user's specific questions with concrete evidence
 
+   **Handling Sub-Agent Failures:**
+   - If a sub-agent fails or times out, document what was attempted
+   - Note which agents failed and why in the research document
+   - Proceed with available information from successful agents
+   - Mark gaps in coverage in the "Open Questions" section
+   - Include error details in a "Research Limitations" section if significant
+
 5. **Gather metadata for the research document:**
    - Get current date/time: `date -u +"%Y-%m-%d %H:%M:%S %Z"`
    - Get git info: `git log -1 --format="%H" && git branch --show-current && git config user.name`
-   - Determine filename: `thoughts/research/YYYY-MM-DD-topic-description.md`
-     - Format: `YYYY-MM-DD-topic-description.md` where:
+   - Determine filename: `.thoughts/research-YYYY-MM-DD-topic-description.md`
+     - Format: `.thoughts/research-YYYY-MM-DD-topic-description.md` where:
        - YYYY-MM-DD is today's date
        - topic-description is a brief kebab-case description
      - Examples:
-       - `2025-01-23-authentication-flow.md`
-       - `2025-01-23-api-endpoint-structure.md`
-       - `2025-01-23-configuration-loading.md`
+       - `.thoughts/research-2025-01-23-authentication-flow.md`
+       - `.thoughts/research-2025-01-23-api-endpoint-structure.md`
+       - `.thoughts/research-2025-01-23-configuration-loading.md`
 
 6. **Generate research document:**
    - Use the metadata gathered in step 5
@@ -98,14 +115,12 @@ Then wait for the user's research query.
      ---
      date: [Current date and time in ISO format]
      researcher: [Git user name]
-     git_commit: [Current commit hash]
+     commit: [Current commit hash]
      branch: [Current branch name]
      repository: [Repository name from git remote]
      topic: "[User's Question/Topic]"
      tags: [research, relevant-topics]
      status: complete
-     last_updated: [Current date in YYYY-MM-DD format]
-     last_updated_by: [Git user name]
      ---
 
      # Research: [User's Question/Topic]
@@ -124,38 +139,52 @@ Then wait for the user's research query.
 
      ## Detailed Findings
 
+     [Organize findings based on research type - adapt sections as needed]
+
+     **For component/architecture research, use:**
      ### [Component/Pattern 1]
      - Description of what exists (`path/to/file.ext:7-10`)
      - How it works
      - Current implementation details (without evaluation)
      - Related components
 
-     ### [Component/Pattern 2]
-     ...
+     **For flow/process research, use:**
+     ### Step 1: [Phase Name]
+     - What happens (`path/to/file.ext:line`)
+     - How data flows
+     - Related handlers
+
+     **For pattern/convention research, use:**
+     ### Pattern: [Pattern Name]
+     - Where it's used
+     - How it's implemented
+     - Examples with file:line references
 
      ## Code References
+     [All relevant file:line references]
      - `path/to/file.ext:9` - [Brief description]
      - `path/to/another/file.ext:16-26` - [Brief description]
-     - `path/to/test.ext:15-32` - [Brief description]
 
-     ## Implementation Patterns
-     [Current patterns and implementations found in the codebase]
+     ## [Optional: Implementation Patterns]
+     [Include if patterns are central to the research]
      - Pattern 1: [Description]
      - Pattern 2: [Description]
-     - Pattern 3: [Description]
 
-     ## Pattern Examples
-     [Concrete code examples with file:line references]
+     ## [Optional: Pattern Examples]
+     [Include if code examples clarify findings]
      ```language
      // From path/to/file.ext:9
      code example here
      ```
 
-     ## Related Research
-     [Links to other research documents if applicable]
+     ## [Optional: Related Research]
+     [Include if other research documents are relevant]
 
-     ## Open Questions
-     [Any areas that need further investigation]
+     ## [Optional: Open Questions]
+     [Include if areas need further investigation]
+
+     ## [Optional: Research Limitations]
+     [Include if sub-agents failed or coverage was incomplete]
      ```
 
 7. **Write the research document:**
