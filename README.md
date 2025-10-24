@@ -29,12 +29,14 @@ claude
 /plugin install ash@elixir
 /plugin install core@elixir
 /plugin install credo@elixir
+/plugin install dialyzer@elixir
 ```
 ## Available Plugins
 
 * [ash](./plugins/ash/README.md) - Ash Framework code generation validation
 * [core](./plugins/core/README.md) - Universal Elixir development support for any Elixir project
 * [credo](./plugins/credo/README.md) - Credo static code analysis
+* [dialyzer](./plugins/dialyzer/README.md) - Dialyzer static type analysis
 
 ## License
 
