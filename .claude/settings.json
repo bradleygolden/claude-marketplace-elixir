@@ -11,6 +11,7 @@
     "core@elixir": true,
     "credo@elixir": true,
     "ash@elixir": true,
-    "dialyzer@elixir": true
+    "dialyzer@elixir": true,
+    "sobelow@elixir": true
   }
 }

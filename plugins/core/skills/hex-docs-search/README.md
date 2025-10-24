@@ -18,6 +18,9 @@ This skill is automatically available when the `core@elixir` plugin is installed
 User: "How do I use Phoenix.LiveView mount/3?"
 User: "Show me Ecto.Query examples"
 User: "What does Jason.decode!/1 do?"
+User: "Research the Sobelow hex package"
+User: "Learn about the Credo library"
+User: "Understand how Ash Framework works"
 ```
 
 ## How it Works

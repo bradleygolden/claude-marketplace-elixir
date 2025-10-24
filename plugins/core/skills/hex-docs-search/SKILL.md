@@ -1,6 +1,6 @@
 ---
 name: hex-docs-search
-description: Search Elixir/Erlang package documentation and usage. Use when looking up Hex packages, module documentation, function signatures, or examples. Searches local deps, codebase usage, hexdocs.pm API, and web as fallback.
+description: Research Hex packages (Sobelow, Phoenix, Ecto, Credo, Ash, etc). Use when investigating packages, understanding integration patterns, or finding module/function docs and usage examples.
 allowed-tools: Read, Grep, Glob, Bash, WebSearch
 ---
 

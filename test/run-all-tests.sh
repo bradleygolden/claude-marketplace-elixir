@@ -48,6 +48,7 @@ run_test_suite "Core Plugin Tests" "$SCRIPT_DIR/plugins/core/test-core-hooks.sh"
 run_test_suite "Credo Plugin Tests" "$SCRIPT_DIR/plugins/credo/test-credo-hooks.sh" || true
 run_test_suite "Ash Plugin Tests" "$SCRIPT_DIR/plugins/ash/test-ash-hooks.sh" || true
 run_test_suite "Dialyzer Plugin Tests" "$SCRIPT_DIR/plugins/dialyzer/test-dialyzer-hooks.sh" || true
+run_test_suite "Sobelow Plugin Tests" "$SCRIPT_DIR/plugins/sobelow/test-sobelow-hooks.sh" || true
 
 echo ""
 echo -e "${BLUE}================================${NC}"
