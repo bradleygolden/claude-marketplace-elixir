@@ -12,14 +12,35 @@ This is a **Claude Code plugin marketplace** for Elixir and BEAM ecosystem devel
 
 ```
 .claude-plugin/
-├── marketplace.json          # Marketplace metadata and plugin registry
-└── plugins/
-    └── core/                 # Core Elixir development plugin
-        ├── .claude-plugin/
-        │   └── plugin.json   # Plugin metadata
-        ├── hooks/
-        │   └── hooks.json    # Hook definitions
-        └── README.md         # Plugin documentation
+└── marketplace.json          # Marketplace metadata and plugin registry
+
+plugins/
+├── core/                     # Core Elixir development plugin
+│   ├── .claude-plugin/
+│   │   └── plugin.json       # Plugin metadata
+│   ├── hooks/
+│   │   └── hooks.json        # Hook definitions
+│   └── README.md             # Plugin documentation
+└── credo/                    # Credo static analysis plugin
+    ├── .claude-plugin/
+    │   └── plugin.json
+    ├── hooks/
+    │   └── hooks.json
+    ├── scripts/
+    │   ├── post-edit-check.sh
+    │   └── pre-commit-check.sh
+    └── README.md
+
+test/plugins/
+├── core/                     # Core plugin tests
+│   ├── README.md
+│   ├── autoformat-test/
+│   ├── compile-test/
+│   └── precommit-test/
+└── credo/                    # Credo plugin tests
+    ├── README.md
+    ├── postedit-test/
+    └── precommit-test/
 ```
 
 ### Key Concepts
@@ -36,11 +57,11 @@ This is a **Claude Code plugin marketplace** for Elixir and BEAM ecosystem devel
 
 The core plugin implements three critical workflows:
 
-1. **Auto-format** (non-blocking): After editing `.ex`/`.exs` files, runs `mix format {{file_path}}`
-2. **Compile check** (blocking): After editing, runs `mix compile --warnings-as-errors` and blocks on errors
-3. **Pre-commit validation** (blocking): Before `git commit`, validates formatting, compilation, and unused deps
+1. **Auto-format** (non-blocking, PostToolUse): After editing `.ex`/`.exs` files, runs `mix format {{file_path}}`
+2. **Compile check** (informational, PostToolUse): After editing, runs `mix compile --warnings-as-errors` and provides compilation errors as context to Claude via `additionalContext`
+3. **Pre-commit validation** (blocking, PreToolUse): Before `git commit`, validates formatting, compilation, and unused deps, blocking commits on failures
 
-Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands.
+Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands. Output is sent to Claude (the LLM) either via JSON `additionalContext` (non-blocking) or stderr with exit code 2 (blocking).
 
 ## Development Commands
 
@@ -68,11 +89,42 @@ After making changes to marketplace or plugin JSON files, validate structure:
 cat .claude-plugin/marketplace.json | jq .
 
 # Check plugin.json is valid JSON
-cat .claude-plugin/plugins/core/.claude-plugin/plugin.json | jq .
+cat plugins/core/.claude-plugin/plugin.json | jq .
 
 # Check hooks.json is valid JSON
-cat .claude-plugin/plugins/core/hooks/hooks.json | jq .
+cat plugins/core/hooks/hooks.json | jq .
 ```
+
+### Testing Plugin Hooks
+
+The repository includes an automated test suite for plugin hooks:
+
+```bash
+# Run all plugin tests
+./test/run-all-tests.sh
+
+# Run tests for a specific plugin
+./test/plugins/core/test-core-hooks.sh
+./test/plugins/credo/test-credo-hooks.sh
+
+# Via Claude Code slash command
+/test-marketplace          # All plugins
+/test-marketplace core     # Specific plugin
+```
+
+**Test Framework**:
+- `test/test-hook.sh` - Base testing utilities
+- `test/run-all-tests.sh` - Main test runner
+- `test/plugins/*/test-*-hooks.sh` - Plugin-specific test suites
+
+**What the tests verify**:
+- Hook exit codes (0 for success, 2 for blocking)
+- Hook output patterns and JSON structure
+- File type filtering (.ex, .exs, non-Elixir)
+- Command filtering (git commit vs other commands)
+- Blocking vs non-blocking behavior
+
+See `test/README.md` for detailed documentation.
 
 ## Important Conventions
 
@@ -89,7 +141,7 @@ The marketplace uses the namespace `elixir` (defined in `marketplace.json`). Plu
 ### Version Management
 
 - Marketplace version in `.claude-plugin/marketplace.json`
-- Plugin version in `.claude-plugin/plugins/core/.claude-plugin/plugin.json`
+- Plugin version in `plugins/core/.claude-plugin/plugin.json`
 - Keep versions in sync when releasing updates
 
 ## File Modification Guidelines
@@ -97,13 +149,15 @@ The marketplace uses the namespace `elixir` (defined in `marketplace.json`). Plu
 **When editing JSON files**: Always maintain valid JSON structure. Use `jq` to validate after changes.
 
 **When adding new plugins**:
-1. Create plugin directory under `.claude-plugin/plugins/`
-2. Add `.claude-plugin/plugin.json` with metadata
-3. Add plugin to `plugins` array in `marketplace.json`
+1. Create plugin directory under `plugins/`
+2. Add `.claude-plugin/plugin.json` with metadata inside the plugin directory
+3. Add plugin to `plugins` array in `.claude-plugin/marketplace.json`
 4. Create `README.md` documenting plugin features
+5. Create test directory under `test/plugins/<plugin-name>/`
 
 **When modifying hooks**:
-1. Edit `.claude-plugin/plugins/core/hooks/hooks.json`
-2. Test hook behavior in a sample Elixir project
-3. Update plugin README.md to document hook behavior
-4. Consider hook execution time and blocking behavior
+1. Edit `plugins/<plugin-name>/hooks/hooks.json`
+2. Update hook script in `plugins/<plugin-name>/scripts/` if needed
+3. Run automated tests: `./test/plugins/<plugin-name>/test-<plugin-name>-hooks.sh`
+4. Update plugin README.md to document hook behavior
+5. Consider hook execution time and blocking behavior
