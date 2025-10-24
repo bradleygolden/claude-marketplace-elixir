@@ -1,0 +1,13 @@
+{
+  "name": "core",
+  "version": "1.0.0-rc.2",
+  "description": "Essential Elixir development support with hooks and automation",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "license": "MIT",
+  "keywords": ["elixir", "erlang", "beam", "otp", "functional"],
+  "hooks": "./hooks/hooks.json"
+}

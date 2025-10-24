@@ -16,3 +16,6 @@ Thumbs.db
 
 # Local settings (not checked in)
 .claude/settings.local.json
+
+# Ignore thoughts
+.thoughts/

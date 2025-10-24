@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0-rc.1",
-    "pluginRoot": "./plugins"
+    "version": "1.0.0-rc.2"
   },
+  "pluginRoot": "../plugins",
   "plugins": [
     {
       "name": "core",
-      "source": "./core",
+      "source": "./plugins/core",
       "description": "Essential Elixir development support with hooks and automation",
       "keywords": ["elixir", "erlang", "beam", "otp", "functional"],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
@@ -20,9 +20,15 @@
     },
     {
       "name": "credo",
-      "source": "./credo",
+      "source": "./plugins/credo",
       "description": "Credo static code analysis for Elixir projects",
-      "keywords": ["elixir", "credo", "linting", "code-quality", "static-analysis"],
+      "keywords": [
+        "elixir",
+        "credo",
+        "linting",
+        "code-quality",
+        "static-analysis"
+      ],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"

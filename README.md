@@ -27,11 +27,12 @@ claude
 
 ```bash
 /plugin install core@elixir
+/plugin install credo@elixir
 ```
 ## Available Plugins
 
-
-* [core](./.claude-plugin/plugins/core/README.md) - Essential Elixir development support with hooks and automation
+* [core](./plugins/core/README.md) - Universal Elixir development support for any Elixir project
+* [credo](./plugins/credo/README.md) - Credo static code analysis
 
 ## License
 

@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "elixir": {
+      "source": {
+        "source": "directory",
+        "path": ".claude-plugin"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "core@elixir": true,
+    "credo@elixir": true
+  }
+}
