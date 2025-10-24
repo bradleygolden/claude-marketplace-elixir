@@ -49,6 +49,7 @@ run_test_suite "Credo Plugin Tests" "$SCRIPT_DIR/plugins/credo/test-credo-hooks.
 run_test_suite "Ash Plugin Tests" "$SCRIPT_DIR/plugins/ash/test-ash-hooks.sh" || true
 run_test_suite "Dialyzer Plugin Tests" "$SCRIPT_DIR/plugins/dialyzer/test-dialyzer-hooks.sh" || true
 run_test_suite "Sobelow Plugin Tests" "$SCRIPT_DIR/plugins/sobelow/test-sobelow-hooks.sh" || true
+run_test_suite "mix_audit Plugin Tests" "$SCRIPT_DIR/plugins/mix_audit/test-mix-audit-hooks.sh" || true
 run_test_suite "ExDoc Plugin Tests" "$SCRIPT_DIR/plugins/ex_doc/test-ex-doc-hooks.sh" || true
 
 echo ""

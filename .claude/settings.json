@@ -13,6 +13,7 @@
     "ash@elixir": true,
     "dialyzer@elixir": true,
     "sobelow@elixir": true,
-    "ex_doc@elixir": true
+    "ex_doc@elixir": true,
+    "mix_audit@elixir": true
   }
 }

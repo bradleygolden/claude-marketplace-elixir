@@ -1,0 +1,13 @@
+{
+  "name": "mix_audit",
+  "version": "1.0.0-rc.1",
+  "description": "Dependency security audit plugin that scans Mix dependencies for known vulnerabilities",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "license": "MIT",
+  "keywords": ["elixir", "mix_audit", "security", "audit", "dependencies", "vulnerability-scanning"],
+  "hooks": "./hooks/hooks.json"
+}
