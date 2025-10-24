@@ -1,0 +1,13 @@
+{
+  "description": "ExUnit testing automation with pre-commit validation",
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pre-commit-test.sh",
+      "description": "Validates tests pass before git commits using mix test --stale",
+      "blocking": true,
+      "timeout": 60000
+    }
+  ]
+}

@@ -26,19 +26,25 @@ claude
 ### Install Plugins
 
 ```bash
-/plugin install ash@elixir
 /plugin install core@elixir
 /plugin install credo@elixir
 /plugin install dialyzer@elixir
+/plugin install ex_unit@elixir
+/plugin install ash@elixir
 /plugin install sobelow@elixir
+/plugin install ex_doc@elixir
+/plugin install mix_audit@elixir
 ```
 ## Available Plugins
 
 * [ash](./plugins/ash/README.md) - Ash Framework code generation validation
-* [core](./plugins/core/README.md) - Universal Elixir development support for any Elixir project
-* [credo](./plugins/credo/README.md) - Credo static code analysis
-* [dialyzer](./plugins/dialyzer/README.md) - Dialyzer static type analysis
-* [sobelow](./plugins/sobelow/README.md) - Sobelow security-focused static analysis for Phoenix applications
+* [core](./plugins/core/README.md) - Essential Elixir development support (auto-formatting, compilation checks, pre-commit validation)
+* [credo](./plugins/credo/README.md) - Static code analysis for code quality and style
+* [ex_doc](./plugins/ex_doc/README.md) - Documentation quality validation
+* [dialyzer](./plugins/dialyzer/README.md) - Static type analysis and discrepancy detection
+* [ex_unit](./plugins/ex_unit/README.md) - ExUnit testing automation with smart pre-commit test validation
+* [mix_audit](./plugins/mix_audit/README.md) - Dependency security audit for known vulnerabilities
+* [sobelow](./plugins/sobelow/README.md) - Security-focused static analysis for Phoenix applications
 
 ## License
 

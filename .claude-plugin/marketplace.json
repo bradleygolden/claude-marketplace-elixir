@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0-rc.7"
+    "version": "1.0.0-rc.8"
   },
   "pluginRoot": "../plugins",
   "plugins": [
@@ -99,6 +99,22 @@
         "audit",
         "dependencies",
         "vulnerability-scanning"
+      ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "ex_unit",
+      "source": "./plugins/ex_unit",
+      "description": "ExUnit testing automation with pre-commit test validation",
+      "keywords": [
+        "elixir",
+        "exunit",
+        "testing",
+        "tdd",
+        "pre-commit",
+        "validation"
       ],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
