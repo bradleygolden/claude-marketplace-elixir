@@ -21,7 +21,16 @@ plugins/
 │   ├── hooks/
 │   │   └── hooks.json        # Hook definitions
 │   └── README.md             # Plugin documentation
-└── credo/                    # Credo static analysis plugin
+├── credo/                    # Credo static analysis plugin
+│   ├── .claude-plugin/
+│   │   └── plugin.json
+│   ├── hooks/
+│   │   └── hooks.json
+│   ├── scripts/
+│   │   ├── post-edit-check.sh
+│   │   └── pre-commit-check.sh
+│   └── README.md
+└── ash/                      # Ash Framework codegen plugin
     ├── .claude-plugin/
     │   └── plugin.json
     ├── hooks/
@@ -37,10 +46,15 @@ test/plugins/
 │   ├── autoformat-test/
 │   ├── compile-test/
 │   └── precommit-test/
-└── credo/                    # Credo plugin tests
+├── credo/                    # Credo plugin tests
+│   ├── README.md
+│   ├── postedit-test/
+│   └── precommit-test/
+└── ash/                      # Ash plugin tests
     ├── README.md
-    ├── postedit-test/
-    └── precommit-test/
+    ├── postedit_test/
+    ├── precommit_test/
+    └── test-ash-hooks.sh
 ```
 
 ### Key Concepts
@@ -55,11 +69,20 @@ test/plugins/
 
 ### Hook Implementation Details
 
-The core plugin implements three critical workflows:
+Each plugin implements workflows through hooks:
 
+**Core plugin** - Universal Elixir development:
 1. **Auto-format** (non-blocking, PostToolUse): After editing `.ex`/`.exs` files, runs `mix format {{file_path}}`
 2. **Compile check** (informational, PostToolUse): After editing, runs `mix compile --warnings-as-errors` and provides compilation errors as context to Claude via `additionalContext`
 3. **Pre-commit validation** (blocking, PreToolUse): Before `git commit`, validates formatting, compilation, and unused deps, blocking commits on failures
+
+**Credo plugin** - Static code analysis:
+1. **Post-edit check** (non-blocking, PostToolUse): Runs `mix credo suggest --format=json` on edited files
+2. **Pre-commit check** (blocking, PreToolUse): Runs `mix credo --strict` before commits, blocks if issues found
+
+**Ash plugin** - Ash Framework code generation:
+1. **Post-edit check** (non-blocking, PostToolUse): Runs `mix ash.codegen --check` to detect when generated code is out of sync
+2. **Pre-commit validation** (blocking, PreToolUse): Blocks commits if `mix ash.codegen --check` fails
 
 Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands. Output is sent to Claude (the LLM) either via JSON `additionalContext` (non-blocking) or stderr with exit code 2 (blocking).
 
@@ -106,10 +129,12 @@ The repository includes an automated test suite for plugin hooks:
 # Run tests for a specific plugin
 ./test/plugins/core/test-core-hooks.sh
 ./test/plugins/credo/test-credo-hooks.sh
+./test/plugins/ash/test-ash-hooks.sh
 
 # Via Claude Code slash command
 /test-marketplace          # All plugins
 /test-marketplace core     # Specific plugin
+/test-marketplace ash      # Specific plugin
 ```
 
 **Test Framework**:
@@ -161,3 +186,50 @@ The marketplace uses the namespace `elixir` (defined in `marketplace.json`). Plu
 3. Run automated tests: `./test/plugins/<plugin-name>/test-<plugin-name>-hooks.sh`
 4. Update plugin README.md to document hook behavior
 5. Consider hook execution time and blocking behavior
+
+## Hook Script Best Practices
+
+**Exit Codes**:
+- `0` - Success (allows operation to continue)
+- `1` - Error (script failure, not blocking)
+- `2` - Block (prevents operation from continuing, used for validation failures)
+
+**JSON Output Patterns**:
+```bash
+# Non-blocking with context (PostToolUse)
+jq -n --arg context "$OUTPUT" '{
+  "hookSpecificOutput": {
+    "hookEventName": "PostToolUse",
+    "additionalContext": $context
+  }
+}'
+
+# Suppress output when not relevant
+jq -n '{"suppressOutput": true}'
+
+# Blocking (PreToolUse) - output to stderr, exit 2
+mix some-check 2>&1 >&2
+exit 2
+```
+
+**Common Patterns**:
+- Project detection: Find Mix project root by traversing upward from file/directory
+- Dependency detection: Use `grep -qE '\{:dependency_name' mix.exs` to check for specific dependency
+- File filtering: Check file extensions with `grep -qE '\.(ex|exs)$'`
+- Command filtering: Check for specific commands like `grep -q 'git commit'`
+- Exit code handling: Check if variable is empty with `[[ -z "$VAR" ]]`, not `$?` after command substitution
+
+## Quality Gates
+
+Before pushing changes, run:
+```bash
+/review-marketplace
+```
+
+This validates:
+- JSON structure and validity
+- Hook script correctness (exit codes, output patterns)
+- Version management (marketplace and plugin versions)
+- Documentation completeness
+- Test coverage
+- Comment quality (removes unnecessary, keeps critical)

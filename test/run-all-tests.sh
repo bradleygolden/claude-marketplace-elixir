@@ -43,8 +43,10 @@ run_test_suite() {
   fi
 }
 
+
 run_test_suite "Core Plugin Tests" "$SCRIPT_DIR/plugins/core/test-core-hooks.sh" || true
 run_test_suite "Credo Plugin Tests" "$SCRIPT_DIR/plugins/credo/test-credo-hooks.sh" || true
+run_test_suite "Ash Plugin Tests" "$SCRIPT_DIR/plugins/ash/test-ash-hooks.sh" || true
 
 echo ""
 echo -e "${BLUE}================================${NC}"
