@@ -458,6 +458,69 @@ After synthesizing the review report, save it to the `.thoughts/` directory for 
    - Show path to saved review document
    - Provide next steps based on assessment
 
+### Phase 6: Generate Changelog (Optional)
+
+After writing the review document, generate changelog entries for the branch changes.
+
+**Only run this phase if the overall status is ✅ READY TO PUSH or ⚠️ NEEDS WORK** (skip if ❌ DO NOT PUSH with critical issues).
+
+1. **Spawn changelog-curator subagent:**
+
+Use Task tool with `subagent_type="changelog-curator"`:
+
+```
+Analyze the current branch vs main and generate changelog entries.
+
+Your task:
+1. Compare current branch against main to identify all changes
+2. Classify changes semantically (breaking/features/fixes/improvements)
+3. Generate Keep a Changelog format entries
+4. Recommend semantic version bump (major/minor/patch)
+5. Verify version files match recommendation
+
+Provide your report with:
+- Change analysis summary
+- Semantic version recommendation with reasoning
+- Changelog draft in Keep a Changelog format
+- List of files requiring version updates
+
+Branch: $(git branch --show-current)
+Current versions:
+- Marketplace: $(jq -r '.metadata.version' .claude-plugin/marketplace.json)
+- Core plugin: $(jq -r '.version' plugins/core/.claude-plugin/plugin.json 2>/dev/null || echo "N/A")
+- Credo plugin: $(jq -r '.version' plugins/credo/.claude-plugin/plugin.json 2>/dev/null || echo "N/A")
+```
+
+2. **Wait for changelog-curator to complete**
+
+3. **Save changelog draft:**
+   - Generate filename: `.thoughts/CHANGELOG-draft-[YYYY-MM-DD].md`
+   - If file exists, append `-2`, `-3`, etc.
+   - Write the changelog draft from the curator's report
+   - Use Write tool to create the file
+
+4. **Include in review summary:**
+   - Add changelog location to the concise summary presented to user
+   - Show recommended version bump
+   - Note if version files need updates
+
+**Output additions to summary:**
+
+```markdown
+### Changelog
+
+**Recommended version**: X.Y.Z (bump type: major/minor/patch)
+**Changelog draft**: .thoughts/CHANGELOG-draft-YYYY-MM-DD.md
+
+[If version files need updates]
+⚠️ Version files need updating:
+- .claude-plugin/marketplace.json
+- plugins/<plugin-name>/.claude-plugin/plugin.json
+
+[If versions are already correct]
+✅ Version files are already correct
+```
+
 ## Critical Validation Rules
 
 ### Sub-Agent Usage (for .claude/commands/*.md files)
@@ -517,7 +580,8 @@ Use TodoWrite throughout to track:
 5. Waiting for validator results
 6. Synthesizing review report (includes all analysis, cleanup, and validation)
 7. Writing review document to .thoughts/ directory
-8. Presenting concise summary to user
+8. Generating changelog (if status allows)
+9. Presenting concise summary to user
 
 ## Important Notes
 
@@ -529,8 +593,10 @@ Use TodoWrite throughout to track:
 - The **comment-cleaner agent** will automatically remove unnecessary comments during review
 - The **version validator** ensures versions are bumped correctly relative to main branch
 - The **best practices validators** check all changed files against Claude Code standards
+- The **changelog-curator agent** generates semantic changelog entries based on branch changes
 - **Critical best practices violations BLOCK the push** - treat them as seriously as other critical issues
 - **Review documents are saved** to `.thoughts/` directory for future reference
+- **Changelog drafts are saved** to `.thoughts/` directory for easy editing before release
 - Present a **concise summary** to the user; full details are in the saved review document
 - The user will push if you give ✅ READY TO PUSH - be thorough!
 - Overall status logic: ❌ DO NOT PUSH if (critical_issues > 0 OR bp_critical > 0)
