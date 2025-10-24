@@ -1,9 +1,9 @@
-defmodule PosteditTest.MixProject do
+defmodule PrecommitTest.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :postedit_test,
+      app: :precommit_test,
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
@@ -17,7 +17,7 @@ defmodule PosteditTest.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {PosteditTest.Application, []}
+      mod: {PrecommitTest.Application, []}
     ]
   end
 

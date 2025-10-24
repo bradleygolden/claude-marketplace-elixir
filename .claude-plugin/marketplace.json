@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0-rc.2"
+    "version": "1.0.0-rc.3"
   },
   "pluginRoot": "../plugins",
   "plugins": [
@@ -29,6 +29,15 @@
         "code-quality",
         "static-analysis"
       ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "ash",
+      "source": "./plugins/ash",
+      "description": "Ash Framework code generation validation and automation",
+      "keywords": ["ash", "elixir", "codegen", "framework", "validation"],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
