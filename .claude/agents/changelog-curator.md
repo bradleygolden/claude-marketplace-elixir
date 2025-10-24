@@ -231,14 +231,14 @@ The following files need version updates:
 **Good changelog entries**:
 - "Add credo plugin for Elixir static code analysis"
 - "Add comprehensive test framework with 15 automated tests"
-- "Fix TodoWrite usage in test-marketplace command to follow best practices"
+- "Fix TodoWrite usage in qa command to follow best practices"
 - "Update pre-commit hook to block on formatting violations"
 
 **Bad changelog entries**:
 - "Update file" (too vague)
 - "Fixed a bug" (not specific)
 - "Refactored code for better maintainability" (implementation detail, not user-facing)
-- "Updated test-marketplace.md" (what changed about it?)
+- "Updated qa.md" (what changed about it?)
 
 ## Edge Cases
 

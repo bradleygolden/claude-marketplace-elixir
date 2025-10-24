@@ -16,7 +16,7 @@ This directory contains automated tests for the core plugin hooks.
 
 ### Via Claude Code slash command:
 ```
-/test-marketplace core
+/qa test core
 ```
 
 ## Test Projects

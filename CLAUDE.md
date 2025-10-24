@@ -148,9 +148,9 @@ The repository includes an automated test suite for plugin hooks:
 ./test/plugins/dialyzer/test-dialyzer-hooks.sh
 
 # Via Claude Code slash command
-/test-marketplace          # All plugins
-/test-marketplace core     # Specific plugin
-/test-marketplace ash      # Specific plugin
+/qa test                   # All plugins
+/qa test core              # Specific plugin
+/qa test ash               # Specific plugin
 ```
 
 **Test Framework**:
@@ -239,7 +239,7 @@ exit 2
 
 Before pushing changes, run:
 ```bash
-/review-marketplace
+/qa
 ```
 
 This validates:
