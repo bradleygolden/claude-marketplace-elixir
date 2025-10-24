@@ -96,26 +96,42 @@ Use the **Grep** tool to find usage patterns in the current project:
 
 This provides **real-world usage examples** from the current project, which is often the most helpful context.
 
-### Step 4: Search HexDocs API
+### Step 4: Search HexDocs Search API
 
-If local search doesn't provide sufficient information, use the **Bash** tool to query the hex.pm API:
+If local search doesn't provide sufficient information, use the **Bash** tool to search the HexDocs search API.
+
+**Full-text search across documentation:**
 
 ```bash
-# Search for package on hex.pm API
-curl -s "https://hex.pm/api/packages/<package_name>" | jq -r '.releases[0].version, .meta.description, .meta.links'
+# Search across all packages
+curl -s "https://search.hexdocs.pm/?q=<query>&query_by=doc,title" | jq -r '.found, .hits[0:5][] | .document | "\(.package) - \(.title)\n\(.doc)\n---"'
+
+# Search within a specific package (get version first)
+VERSION=$(curl -s "https://hex.pm/api/packages/<package_name>" | jq -r '.releases[0].version')
+curl -s "https://search.hexdocs.pm/?q=<query>&query_by=doc,title&filter_by=package:=[<package>-$VERSION]" | jq -r '.hits[] | .document | "\(.title)\n\(.doc)\nURL: https://hexdocs.pm\(.url)\n---"'
 ```
 
-This will:
-1. Fetch the package information from hex.pm
-2. Get the latest version
-3. Show description and links
+**Examples:**
 
-Then construct the hexdocs.pm URL:
-```
-https://hexdocs.pm/<package_name>/<version>/<Module>.html
+```bash
+# Search for "mount" in phoenix_live_view
+VERSION=$(curl -s "https://hex.pm/api/packages/phoenix_live_view" | jq -r '.releases[0].version')
+curl -s "https://search.hexdocs.pm/?q=mount&query_by=doc,title&filter_by=package:=[phoenix_live_view-$VERSION]" | jq -r '.hits[0:3][] | .document | "\(.title)\n\(.doc)\n---"'
+
+# General search for Ecto.Query
+curl -s "https://search.hexdocs.pm/?q=Ecto.Query&query_by=doc,title" | jq -r '.hits[0:5][] | .document | "\(.package) - \(.title)\n\(.doc)\n"'
 ```
 
-Provide this link to the user along with the version and description.
+**API Response structure:**
+- `found`: Total number of results
+- `hits[]`: Array of results with:
+  - `document.package`: Package name
+  - `document.ref`: Version
+  - `document.title`: Function/module name
+  - `document.doc`: Documentation text
+  - `document.url`: Path to docs (append to https://hexdocs.pm)
+
+**Requirements:** curl and jq (available on Linux/Mac, use Git Bash or WSL on Windows)
 
 ### Step 5: Web search fallback
 
@@ -189,10 +205,13 @@ Searching web for <package_name> documentation:
 **User asks**: "Show me Ecto.Query examples"
 
 **Search process**:
-1. Check `deps/ecto/`
+1. Check `deps/ecto/` for source code
 2. Search project for `import Ecto.Query`
 3. Find query examples in `lib/*/queries/*.ex` or `lib/*_context.ex`
-4. If needed, fetch from hexdocs.pm using the script
+4. If needed, search HexDocs API:
+   ```bash
+   curl -s "https://search.hexdocs.pm/?q=Ecto.Query&query_by=doc,title" | jq '.hits[0:3]'
+   ```
 5. Show local examples first, then external docs
 
 ### Example 3: Unknown package
@@ -201,9 +220,16 @@ Searching web for <package_name> documentation:
 
 **Search process**:
 1. Check `deps/timex/` (not found)
-2. Search hex.pm API for "timex"
-3. Provide hexdocs.pm link: https://hexdocs.pm/timex
-4. Offer to add it to mix.exs if user wants to use it
+2. Get package info:
+   ```bash
+   curl -s "https://hex.pm/api/packages/timex" | jq -r '.releases[0].version'
+   ```
+3. Search HexDocs for usage examples:
+   ```bash
+   curl -s "https://search.hexdocs.pm/?q=timex getting started&query_by=doc,title&filter_by=package:=[timex-3.7.11]" | jq
+   ```
+4. Provide hexdocs.pm link and documentation excerpts
+5. Offer to add it to mix.exs if user wants to use it
 
 ## Tool usage summary
 
@@ -212,8 +238,10 @@ Use Claude's built-in tools in this order:
 1. **Glob** - Find package files in deps/
 2. **Grep** - Search for modules, functions, and documentation in deps/ and project code
 3. **Read** - Read full files for detailed documentation
-4. **Bash** - Query hex.pm API with curl
+4. **Bash** - Query HexDocs Search API with curl + jq
 5. **WebSearch** - Fallback search for hexdocs.pm or general web
+
+**Requirements:** curl and jq (Linux/Mac native, use Git Bash or WSL on Windows)
 
 ## Best practices
 

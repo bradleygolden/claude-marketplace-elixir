@@ -14,6 +14,7 @@ claude
 - Elixir installed and available in PATH
 - Mix available
 - Run from an Elixir project directory (with mix.exs)
+- curl and jq (for hex-docs-search skill)
 
 ## Features
 

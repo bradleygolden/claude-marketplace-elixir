@@ -40,14 +40,15 @@ Searches the project's `lib/` and `test/` directories:
 
 **Advantage**: Context-aware examples from your actual codebase
 
-### 3. HexDocs API Search
+### 3. HexDocs Search API
 
-Queries `https://hex.pm/api/packages/<name>`:
-- Gets latest version information
-- Fetches package description
-- Constructs hexdocs.pm URLs
+Uses the HexDocs search API at `https://search.hexdocs.pm/`:
+- Full-text search across documentation content
+- Filters by package name and version
+- Returns documentation excerpts with direct links
+- Falls back to hex.pm API for package info
 
-**Advantage**: Official, up-to-date documentation
+**Advantage**: Searches actual documentation content, not just package metadata
 
 ### 4. Web Search Fallback
 
