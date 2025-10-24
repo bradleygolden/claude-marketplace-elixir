@@ -30,13 +30,21 @@ plugins/
 │   │   ├── post-edit-check.sh
 │   │   └── pre-commit-check.sh
 │   └── README.md
-└── ash/                      # Ash Framework codegen plugin
+├── ash/                      # Ash Framework codegen plugin
+│   ├── .claude-plugin/
+│   │   └── plugin.json
+│   ├── hooks/
+│   │   └── hooks.json
+│   ├── scripts/
+│   │   ├── post-edit-check.sh
+│   │   └── pre-commit-check.sh
+│   └── README.md
+└── dialyzer/                 # Dialyzer type analysis plugin
     ├── .claude-plugin/
     │   └── plugin.json
     ├── hooks/
     │   └── hooks.json
     ├── scripts/
-    │   ├── post-edit-check.sh
     │   └── pre-commit-check.sh
     └── README.md
 
@@ -50,11 +58,15 @@ test/plugins/
 │   ├── README.md
 │   ├── postedit-test/
 │   └── precommit-test/
-└── ash/                      # Ash plugin tests
+├── ash/                      # Ash plugin tests
+│   ├── README.md
+│   ├── postedit_test/
+│   ├── precommit_test/
+│   └── test-ash-hooks.sh
+└── dialyzer/                 # Dialyzer plugin tests
     ├── README.md
-    ├── postedit_test/
-    ├── precommit_test/
-    └── test-ash-hooks.sh
+    ├── precommit-test/
+    └── test-dialyzer-hooks.sh
 ```
 
 ### Key Concepts
@@ -83,6 +95,9 @@ Each plugin implements workflows through hooks:
 **Ash plugin** - Ash Framework code generation:
 1. **Post-edit check** (non-blocking, PostToolUse): Runs `mix ash.codegen --check` to detect when generated code is out of sync
 2. **Pre-commit validation** (blocking, PreToolUse): Blocks commits if `mix ash.codegen --check` fails
+
+**Dialyzer plugin** - Static type analysis:
+1. **Pre-commit check** (blocking, PreToolUse): Runs `mix dialyzer` before commits, blocks if type errors found. Uses 120s timeout due to potential analysis time.
 
 Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands. Output is sent to Claude (the LLM) either via JSON `additionalContext` (non-blocking) or stderr with exit code 2 (blocking).
 
@@ -130,6 +145,7 @@ The repository includes an automated test suite for plugin hooks:
 ./test/plugins/core/test-core-hooks.sh
 ./test/plugins/credo/test-credo-hooks.sh
 ./test/plugins/ash/test-ash-hooks.sh
+./test/plugins/dialyzer/test-dialyzer-hooks.sh
 
 # Via Claude Code slash command
 /test-marketplace          # All plugins
