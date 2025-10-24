@@ -1,0 +1,13 @@
+{
+  "name": "dialyzer",
+  "version": "1.0.0-rc.1",
+  "description": "Dialyzer static type analysis for Elixir projects",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "license": "MIT",
+  "keywords": ["elixir", "dialyzer", "type-checking", "static-analysis"],
+  "hooks": "./hooks/hooks.json"
+}

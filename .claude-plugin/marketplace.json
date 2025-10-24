@@ -41,6 +41,20 @@
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "dialyzer",
+      "source": "./plugins/dialyzer",
+      "description": "Dialyzer static type analysis for Elixir projects",
+      "keywords": [
+        "elixir",
+        "dialyzer",
+        "type-checking",
+        "static-analysis"
+      ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
     }
   ]
 }
