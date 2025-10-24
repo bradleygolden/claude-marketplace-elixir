@@ -1,0 +1,17 @@
+{
+  "description": "Dependency security audit with pre-commit validation",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pre-commit-check.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

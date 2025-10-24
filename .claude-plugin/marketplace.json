@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0-rc.6"
+    "version": "1.0.0-rc.7"
   },
   "pluginRoot": "../plugins",
   "plugins": [
@@ -83,6 +83,22 @@
         "validation",
         "quality",
         "pre-commit"
+      ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "mix_audit",
+      "source": "./plugins/mix_audit",
+      "description": "Dependency security audit plugin that scans Mix dependencies for known vulnerabilities",
+      "keywords": [
+        "elixir",
+        "mix_audit",
+        "security",
+        "audit",
+        "dependencies",
+        "vulnerability-scanning"
       ],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
