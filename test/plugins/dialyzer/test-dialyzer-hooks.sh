@@ -8,7 +8,6 @@ echo "Testing Dialyzer Plugin Hooks"
 echo "================================"
 echo ""
 
-# Test 1: Pre-commit check blocks on Dialyzer type errors
 test_hook \
   "Pre-commit check: Blocks on Dialyzer type errors" \
   "plugins/dialyzer/scripts/pre-commit-check.sh" \
@@ -16,7 +15,6 @@ test_hook \
   2 \
   "dialyzer"
 
-# Test 2: Pre-commit check ignores non-commit commands
 test_hook \
   "Pre-commit check: Ignores non-commit git commands" \
   "plugins/dialyzer/scripts/pre-commit-check.sh" \
@@ -24,7 +22,6 @@ test_hook \
   0 \
   ""
 
-# Test 3: Pre-commit check ignores non-git commands
 test_hook \
   "Pre-commit check: Ignores non-git commands" \
   "plugins/dialyzer/scripts/pre-commit-check.sh" \

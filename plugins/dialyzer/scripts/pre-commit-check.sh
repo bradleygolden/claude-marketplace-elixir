@@ -1,18 +1,21 @@
 #!/bin/bash
 
+# Pre-commit validation for Dialyzer static type analysis
+# Runs before git commits to check for type errors
+# Blocks commits if type issues are found (exit 2)
+# Uses 120s timeout due to Dialyzer's analysis time
+
 INPUT=$(cat) || exit 1
 
-# Validate JSON and extract fields with error handling
 COMMAND=$(echo "$INPUT" | jq -e -r '.tool_input.command' 2>/dev/null) || exit 1
 CWD=$(echo "$INPUT" | jq -e -r '.cwd' 2>/dev/null) || exit 1
 
-# Validate extracted values are not null
 if [[ -z "$COMMAND" ]] || [[ "$COMMAND" == "null" ]]; then
-  exit 1
+  exit 0
 fi
 
 if [[ -z "$CWD" ]] || [[ "$CWD" == "null" ]]; then
-  exit 1
+  exit 0
 fi
 
 if ! echo "$COMMAND" | grep -q 'git commit'; then
@@ -39,10 +42,15 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
+# Check if project uses Dialyzer (dialyxir dependency)
+if ! grep -qE '\{:dialyxir' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then
+  exit 0
+fi
+
 DIALYZER_OUTPUT=$(cd "$PROJECT_ROOT" && mix dialyzer 2>&1)
 DIALYZER_EXIT_CODE=$?
 
-# Dialyzer exit codes: 0 = no issues, >0 = issues found
+# Dialyzer exit code: 0 = no type errors, >0 = type errors found
 if [ $DIALYZER_EXIT_CODE -ne 0 ]; then
   TOTAL_LINES=$(echo "$DIALYZER_OUTPUT" | wc -l)
   MAX_LINES=30
@@ -61,8 +69,5 @@ Run 'mix dialyzer' to see the full output."
   echo "$OUTPUT" >&2
   exit 2
 else
-  jq -n '{
-    "suppressOutput": true
-  }'
   exit 0
 fi
