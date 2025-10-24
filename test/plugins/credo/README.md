@@ -1,121 +1,96 @@
-# Credo Plugin Test Suite
+# Credo Plugin Tests
 
-This test suite validates the credo@elixir plugin hooks using pre-canned test projects.
+This directory contains automated tests for the credo plugin hooks.
 
-**Prerequisite**: The credo@elixir plugin must be installed before running this test.
+## Running Tests
 
-## Test Structure
-
-Pre-canned projects are located in:
-- `test/credo/postedit-test/` - Tests PostToolUse hook (provides Credo context)
-- `test/credo/precommit-test/` - Tests PreToolUse hook (runs Credo before commits)
-
-## Setup
-
-Both test projects require Credo dependencies to be installed:
-
+### Run all credo plugin tests:
 ```bash
-cd test/credo/postedit-test && mix deps.get
-cd test/credo/precommit-test && mix deps.get
+./test/plugins/credo/test-credo-hooks.sh
 ```
 
----
-
-## Test 1: PostToolUse Hook (Non-blocking)
-
-### Test Steps
-
-1. Use the Read tool to view `test/credo/postedit-test/lib/code_with_credo_issues.ex` and observe the existing Credo violations:
-   - Missing `@moduledoc`
-   - CamelCase function names (should be snake_case)
-   - Lines exceeding 120 characters
-   - TODO comments
-   - Deep nesting
-
-2. Use the Edit tool to make ANY change to `test/credo/postedit-test/lib/code_with_credo_issues.ex` (e.g., add a new function, modify existing code).
-
-3. Observe the PostToolUse hook providing Credo analysis in the `additionalContext` system reminder.
-
-4. The context should show Credo violations like:
-   - `Readability.ModuleDoc` - Missing moduledoc
-   - `Naming.FunctionName` - CamelCase function names
-   - `Refactor.Nesting` - Deep nesting issues
-   - `Design.TagTODO` - TODO comments
-
-### Expected Behavior
-
-The PostToolUse hook should:
-- Execute `mix credo` on the edited file
-- Provide Credo violations as context in system reminders
-- Be NON-BLOCKING (edit succeeds even with violations)
-- Help you understand code quality issues without preventing edits
-
-**Success criteria**: Hook provides Credo violation feedback after file edit without blocking.
-
----
-
-## Test 2: PreToolUse Hook (Blocking)
-
-### Test Steps
-
-1. Use the Read tool to view `test/credo/precommit-test/lib/code_with_issues.ex` and observe the Credo violations:
-   - Missing `@moduledoc`
-   - CamelCase function name (`processData` should be `process_data`)
-   - FIXME comments
-   - Lines exceeding 120 characters
-   - Deep nesting (5+ levels)
-
-2. Try to commit:
+### Run all marketplace tests (includes core + credo):
 ```bash
-cd test/credo/precommit-test && git add . && git commit -m "Test commit"
+./test/run-all-tests.sh
 ```
 
-3. Observe that the PreToolUse hook runs `mix credo --strict` before the commit.
+### Via Claude Code slash command:
+```
+/test-marketplace credo
+```
 
-4. The Credo violations should appear as output sent to Claude via stderr.
+## Test Projects
 
-5. The commit should be BLOCKED (Credo hook prevents committing code with quality issues).
+The credo plugin has two test projects with intentional Credo violations to verify hook behavior:
 
-6. Fix the Credo violations and try committing again - it should succeed.
+### 1. postedit-test/
+- **Purpose**: Tests the post-edit check hook (PostToolUse, non-blocking)
+- **Contains**: Elixir code with Credo violations:
+  - Missing `@moduledoc`
+  - Deep nesting (5+ levels)
+- **Expected behavior**: Credo violations provided as context to Claude after editing
 
-### Expected Behavior
+### 2. precommit-test/
+- **Purpose**: Tests the pre-commit check hook (PreToolUse, blocking)
+- **Contains**: Elixir code with Credo violations:
+  - Missing `@moduledoc`
+  - Deep nesting (5+ levels)
+- **Expected behavior**: Blocks git commits when Credo violations found
 
-The PreToolUse hook should:
-- Execute `mix credo --strict` before git commits
-- Display Credo violations to Claude via stderr (same pattern as core plugin)
-- Be BLOCKING (commit fails when violations are found, similar to compile errors)
-- Prevent committing code with quality issues
+## Test Coverage
 
-**Success criteria**: Hook runs Credo check before git commit and blocks execution when violations are found.
+The automated test suite includes 6 tests:
 
----
+**Post-edit check hook**:
+- ✅ Detects Credo violations
+- ✅ Works on .exs files
+- ✅ Ignores non-Elixir files
 
-## Credo Violations vs Compilation Errors
+**Pre-commit check hook**:
+- ✅ Blocks on Credo violations
+- ✅ Ignores non-commit git commands
+- ✅ Ignores non-git commands
 
-**Important**: Credo checks CODE QUALITY, not correctness:
+## Hook Implementation
 
-**Credo Issues** (style/readability):
+The credo plugin implements two hooks:
+
+1. **Post-edit check** (`scripts/post-edit-check.sh`)
+   - Trigger: After Edit/Write tools on .ex/.exs files
+   - Action: Runs `mix credo {{file_path}}`
+   - Blocking: No (provides context on violations)
+   - Output: Truncated to 30 lines
+
+2. **Pre-commit check** (`scripts/pre-commit-check.sh`)
+   - Trigger: Before `git commit` commands
+   - Action: Runs `mix credo --strict`
+   - Blocking: Yes (exit code 2 on violations)
+
+## Credo vs Compilation
+
+**Credo checks CODE QUALITY** (style/readability):
 - Missing moduledocs
-- Function naming conventions (snake_case vs CamelCase)
-- Line length (>120 chars)
+- Function naming conventions
+- Line length
 - TODO/FIXME comments
-- Code complexity (nesting depth, function length)
+- Code complexity
 
-**NOT Credo Issues** (these are compiler warnings/errors):
+**NOT Credo issues** (these are compiler warnings/errors):
 - Unused variables
 - Undefined functions
 - Type errors
 - Syntax errors
 
----
+## Prerequisites
 
-## Summary Format
-
-After completing all tests, provide a summary:
-
+Before running tests, ensure the test projects have Credo dependencies installed:
+```bash
+cd test/plugins/credo/postedit-test && mix deps.get
+cd test/plugins/credo/precommit-test && mix deps.get
 ```
-✅/❌ PostToolUse hook - Did it provide Credo context after editing (non-blocking)?
-✅/❌ PreToolUse hook - Did it run Credo before git commit and block on violations?
 
-Overall result: PASS/FAIL
+The credo plugin must also be installed in Claude Code:
+```
+/plugin marketplace add /path/to/marketplace
+/plugin install credo@elixir
 ```

@@ -95,6 +95,37 @@ cat plugins/core/.claude-plugin/plugin.json | jq .
 cat plugins/core/hooks/hooks.json | jq .
 ```
 
+### Testing Plugin Hooks
+
+The repository includes an automated test suite for plugin hooks:
+
+```bash
+# Run all plugin tests
+./test/run-all-tests.sh
+
+# Run tests for a specific plugin
+./test/plugins/core/test-core-hooks.sh
+./test/plugins/credo/test-credo-hooks.sh
+
+# Via Claude Code slash command
+/test-marketplace          # All plugins
+/test-marketplace core     # Specific plugin
+```
+
+**Test Framework**:
+- `test/test-hook.sh` - Base testing utilities
+- `test/run-all-tests.sh` - Main test runner
+- `test/plugins/*/test-*-hooks.sh` - Plugin-specific test suites
+
+**What the tests verify**:
+- Hook exit codes (0 for success, 2 for blocking)
+- Hook output patterns and JSON structure
+- File type filtering (.ex, .exs, non-Elixir)
+- Command filtering (git commit vs other commands)
+- Blocking vs non-blocking behavior
+
+See `test/README.md` for detailed documentation.
+
 ## Important Conventions
 
 ### Marketplace Namespace
@@ -126,7 +157,7 @@ The marketplace uses the namespace `elixir` (defined in `marketplace.json`). Plu
 
 **When modifying hooks**:
 1. Edit `plugins/<plugin-name>/hooks/hooks.json`
-2. Test hook behavior in `test/plugins/<plugin-name>/` test projects
-3. Update plugin README.md to document hook behavior
-4. Consider hook execution time and blocking behavior
-5. Run `/test-marketplace <plugin-name>` to validate changes
+2. Update hook script in `plugins/<plugin-name>/scripts/` if needed
+3. Run automated tests: `./test/plugins/<plugin-name>/test-<plugin-name>-hooks.sh`
+4. Update plugin README.md to document hook behavior
+5. Consider hook execution time and blocking behavior
