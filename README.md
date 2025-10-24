@@ -30,6 +30,7 @@ claude
 /plugin install core@elixir
 /plugin install credo@elixir
 /plugin install dialyzer@elixir
+/plugin install sobelow@elixir
 ```
 ## Available Plugins
 
@@ -37,6 +38,7 @@ claude
 * [core](./plugins/core/README.md) - Universal Elixir development support for any Elixir project
 * [credo](./plugins/credo/README.md) - Credo static code analysis
 * [dialyzer](./plugins/dialyzer/README.md) - Dialyzer static type analysis
+* [sobelow](./plugins/sobelow/README.md) - Sobelow security-focused static analysis for Phoenix applications
 
 ## License
 

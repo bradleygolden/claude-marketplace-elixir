@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0-rc.4"
+    "version": "1.0.0-rc.5"
   },
   "pluginRoot": "../plugins",
   "plugins": [
@@ -51,6 +51,22 @@
         "dialyzer",
         "type-checking",
         "static-analysis"
+      ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "sobelow",
+      "source": "./plugins/sobelow",
+      "description": "Sobelow security-focused static analysis for Phoenix and Elixir projects",
+      "keywords": [
+        "elixir",
+        "phoenix",
+        "sobelow",
+        "security",
+        "static-analysis",
+        "vulnerability-scanning"
       ],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
