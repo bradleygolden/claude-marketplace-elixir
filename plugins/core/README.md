@@ -14,6 +14,7 @@ claude
 - Elixir installed and available in PATH
 - Mix available
 - Run from an Elixir project directory (with mix.exs)
+- curl and jq (for hex-docs-search skill)
 
 ## Features
 
@@ -25,6 +26,16 @@ claude
 
 **PreToolUse - Before git commits:**
 - ✅ **Pre-commit validation** - Ensures code is formatted, compiles, and has no unused deps before committing
+
+### Skills
+
+**hex-docs-search** - Intelligent Hex package documentation search:
+- 🔍 **Local deps search** - Searches installed packages in `deps/` directory for code and docs
+- 📚 **Codebase usage** - Finds real-world usage examples from your project
+- 🌐 **HexDocs API** - Queries hex.pm API for official documentation
+- 🔎 **Web fallback** - Uses web search when other methods don't provide enough information
+
+See [skills/hex-docs-search/SKILL.md](skills/hex-docs-search/SKILL.md) for details.
 
 ## Hooks Behavior
 
