@@ -14,6 +14,7 @@
     "dialyzer@elixir": true,
     "sobelow@elixir": true,
     "ex_doc@elixir": true,
-    "mix_audit@elixir": true
+    "mix_audit@elixir": true,
+    "ex_unit@elixir": true
   }
 }
