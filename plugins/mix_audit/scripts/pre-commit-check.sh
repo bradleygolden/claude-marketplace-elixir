@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Pre-commit validation for mix_audit dependency security scanner
 # Runs before git commits to check for vulnerable dependencies
@@ -17,12 +17,10 @@ if [[ -z "$CWD" ]] || [[ "$CWD" == "null" ]]; then
   exit 0
 fi
 
-# Only run audit check on git commits (not other bash commands)
 if ! echo "$COMMAND" | grep -q 'git commit'; then
   exit 0
 fi
 
-# Function to find the Mix project root by traversing upward
 find_mix_project_root() {
   local dir="$1"
   while [[ "$dir" != "/" ]]; do
@@ -48,7 +46,6 @@ fi
 AUDIT_OUTPUT=$(cd "$PROJECT_ROOT" && mix deps.audit 2>&1)
 AUDIT_EXIT_CODE=$?
 
-# Block commit if vulnerabilities found
 if [ $AUDIT_EXIT_CODE -ne 0 ]; then
   TOTAL_LINES=$(echo "$AUDIT_OUTPUT" | wc -l)
   MAX_LINES=30
@@ -63,8 +60,21 @@ Run 'mix deps.audit' to see the full output."
     OUTPUT="$AUDIT_OUTPUT"
   fi
 
-  echo "$OUTPUT" >&2
-  exit 2
+  REASON="MixAudit plugin found vulnerable dependencies:\n\n${OUTPUT}"
+
+  jq -n \
+    --arg reason "$REASON" \
+    --arg msg "Commit blocked: MixAudit found vulnerable dependencies" \
+    '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": $reason
+      },
+      "systemMessage": $msg
+    }'
+  exit 0
 fi
 
+jq -n '{"suppressOutput": true}'
 exit 0

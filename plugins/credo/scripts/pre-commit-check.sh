@@ -1,18 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 INPUT=$(cat) || exit 1
 
-# Validate JSON and extract fields with error handling
 COMMAND=$(echo "$INPUT" | jq -e -r '.tool_input.command' 2>/dev/null) || exit 1
 CWD=$(echo "$INPUT" | jq -e -r '.cwd' 2>/dev/null) || exit 1
 
-# Validate extracted values are not null
 if [[ -z "$COMMAND" ]] || [[ "$COMMAND" == "null" ]]; then
-  exit 1
+  exit 0
 fi
 
 if [[ -z "$CWD" ]] || [[ "$CWD" == "null" ]]; then
-  exit 1
+  exit 0
 fi
 
 if ! echo "$COMMAND" | grep -q 'git commit'; then
@@ -34,7 +32,6 @@ find_mix_project_root() {
 
 PROJECT_ROOT=$(find_mix_project_root "$CWD")
 
-# If no project root found, exit silently (not an Elixir project)
 if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
@@ -57,9 +54,20 @@ Run 'mix credo --strict' to see the full output."
     OUTPUT="$CREDO_OUTPUT"
   fi
 
-  # Block commit and send output to Claude via stderr (same pattern as core plugin)
-  echo "$OUTPUT" >&2
-  exit 2
+  REASON="Credo plugin found code quality issues:\n\n${OUTPUT}"
+
+  jq -n \
+    --arg reason "$REASON" \
+    --arg msg "Commit blocked: Credo found code quality issues" \
+    '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": $reason
+      },
+      "systemMessage": $msg
+    }'
+  exit 0
 else
   jq -n '{
     "suppressOutput": true

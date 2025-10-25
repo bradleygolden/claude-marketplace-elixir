@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# Source the test framework
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../test-hook.sh"
 
@@ -48,21 +47,21 @@ test_hook \
   0 \
   ""
 
-# Test 6: Pre-commit validation blocks on unformatted code
-test_hook \
-  "Pre-commit: Blocks on unformatted code" \
+# Test 6: Pre-commit validation blocks on unformatted code with JSON
+test_hook_json \
+  "Pre-commit: Blocks on unformatted code with structured JSON" \
   "plugins/core/scripts/pre-commit-check.sh" \
   "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/core/precommit-test\"}" \
-  2 \
-  "mix format"
+  0 \
+  '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Core plugin")) and .systemMessage != null'
 
-# Test 7: Pre-commit validation shows compilation errors
-test_hook \
-  "Pre-commit: Shows compilation errors" \
+# Test 7: Pre-commit validation shows compilation errors in permissionDecisionReason
+test_hook_json \
+  "Pre-commit: Shows compilation errors in structured output" \
   "plugins/core/scripts/pre-commit-check.sh" \
   "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/core/precommit-test\"}" \
-  2 \
-  "CompileError"
+  0 \
+  '.hookSpecificOutput.permissionDecisionReason | contains("Compilation failed")'
 
 # Test 8: Pre-commit validation ignores non-commit commands
 test_hook \

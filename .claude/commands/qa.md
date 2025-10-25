@@ -177,7 +177,7 @@ Categorize changes by type:
 
 #### 1.2 Spawn Parallel Analysis Agents
 
-Spawn FOUR parallel sub-agent tasks using Task tool in a single response:
+Spawn FIVE parallel sub-agent tasks using Task tool in a single response:
 
 **Task 1: Plugin/Hook Changes Analysis**
 - Use Task tool with `subagent_type="analyzer"`
@@ -201,11 +201,33 @@ Spawn FOUR parallel sub-agent tasks using Task tool in a single response:
 **Task 4: Version Management Validation**
 - Use Task tool with `subagent_type="analyzer"`
 - Compare current branch with main to determine changes
-- Validate version bumps (marketplace + plugins)
+- Validate version bumps according to versioning protocol:
+  - **Plugin versions**: Bump when plugin functionality changes (hooks, scripts, commands, agents)
+  - **Marketplace version**: Bump ONLY when catalog structure changes (add/remove plugins, marketplace metadata)
+  - This follows standard package registry practices (npm, PyPI) where registry version ≠ package versions
 - Check version format (semver)
 - Compare with main: `git diff main -- .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json`
+- Verify: If only plugin functionality changed, marketplace version should be unchanged
 
-Wait for ALL four agents to complete.
+**Task 5: Documentation Consistency Validation**
+- Use Task tool with `subagent_type="finder"`
+- Check ALL documentation files for outdated patterns (regardless of whether they changed):
+  - `CLAUDE.md`: Hook blocking patterns, exit codes, version management guidance
+  - All `plugins/*/README.md`: Hook implementation details, exit codes, stderr/stdout usage
+  - Main `README.md`: Setup instructions, hook behavior descriptions
+- Search for known outdated patterns:
+  - "exit 2" for blocking (should be "exit 0 with JSON permissionDecision")
+  - "stderr" for blocking output (should be "stdout with JSON")
+  - "Keep versions in sync" (should explain independent plugin/marketplace versioning)
+  - Any references to old blocking mechanisms
+- For each outdated pattern found, provide:
+  - File path and line number
+  - Current (outdated) text
+  - What it should say (corrected text based on current implementation)
+  - Severity: ⚠️ WARNING (outdated documentation)
+- Report count of outdated patterns by file
+
+Wait for ALL five agents to complete.
 
 #### 1.3 Best Practices Validation
 
@@ -249,10 +271,11 @@ Generate comprehensive review with:
 4. Command/Agent Changes details
 5. Comment Cleanup Results
 6. Version Management Validation
-7. Best Practices Validation results
-8. Test Coverage assessment
-9. Documentation assessment
-10. Actionable Next Steps
+7. Documentation Consistency Validation (outdated patterns found)
+8. Best Practices Validation results
+9. Test Coverage assessment
+10. Documentation assessment
+11. Actionable Next Steps
 
 #### 1.5 Write Review Document
 
@@ -436,7 +459,13 @@ Quick Stats:
 - Critical issues: X ❌
 - Warnings: X ⚠️
 - Recommendations: X 💡
+- Documentation consistency: X outdated patterns found
 - Best practices violations: X ❌ / X ⚠️ / X 💡
+
+**Documentation Issues** (if any):
+- `CLAUDE.md`: X outdated patterns
+- `plugins/*/README.md`: X outdated patterns
+- Main `README.md`: X outdated patterns
 
 **Details**: See `.thoughts/YYYY-MM-DD-marketplace-review.md`
 
@@ -876,10 +905,11 @@ Ask if they want:
 
 ### Sub-Agent Usage
 - Spawn multiple agents in parallel when possible (single response, multiple Task calls)
+- Marketplace review spawns 5 parallel agents: plugin/hook analysis, command/agent review, comment cleanup, version management validation, and documentation consistency validation
 - Wait for ALL agents to complete before proceeding
 - Use appropriate subagent types:
   - `analyzer` for execution flow and technical analysis
-  - `finder` for pattern finding and examples
+  - `finder` for pattern finding, examples, and documentation consistency checks
   - `comment-cleaner` for comment cleanup
   - `changelog-curator` for changelog generation
 
@@ -899,3 +929,52 @@ Ask if they want:
 - Don't run intelligent analysis if structural validation fails
 - Wait for all parallel agents before synthesizing
 - Save all reports to `.thoughts/` for future reference
+
+### Documentation Consistency
+
+Documentation consistency validation checks ALL documentation files (regardless of whether they changed) for outdated patterns that don't match the current implementation:
+
+**Known Outdated Patterns to Check:**
+- **"exit 2" for blocking**: Should now be "exit 0 with JSON permissionDecision: deny"
+- **"stderr" for blocking output**: Should now be "stdout with structured JSON"
+- **"Keep versions in sync"**: Should explain plugin vs marketplace versioning independence
+- **Hook blocking examples**: Should show current JSON structure with permissionDecision/permissionDecisionReason/systemMessage
+
+**Files to Validate:**
+- `CLAUDE.md`: Hook Script Best Practices section, Hook Implementation Details section, Version Management section
+- All `plugins/*/README.md`: Hook implementation descriptions, pattern references
+- Main `README.md`: Any hook behavior or setup instructions
+
+**Severity**: All outdated documentation is ⚠️ WARNING (doesn't block push but should be fixed to prevent confusion)
+
+### Versioning Protocol
+
+**Plugin Versions vs Marketplace Version**:
+
+Plugin and marketplace versions serve different purposes and should version independently:
+
+**When to Bump Plugin Version** (`plugins/*/.claude-plugin/plugin.json`):
+- ✅ Hooks changed (hooks.json, scripts/*.sh)
+- ✅ Commands added/modified (.claude/commands/*.md in plugin)
+- ✅ Agents added/modified (.claude/agents/*.md in plugin)
+- ✅ MCP servers changed
+- ✅ Bug fixes in plugin functionality
+- ✅ Documentation updates (README.md in plugin)
+- Use semantic versioning:
+  - **Major** (2.0.0): Breaking changes to hooks, commands, or APIs
+  - **Minor** (1.1.0): New features, new commands, backward-compatible changes
+  - **Patch** (1.0.1): Bug fixes, documentation updates
+
+**When to Bump Marketplace Version** (`.claude-plugin/marketplace.json`):
+- ✅ Adding new plugin to catalog
+- ✅ Removing plugin from catalog
+- ✅ Changing marketplace metadata (owner, description)
+- ✅ Reorganizing plugin categories/structure
+- ❌ NOT when updating individual plugin versions
+- ❌ NOT when changing plugin functionality
+
+**Rationale**:
+- Think of it like a bookstore: book editions (plugin versions) change independently of catalog editions (marketplace version)
+- Follows standard package registry practices (npm, PyPI, Homebrew)
+- Users run `/plugin marketplace update` to fetch latest catalog state from Git anyway
+- Marketplace version is for human tracking of catalog structural changes

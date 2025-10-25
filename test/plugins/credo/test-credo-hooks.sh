@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# Source the test framework
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../test-hook.sh"
 
@@ -32,13 +31,13 @@ test_hook \
   0 \
   ""
 
-# Test 4: Pre-commit check blocks on Credo violations
-test_hook \
-  "Pre-commit check: Blocks on Credo violations" \
+# Test 4: Pre-commit check blocks on Credo violations with structured JSON
+test_hook_json \
+  "Pre-commit check: Blocks on Credo violations with structured JSON" \
   "plugins/credo/scripts/pre-commit-check.sh" \
   "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/credo/precommit-test\"}" \
-  2 \
-  "credo"
+  0 \
+  '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Credo")) and .systemMessage != null'
 
 # Test 5: Pre-commit check ignores non-commit commands
 test_hook \

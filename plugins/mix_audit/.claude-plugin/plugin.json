@@ -1,6 +1,6 @@
 {
   "name": "mix_audit",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Dependency security audit plugin that scans Mix dependencies for known vulnerabilities",
   "author": {
     "name": "Bradley Golden",

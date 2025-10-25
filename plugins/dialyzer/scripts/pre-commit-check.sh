@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Pre-commit validation for Dialyzer static type analysis
 # Runs before git commits to check for type errors
@@ -37,12 +37,10 @@ find_mix_project_root() {
 
 PROJECT_ROOT=$(find_mix_project_root "$CWD")
 
-# If no project root found, exit silently (not an Elixir project)
 if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
-# Check if project uses Dialyzer (dialyxir dependency)
 if ! grep -qE '\{:dialyxir' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then
   exit 0
 fi
@@ -65,9 +63,21 @@ Run 'mix dialyzer' to see the full output."
     OUTPUT="$DIALYZER_OUTPUT"
   fi
 
-  # Block commit and send output to Claude via stderr (same pattern as core plugin)
-  echo "$OUTPUT" >&2
-  exit 2
+  REASON="Dialyzer plugin found type errors:\n\n${OUTPUT}"
+
+  jq -n \
+    --arg reason "$REASON" \
+    --arg msg "Commit blocked: Dialyzer found type errors" \
+    '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": $reason
+      },
+      "systemMessage": $msg
+    }'
+  exit 0
 else
+  jq -n '{"suppressOutput": true}'
   exit 0
 fi

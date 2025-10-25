@@ -3,7 +3,6 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-# Source test utilities
 source "$REPO_ROOT/test/test-hook.sh"
 
 echo "Testing Sobelow Plugin Hooks"
@@ -30,12 +29,12 @@ test_hook \
   0 \
   ""
 
-test_hook \
-  "Pre-commit check: Blocks on security violations" \
+test_hook_json \
+  "Pre-commit check: Blocks on security violations with structured JSON" \
   "plugins/sobelow/scripts/pre-commit-check.sh" \
   "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/sobelow/precommit-test\"}" \
-  2 \
-  "sobelow"
+  0 \
+  '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Sobelow")) and .systemMessage != null'
 
 test_hook \
   "Pre-commit check: Ignores non-commit git commands" \

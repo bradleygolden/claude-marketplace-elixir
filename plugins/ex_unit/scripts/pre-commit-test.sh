@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Pre-commit test validation for ExUnit
 # Runs stale tests (tests for changed modules) before git commits
@@ -21,7 +21,6 @@ if ! echo "$COMMAND" | grep -q 'git commit'; then
   exit 0
 fi
 
-# Find Mix project root by traversing upward from CWD
 find_mix_project_root() {
   local dir="$1"
   while [[ "$dir" != "/" ]]; do
@@ -75,6 +74,17 @@ else
   FINAL_OUTPUT="$TEST_OUTPUT"
 fi
 
-# Block commit and send output to stderr (matches core plugin pattern)
-echo "$FINAL_OUTPUT" >&2
-exit 2
+REASON="ExUnit plugin found test failures:\n\n${FINAL_OUTPUT}"
+
+jq -n \
+  --arg reason "$REASON" \
+  --arg msg "Commit blocked: ExUnit tests failed" \
+  '{
+    "hookSpecificOutput": {
+      "hookEventName": "PreToolUse",
+      "permissionDecision": "deny",
+      "permissionDecisionReason": $reason
+    },
+    "systemMessage": $msg
+  }'
+exit 0
