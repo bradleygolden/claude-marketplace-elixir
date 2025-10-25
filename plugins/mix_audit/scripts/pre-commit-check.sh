@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 # Pre-commit validation for mix_audit dependency security scanner
-# Runs before git commits to check for vulnerable dependencies
-# Blocks commits if vulnerabilities are found (exit 2)
 
 INPUT=$(cat) || exit 1
 

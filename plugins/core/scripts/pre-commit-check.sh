@@ -32,7 +32,7 @@ find_mix_project_root() {
 
 PROJECT_ROOT=$(find_mix_project_root "$CWD")
 
-if [ $? -ne 0 ]; then
+if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
@@ -51,15 +51,15 @@ if [ $FORMAT_EXIT -ne 0 ] || [ $COMPILE_EXIT -ne 0 ] || [ $DEPS_EXIT -ne 0 ]; th
   ERROR_MSG="Core plugin pre-commit validation failed:\n\n"
 
   if [ $FORMAT_EXIT -ne 0 ]; then
-    ERROR_MSG="${ERROR_MSG}❌ Format check failed:\n${FORMAT_OUTPUT}\n\n"
+    ERROR_MSG="${ERROR_MSG}[ERROR] Format check failed:\n${FORMAT_OUTPUT}\n\n"
   fi
 
   if [ $COMPILE_EXIT -ne 0 ]; then
-    ERROR_MSG="${ERROR_MSG}❌ Compilation failed:\n${COMPILE_OUTPUT}\n\n"
+    ERROR_MSG="${ERROR_MSG}[ERROR] Compilation failed:\n${COMPILE_OUTPUT}\n\n"
   fi
 
   if [ $DEPS_EXIT -ne 0 ]; then
-    ERROR_MSG="${ERROR_MSG}❌ Unused dependencies check failed:\n${DEPS_OUTPUT}\n\n"
+    ERROR_MSG="${ERROR_MSG}[ERROR] Unused dependencies check failed:\n${DEPS_OUTPUT}\n\n"
   fi
 
   ERROR_MSG="${ERROR_MSG}Fix these issues before committing."

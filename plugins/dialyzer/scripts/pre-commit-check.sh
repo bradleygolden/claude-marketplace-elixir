@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 # Pre-commit validation for Dialyzer static type analysis
-# Runs before git commits to check for type errors
-# Blocks commits if type issues are found (exit 2)
+# Blocks commits if type issues are found (JSON permissionDecision: deny)
 # Uses 120s timeout due to Dialyzer's analysis time
 
 INPUT=$(cat) || exit 1

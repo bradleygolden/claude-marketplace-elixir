@@ -2,7 +2,6 @@
 
 # Pre-commit validation for Ash code generation
 # Blocks git commits if ash.codegen is out of sync with resource definitions
-# Ensures generated code is current before allowing commits
 
 INPUT=$(cat) || exit 1
 

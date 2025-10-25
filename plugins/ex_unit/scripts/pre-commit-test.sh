@@ -2,7 +2,6 @@
 
 # Pre-commit test validation for ExUnit
 # Runs stale tests (tests for changed modules) before git commits
-# Blocks commits if tests fail
 
 INPUT=$(cat) || exit 1
 

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-set -e
 
 # ExDoc Pre-Commit Check
-# Validates documentation quality before git commits using mix docs --warnings-as-errors
 
 INPUT=$(cat) || exit 1
 
@@ -33,12 +31,9 @@ find_mix_project_root() {
   return 1
 }
 
-set +e
 PROJECT_ROOT=$(find_mix_project_root "$CWD")
-PROJECT_EXIT=$?
-set -e
 
-if [ $PROJECT_EXIT -ne 0 ]; then
+if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
@@ -48,10 +43,8 @@ if ! grep -qE '\{:ex_doc' mix.exs 2>/dev/null; then
   exit 0
 fi
 
-set +e
 DOCS_OUTPUT=$(mix docs --warnings-as-errors 2>&1)
 DOCS_EXIT_CODE=$?
-set -e
 
 if [ $DOCS_EXIT_CODE -ne 0 ]; then
   TOTAL_LINES=$(echo "$DOCS_OUTPUT" | wc -l)

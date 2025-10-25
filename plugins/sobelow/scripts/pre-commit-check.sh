@@ -52,6 +52,7 @@ SOBELOW_OUTPUT=$($CMD 2>&1)
 SOBELOW_EXIT_CODE=$?
 
 # Check if there are any findings by parsing JSON output
+# Extract JSON from output (Sobelow may emit warnings before JSON)
 JSON_OUTPUT=$(echo "$SOBELOW_OUTPUT" | sed -n '/{/,$ p')
 HAS_FINDINGS=false
 if echo "$JSON_OUTPUT" | jq -e '.findings | (.high_confidence + .medium_confidence + .low_confidence) | length > 0' > /dev/null 2>&1; then
@@ -69,7 +70,7 @@ if [ "$HAS_FINDINGS" = true ]; then
 [Output truncated: showing $MAX_LINES of $TOTAL_LINES lines]
 Run 'mix sobelow' in $PROJECT_ROOT to see the full output.
 
-⚠️  Sobelow found security issues. Options:
+WARNING: Sobelow found security issues. Options:
   1. Fix the issues (recommended)
   2. Mark false positives: mix sobelow --mark-skip-all
   3. Skip specific types: mix sobelow --ignore Type1,Type2 --mark-skip-all
@@ -77,7 +78,7 @@ Run 'mix sobelow' in $PROJECT_ROOT to see the full output.
   else
     OUTPUT="$SOBELOW_OUTPUT
 
-⚠️  Sobelow found security issues. Options:
+WARNING: Sobelow found security issues. Options:
   1. Fix the issues (recommended)
   2. Mark false positives: mix sobelow --mark-skip-all
   3. Skip specific types: mix sobelow --ignore Type1,Type2 --mark-skip-all
