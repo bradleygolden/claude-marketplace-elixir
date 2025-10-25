@@ -43,8 +43,8 @@ mix credo --strict
 ```
 - Runs before any `git commit` command
 - **Blocks commits** when Credo finds violations (similar to compile errors)
-- Sends violations to Claude via stderr for review
+- Sends violations to Claude via JSON permissionDecision for review
 - Output truncated to 30 lines if needed
 - Exits silently for non-Elixir projects
-- **Pattern**: Matches core plugin's PreToolUse blocking pattern (`exit 2` + stderr)
+- **Pattern**: Uses JSON permissionDecision with deny status to block commits
 - **Context Detection**: Automatically finds Mix project root by traversing upward from current directory

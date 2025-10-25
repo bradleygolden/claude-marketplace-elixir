@@ -1,10 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Pre-commit validation for Ash code generation
 # Blocks git commits if ash.codegen is out of sync with resource definitions
-# Ensures generated code is current before allowing commits
 
-# Read and validate stdin
 INPUT=$(cat) || exit 1
 
 COMMAND=$(echo "$INPUT" | jq -e -r '.tool_input.command' 2>/dev/null) || exit 1
@@ -37,7 +35,6 @@ find_mix_project_root() {
 
 PROJECT_ROOT=$(find_mix_project_root "$CWD")
 
-# If no project root found, exit silently (not an Elixir project)
 if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
@@ -48,11 +45,25 @@ if ! grep -qE '\{:ash' mix.exs 2>/dev/null; then
   exit 0
 fi
 
-mix ash.codegen --check 2>&1 >&2
+CODEGEN_OUTPUT=$(mix ash.codegen --check 2>&1)
 CODEGEN_EXIT=$?
 
 if [ $CODEGEN_EXIT -ne 0 ]; then
-  exit 2
+  REASON="Ash plugin detected code generation is out of sync:\n\n${CODEGEN_OUTPUT}\n\nRun 'mix ash.codegen' to update generated code."
+
+  jq -n \
+    --arg reason "$REASON" \
+    --arg msg "Commit blocked: Ash code generation required" \
+    '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": $reason
+      },
+      "systemMessage": $msg
+    }'
+  exit 0
 fi
 
+jq -n '{"suppressOutput": true}'
 exit 0

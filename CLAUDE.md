@@ -99,7 +99,7 @@ Each plugin implements workflows through hooks:
 **Dialyzer plugin** - Static type analysis:
 1. **Pre-commit check** (blocking, PreToolUse): Runs `mix dialyzer` before commits, blocks if type errors found. Uses 120s timeout due to potential analysis time.
 
-Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands. Output is sent to Claude (the LLM) either via JSON `additionalContext` (non-blocking) or stderr with exit code 2 (blocking).
+Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands. Output is sent to Claude (the LLM) via JSON with either `additionalContext` (non-blocking) or `permissionDecision: "deny"` (blocking).
 
 ## Development Commands
 
@@ -159,7 +159,7 @@ The repository includes an automated test suite for plugin hooks:
 - `test/plugins/*/test-*-hooks.sh` - Plugin-specific test suites
 
 **What the tests verify**:
-- Hook exit codes (0 for success, 2 for blocking)
+- Hook exit codes (0 for success) and JSON permissionDecision for blocking
 - Hook output patterns and JSON structure
 - File type filtering (.ex, .exs, non-Elixir)
 - Command filtering (git commit vs other commands)
@@ -206,9 +206,8 @@ The marketplace uses the namespace `elixir` (defined in `marketplace.json`). Plu
 ## Hook Script Best Practices
 
 **Exit Codes**:
-- `0` - Success (allows operation to continue)
-- `1` - Error (script failure, not blocking)
-- `2` - Block (prevents operation from continuing, used for validation failures)
+- `0` - Success (allows operation to continue or suppresses output)
+- `1` - Error (script failure)
 
 **JSON Output Patterns**:
 ```bash
@@ -223,9 +222,19 @@ jq -n --arg context "$OUTPUT" '{
 # Suppress output when not relevant
 jq -n '{"suppressOutput": true}'
 
-# Blocking (PreToolUse) - output to stderr, exit 2
-mix some-check 2>&1 >&2
-exit 2
+# Blocking (PreToolUse) - JSON permissionDecision with exit 0
+jq -n \
+  --arg reason "$ERROR_MSG" \
+  --arg msg "Commit blocked: validation failed" \
+  '{
+    "hookSpecificOutput": {
+      "hookEventName": "PreToolUse",
+      "permissionDecision": "deny",
+      "permissionDecisionReason": $reason
+    },
+    "systemMessage": $msg
+  }'
+exit 0
 ```
 
 **Common Patterns**:

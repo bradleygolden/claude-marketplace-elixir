@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../test-hook.sh"
@@ -7,13 +7,13 @@ echo "Testing ExUnit Plugin Hooks"
 echo "================================"
 echo ""
 
-# Test 1: Pre-commit hook blocks on test failures
-test_hook \
-  "Pre-commit: Blocks commits when tests fail" \
+# Test 1: Pre-commit hook blocks on test failures with structured JSON
+test_hook_json \
+  "Pre-commit: Blocks commits when tests fail with structured JSON" \
   "plugins/ex_unit/scripts/pre-commit-test.sh" \
   "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/ex_unit/precommit-test\"}" \
-  2 \
-  "test will fail"
+  0 \
+  '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("ExUnit")) and .systemMessage != null'
 
 # Test 2: Pre-commit hook ignores non-commit git commands
 test_hook \

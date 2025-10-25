@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# Source the test framework
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../test-hook.sh"
 
@@ -25,12 +24,12 @@ test_hook \
   "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/README.md\"},\"cwd\":\"$REPO_ROOT\"}" \
   0 \
   ""
-test_hook \
-  "Pre-commit check: Blocks when codegen is needed" \
+test_hook_json \
+  "Pre-commit check: Blocks when codegen is needed with structured JSON" \
   "plugins/ash/scripts/pre-commit-check.sh" \
   "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/ash/precommit_test\"}" \
-  2 \
-  "Pending Code Generation"
+  0 \
+  '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Ash")) and .systemMessage != null'
 test_hook \
   "Pre-commit check: Ignores non-commit git commands" \
   "plugins/ash/scripts/pre-commit-check.sh" \

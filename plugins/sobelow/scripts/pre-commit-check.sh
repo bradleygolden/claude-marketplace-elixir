@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 INPUT=$(cat) || exit 1
 
@@ -6,11 +6,11 @@ COMMAND=$(echo "$INPUT" | jq -e -r '.tool_input.command' 2>/dev/null) || exit 1
 CWD=$(echo "$INPUT" | jq -e -r '.cwd' 2>/dev/null) || exit 1
 
 if [[ -z "$COMMAND" ]] || [[ "$COMMAND" == "null" ]]; then
-  exit 1
+  exit 0
 fi
 
 if [[ -z "$CWD" ]] || [[ "$CWD" == "null" ]]; then
-  exit 1
+  exit 0
 fi
 
 if ! echo "$COMMAND" | grep -q 'git commit'; then
@@ -32,7 +32,6 @@ find_mix_project_root() {
 
 PROJECT_ROOT=$(find_mix_project_root "$CWD")
 
-# If no project root found, exit silently (not an Elixir project)
 if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
@@ -53,14 +52,13 @@ SOBELOW_OUTPUT=$($CMD 2>&1)
 SOBELOW_EXIT_CODE=$?
 
 # Check if there are any findings by parsing JSON output
-# Extract JSON part (skip any warnings)
+# Extract JSON from output (Sobelow may emit warnings before JSON)
 JSON_OUTPUT=$(echo "$SOBELOW_OUTPUT" | sed -n '/{/,$ p')
 HAS_FINDINGS=false
 if echo "$JSON_OUTPUT" | jq -e '.findings | (.high_confidence + .medium_confidence + .low_confidence) | length > 0' > /dev/null 2>&1; then
   HAS_FINDINGS=true
 fi
 
-# Block commit if there are any findings (regardless of confidence level or exit code)
 if [ "$HAS_FINDINGS" = true ]; then
   TOTAL_LINES=$(echo "$SOBELOW_OUTPUT" | wc -l)
   MAX_LINES=30
@@ -72,7 +70,7 @@ if [ "$HAS_FINDINGS" = true ]; then
 [Output truncated: showing $MAX_LINES of $TOTAL_LINES lines]
 Run 'mix sobelow' in $PROJECT_ROOT to see the full output.
 
-⚠️  Sobelow found security issues. Options:
+WARNING: Sobelow found security issues. Options:
   1. Fix the issues (recommended)
   2. Mark false positives: mix sobelow --mark-skip-all
   3. Skip specific types: mix sobelow --ignore Type1,Type2 --mark-skip-all
@@ -80,16 +78,27 @@ Run 'mix sobelow' in $PROJECT_ROOT to see the full output.
   else
     OUTPUT="$SOBELOW_OUTPUT
 
-⚠️  Sobelow found security issues. Options:
+WARNING: Sobelow found security issues. Options:
   1. Fix the issues (recommended)
   2. Mark false positives: mix sobelow --mark-skip-all
   3. Skip specific types: mix sobelow --ignore Type1,Type2 --mark-skip-all
   4. Adjust threshold: Create .sobelow-conf with --threshold flag"
   fi
 
-  # Block commit and send output to Claude via stderr (matches core plugin pattern)
-  echo "$OUTPUT" >&2
-  exit 2
+  REASON="Sobelow plugin found security issues:\n\n${OUTPUT}"
+
+  jq -n \
+    --arg reason "$REASON" \
+    --arg msg "Commit blocked: Sobelow found security issues" \
+    '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": $reason
+      },
+      "systemMessage": $msg
+    }'
+  exit 0
 else
   jq -n '{
     "suppressOutput": true

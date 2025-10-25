@@ -35,7 +35,7 @@ Before allowing git commits, the plugin validates that all Ash-generated code is
 
 - Triggers on: `git commit` commands
 - Behavior: **Blocks commits** if codegen is needed - commit will fail with error message
-- Output: Shows what codegen tasks are pending via stderr
+- Output: Shows what codegen tasks are pending via JSON permissionDecision
 - Timeout: 45 seconds
 
 ## How It Works
