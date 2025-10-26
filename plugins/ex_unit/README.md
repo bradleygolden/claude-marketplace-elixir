@@ -23,7 +23,7 @@ This plugin automatically runs ExUnit tests before git commits, preventing broke
 
 **Behavior**:
 - ✅ **Fast**: Only runs tests for modules that changed (`--stale` flag)
-- ✅ **Blocking**: Prevents commits if tests fail (exit code 2)
+- ✅ **Blocking**: Prevents commits if tests fail (via JSON permissionDecision: "deny")
 - ✅ **Smart**: Skips if not an Elixir project or no tests exist
 - ✅ **Informative**: Shows test failures with truncated output (50 lines max)
 
@@ -44,9 +44,11 @@ The key to performance is ExUnit's `--stale` flag, which only runs tests for mod
 **Hook Type**: PreToolUse (blocks before bash commands execute)
 **Matcher**: Filters for `git commit` commands only
 **Timeout**: 60 seconds
-**Exit Codes**:
-- `0`: Tests passed (commit proceeds)
-- `2`: Tests failed (commit blocked)
+**Blocking Behavior**:
+- Hook always exits with `0` (success)
+- Blocking decision communicated via JSON output with `permissionDecision: "deny"`
+- When tests fail: Outputs JSON with permissionDecision: "deny" and test failure details
+- When tests pass: Outputs JSON with suppressOutput: true
 
 ## Usage
 
