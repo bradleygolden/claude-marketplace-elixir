@@ -32,6 +32,7 @@ claude
 /plugin install dialyzer@elixir
 /plugin install ex_doc@elixir
 /plugin install ex_unit@elixir
+/plugin install meta@elixir
 /plugin install mix_audit@elixir
 /plugin install sobelow@elixir
 ```
@@ -43,6 +44,7 @@ claude
 * [dialyzer](./plugins/dialyzer/README.md) - Static type analysis and discrepancy detection
 * [ex_doc](./plugins/ex_doc/README.md) - Documentation quality validation
 * [ex_unit](./plugins/ex_unit/README.md) - ExUnit testing automation with smart pre-commit test validation
+* [meta](./plugins/meta/README.md) - Generates project-specific workflow commands (research, plan, implement, qa)
 * [mix_audit](./plugins/mix_audit/README.md) - Dependency security audit for known vulnerabilities
 * [sobelow](./plugins/sobelow/README.md) - Security-focused static analysis for Phoenix applications
 
