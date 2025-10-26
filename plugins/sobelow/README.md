@@ -155,7 +155,7 @@ git commit -m "fix: resolve XSS vulnerability"
 ### PreToolUse Hook
 - **Trigger**: Before Bash tool (git commit commands)
 - **Timeout**: 30 seconds
-- **Behavior**: Blocking (exit code 2 prevents commit)
+- **Behavior**: Blocking (JSON permissionDecision: "deny" prevents commit)
 - **Threshold**: Medium and High confidence findings
 
 ## Customization

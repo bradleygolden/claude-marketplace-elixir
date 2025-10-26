@@ -34,8 +34,8 @@ The plugin uses a single PreToolUse hook that:
 1. Triggers before `git commit` commands execute
 2. Detects if the project uses ExDoc (checks for `{:ex_doc` in `mix.exs`)
 3. Runs `mix docs --warnings-as-errors` to validate documentation
-4. Blocks the commit (exit code 2) if validation fails
-5. Allows the commit (exit code 0) if validation passes
+4. Blocks the commit (via JSON permissionDecision: "deny") if validation fails
+5. Allows the commit to proceed if validation passes
 
 ### Why Pre-Commit Only?
 

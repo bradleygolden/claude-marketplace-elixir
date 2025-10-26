@@ -181,9 +181,19 @@ The marketplace uses the namespace `elixir` (defined in `marketplace.json`). Plu
 
 ### Version Management
 
-- Marketplace version in `.claude-plugin/marketplace.json`
-- Plugin version in `plugins/core/.claude-plugin/plugin.json`
-- Keep versions in sync when releasing updates
+Plugin and marketplace versions are **independent** and version for different reasons:
+
+**Plugin Version** (`plugins/*/. claude-plugin/plugin.json`):
+- Bump when plugin functionality changes (hooks, scripts, commands, agents, bug fixes, docs)
+- Use semantic versioning: major.minor.patch
+- Each plugin versions independently based on its own changes
+
+**Marketplace Version** (`.claude-plugin/marketplace.json`):
+- Bump ONLY when catalog structure changes (add/remove plugins, marketplace metadata, reorganization)
+- NOT when individual plugin versions change
+- NOT when plugin functionality changes
+
+This follows standard package registry practices (npm, PyPI, Homebrew) where the registry version is independent of package versions. Think of it like a bookstore: book editions (plugin versions) change independently of catalog editions (marketplace version).
 
 ## File Modification Guidelines
 

@@ -57,7 +57,7 @@ When you or Claude attempt to create a git commit, the plugin:
 2. Finds the Mix project root
 3. Checks if `mix_audit` is in dependencies
 4. Runs `mix deps.audit` in the project root
-5. **Blocks the commit** if vulnerabilities are found (exit code 2)
+5. **Blocks the commit** if vulnerabilities are found (via JSON permissionDecision: "deny")
 6. Provides vulnerability details to Claude for context
 
 ### Example Output
