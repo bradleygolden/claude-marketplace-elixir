@@ -254,6 +254,38 @@ exit 0
 - Command filtering: Check for specific commands like `grep -q 'git commit'`
 - Exit code handling: Check if variable is empty with `[[ -z "$VAR" ]]`, not `$?` after command substitution
 
+## TodoWrite Best Practices
+
+When using TodoWrite in slash commands and workflows:
+
+**When to use**:
+- Multi-step tasks with 3+ discrete actions
+- Complex workflows requiring progress tracking
+- User-requested lists of tasks
+- Immediately when starting a complex command execution
+
+**Required fields**:
+- `content`: Imperative form describing what needs to be done (e.g., "Run tests")
+- `activeForm`: Present continuous form shown during execution (e.g., "Running tests")
+- `status`: One of `pending`, `in_progress`, `completed`
+
+**Best practices**:
+- Create todos at the START of command execution, not after
+- Mark ONE task as `in_progress` at a time
+- Mark tasks as `completed` IMMEDIATELY after finishing (don't batch)
+- Break complex tasks into specific, actionable items
+- Use clear, descriptive task names
+- Update status in real-time as work progresses
+
+**Example pattern**:
+```javascript
+[
+  {"content": "Parse user input", "status": "completed", "activeForm": "Parsing user input"},
+  {"content": "Research existing patterns", "status": "in_progress", "activeForm": "Researching existing patterns"},
+  {"content": "Generate implementation plan", "status": "pending", "activeForm": "Generating implementation plan"}
+]
+```
+
 ## Quality Gates
 
 Before pushing changes, run:

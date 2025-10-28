@@ -60,7 +60,7 @@ The ash plugin implements two hooks:
 2. **Pre-commit check** (`scripts/pre-commit-check.sh`)
    - Trigger: Before `git commit` commands
    - Action: Runs `mix ash.codegen --check`
-   - Blocking: Yes (exit code 2 when codegen needed)
+   - Blocking: Yes (exit 0 with JSON permissionDecision: "deny" when codegen needed)
 
 ## Ash Codegen
 

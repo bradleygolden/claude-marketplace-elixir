@@ -5,7 +5,7 @@ INPUT=$(cat) || exit 1
 FILE_PATH=$(echo "$INPUT" | jq -e -r '.tool_input.file_path' 2>/dev/null) || exit 1
 
 if [[ -z "$FILE_PATH" ]] || [[ "$FILE_PATH" == "null" ]]; then
-  exit 1
+  exit 0
 fi
 
 if ! echo "$FILE_PATH" | grep -qE '\.(ex|exs)$'; then

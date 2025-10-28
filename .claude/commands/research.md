@@ -53,14 +53,14 @@ When this command is invoked, the user provides their research query as an argum
    - We have specialized agents for repository research:
 
    **For finding files and patterns:**
-   - Use the **finder** agent (subagent_type="general-purpose") to:
+   - Use the **finder** agent (subagent_type="finder") to:
      - Locate relevant files (JSON configs, bash scripts, markdown docs)
      - Show implementation patterns
      - Extract examples
      - Example prompt: "Find all plugin.json files and show their structure and metadata patterns"
 
    **For deep analysis:**
-   - Use the **analyzer** agent (subagent_type="general-purpose") to:
+   - Use the **analyzer** agent (subagent_type="analyzer") to:
      - Trace execution flows (how hooks trigger and execute)
      - Analyze technical implementation details
      - Explain step-by-step processing

@@ -18,9 +18,10 @@ When this command is invoked, the user provides a feature description as an argu
    - Ask clarifying questions if the request is ambiguous using AskUserQuestion
 
 2. **Research existing patterns:**
-   - Use Task agents to research similar implementations:
+   - **Spawn Task agents in parallel** (single message, multiple Task tool calls):
      - finder: "Find similar plugins or hooks in the marketplace"
      - analyzer: "Analyze how existing plugins implement similar features"
+   - Wait for both agents to complete before proceeding
    - Review relevant test patterns in test/plugins/
    - Check marketplace.json structure and plugin registration patterns
    - Examine hook patterns in existing plugins/*/hooks/hooks.json files

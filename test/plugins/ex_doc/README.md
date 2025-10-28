@@ -31,7 +31,7 @@ The ex_doc plugin implements one hook:
 **Pre-commit check** (`plugins/ex_doc/scripts/pre-commit-check.sh`)
 - **Trigger**: Before `git commit` commands (PreToolUse)
 - **Action**: Runs `mix docs --warnings-as-errors`
-- **Blocking**: Yes (exit code 2 blocks commit on validation failures)
+- **Blocking**: Yes (exit 0 with JSON permissionDecision: "deny" blocks commit on validation failures)
 - **Timeout**: 45 seconds
 - **Dependency Check**: Only runs if `{:ex_doc` found in mix.exs
 
@@ -78,11 +78,11 @@ The ex_doc plugin implements one hook:
 - Hook detects ExDoc dependency
 - Runs `mix docs --warnings-as-errors`
 - **Note**: With current test fixture, this still produces warnings
-- Commit is BLOCKED (exit code 2)
+- Commit is BLOCKED (exit 0 with JSON permissionDecision: "deny")
 - Error output shows warnings
 
 #### Validation
-- Exit code is `2` (blocks due to invalid_docs.ex in test project)
+- Exit code is `0` with JSON `permissionDecision: "deny"` (blocks due to invalid_docs.ex in test project)
 - Output contains `"warning:"` text
 
 **Note**: This test demonstrates the blocking behavior. For a true "success path" test, you would need a separate test project with only valid documentation.
@@ -182,8 +182,8 @@ test_hook \
   "Pre-commit check: Blocks on documentation warnings" \
   "plugins/ex_doc/scripts/pre-commit-check.sh" \
   '{"tool_input":{"command":"git commit -m \"test\""},"cwd":"'$PWD'/precommit-test"}' \
-  2 \
-  "warning:"
+  0 \
+  "permissionDecision"
 ```
 
 ---
@@ -222,9 +222,9 @@ Failed: 0
 ```
 [TEST] Pre-commit check: Blocks on documentation warnings
   ❌ FAIL
-  Expected exit code: 2
+  Expected exit code: 0 with JSON permissionDecision: "deny"
   Actual exit code: 0
-  Expected output to contain: "warning:"
+  Expected output to contain: "permissionDecision"
   Actual output: ""
 ```
 

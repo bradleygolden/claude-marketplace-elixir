@@ -35,6 +35,40 @@ Or run specific actions when you provide an argument.
 
 ---
 
+## Execution Flow
+
+**Default Mode (`/qa` with no arguments)** runs 5 phases sequentially:
+
+```
+Phase 0: Settings Configuration
+    ↓ (sequential)
+Phase 1: Marketplace Review
+    ├─ Spawn 5 agents in PARALLEL (single message):
+    │  ├─ Plugin/Hook Analysis (analyzer)
+    │  ├─ Command/Agent Review (finder)
+    │  ├─ Comment Cleanup (comment-cleaner)
+    │  ├─ Version Management (analyzer)
+    │  └─ Documentation Consistency (finder)
+    ↓ (wait for all agents, then sequential)
+Phase 2: Run All Plugin Tests
+    ↓ (sequential)
+Phase 3: Validate All Plugins
+    ↓ (sequential)
+Phase 4: Generate Consolidated QA Report
+```
+
+**Specific Actions** execute only their respective phase:
+- `/qa review` → Phase 1 only
+- `/qa test [plugin]` → Phase 2 only
+- `/qa validate <plugin>` → Phase 3 only (single plugin)
+
+**Key Points**:
+- Agents within Phase 1 run in PARALLEL (spawned in single message)
+- Phases themselves run SEQUENTIALLY (wait for previous phase to complete)
+- Each phase updates TodoWrite progress in real-time
+
+---
+
 ## Step 1: Parse Arguments and Create Plan
 
 Parse command arguments:
