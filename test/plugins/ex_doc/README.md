@@ -290,7 +290,7 @@ The ExDoc plugin only implements PreToolUse hooks (no PostToolUse):
 
 - Test 2 is conceptual - it expects valid docs to pass (exit 0)
 - Current test fixture always contains `invalid_docs.ex` which causes warnings
-- Both Test 1 and Test 2 currently expect exit code 2 (blocking)
+- Both Test 1 and Test 2 currently expect exit code 0 with JSON permissionDecision: "deny" (blocking)
 - For a true success path test, create separate fixture with only valid docs
 
 ### Comparison with Other Plugins

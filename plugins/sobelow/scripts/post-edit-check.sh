@@ -12,7 +12,6 @@ if ! echo "$FILE_PATH" | grep -qE '\.(ex|exs)$'; then
   exit 0
 fi
 
-# Find Mix project root by traversing upward from file directory
 find_mix_project_root() {
   local dir=$(dirname "$1")
   while [[ "$dir" != "/" ]]; do
