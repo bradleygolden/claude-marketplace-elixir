@@ -35,6 +35,40 @@ Or run specific actions when you provide an argument.
 
 ---
 
+## Execution Flow
+
+**Default Mode (`/qa` with no arguments)** runs 5 phases sequentially:
+
+```
+Phase 0: Settings Configuration
+    ↓ (sequential)
+Phase 1: Marketplace Review
+    ├─ Spawn 5 agents in PARALLEL (single message):
+    │  ├─ Plugin/Hook Analysis (analyzer)
+    │  ├─ Command/Agent Review (finder)
+    │  ├─ Comment Cleanup (comment-cleaner)
+    │  ├─ Version Management (analyzer)
+    │  └─ Documentation Consistency (finder)
+    ↓ (wait for all agents, then sequential)
+Phase 2: Run All Plugin Tests
+    ↓ (sequential)
+Phase 3: Validate All Plugins
+    ↓ (sequential)
+Phase 4: Generate Consolidated QA Report
+```
+
+**Specific Actions** execute only their respective phase:
+- `/qa review` → Phase 1 only
+- `/qa test [plugin]` → Phase 2 only
+- `/qa validate <plugin>` → Phase 3 only (single plugin)
+
+**Key Points**:
+- Agents within Phase 1 run in PARALLEL (spawned in single message)
+- Phases themselves run SEQUENTIALLY (wait for previous phase to complete)
+- Each phase updates TodoWrite progress in real-time
+
+---
+
 ## Step 1: Parse Arguments and Create Plan
 
 Parse command arguments:
@@ -770,19 +804,25 @@ Report: ❌ FAIL / ⚠️ WARN / ✅ PASS for each check
 
 **Only run if all structural checks passed.**
 
-Spawn three parallel sub-agents:
+Spawn three sub-agents (Task 1 first, then Tasks 2-3 can run in parallel using Task 1's output):
 
-**Task 1: Best Practices Pattern Analysis** (finder):
+**Task 1: Locate Plugin Files and Patterns** (finder):
 ```
-Find all plugins with similar functionality
-Extract common patterns (stdin handling, project detection, file filtering, output formatting)
-Compare $2's implementation against patterns
-Provide file:line examples showing both approaches
+Find all plugins with similar functionality to $2
+Locate hooks.json and script files for $2 and similar plugins
+Locate test files for $2 and similar plugins
+Extract common pattern locations (stdin handling, project detection, file filtering, output formatting)
+Provide file:line locations showing both $2 and comparison plugins
+Do NOT read file contents - only provide file paths and pattern locations
 ```
+
+Wait for Task 1 to complete, then spawn Tasks 2-3 in parallel:
 
 **Task 2: Hook Implementation Deep Analysis** (analyzer, if hooks exist):
 ```
-Read hooks.json and scripts
+Using file paths from Task 1:
+- Read plugins/$2/hooks/hooks.json
+- Read scripts in plugins/$2/scripts/
 For each hook:
   - Trace execution flow
   - Document stdin handling, project detection, file filtering, exit codes
@@ -790,13 +830,15 @@ For each hook:
 Provide detailed technical analysis with file:line references
 ```
 
-**Task 3: Test Quality Comparison** (finder):
+**Task 3: Test Quality Analysis** (analyzer):
 ```
-Read test/$2/README.md
-Find test suites for other plugins
-Compare coverage and structure
-Identify missing test patterns
-Show concrete examples
+Using test file locations from Task 1:
+- Read test/plugins/$2/README.md
+- Read test/plugins/$2/test-$2-hooks.sh
+Compare with similar plugin test patterns from Task 1
+Analyze coverage and structure
+Identify missing test scenarios
+Show concrete comparisons with file:line references
 ```
 
 Wait for all agents to complete.

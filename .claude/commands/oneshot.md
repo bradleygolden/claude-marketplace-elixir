@@ -69,7 +69,7 @@ Gather metadata:
 date -u +"%Y-%m-%d %H:%M:%S %Z" && git log -1 --format="%H" && git branch --show-current && git config user.name
 ```
 
-Determine filename: `docs/research/research-YYYY-MM-DD-[feature-name].md`
+Determine filename: `.thoughts/research/research-YYYY-MM-DD-[feature-name].md`
 
 Create research document with:
 - YAML frontmatter with metadata
@@ -111,7 +111,7 @@ Gather metadata:
 date -u +"%Y-%m-%d %H:%M:%S %Z" && git log -1 --format="%H" && git branch --show-current && git config user.name
 ```
 
-Determine filename: `docs/plans/plan-YYYY-MM-DD-[feature-name].md`
+Determine filename: `.thoughts/plans/plan-YYYY-MM-DD-[feature-name].md`
 
 Create plan document with:
 - YAML frontmatter (status: "draft")
@@ -230,8 +230,8 @@ Create comprehensive workflow report:
 1. **Create `.thoughts/` directory** if it doesn't exist
 2. **Write workflow report** to `.thoughts/YYYY-MM-DD-oneshot-[feature-name].md`
 3. **Include all phases**:
-   - Research summary (reference docs/research/ document)
-   - Planning summary (reference docs/plans/ document)
+   - Research summary (reference .thoughts/research/ document)
+   - Planning summary (reference .thoughts/plans/ document)
    - Implementation details (files created/modified, test results)
    - QA validation results (all findings)
    - Overall status and assessment
@@ -256,7 +256,7 @@ Present concise summary to user:
 
 ## 1. Research Phase ✅
 
-**Document**: docs/research/research-YYYY-MM-DD-[feature-name].md
+**Document**: .thoughts/research/research-YYYY-MM-DD-[feature-name].md
 
 **Key Findings**:
 - [Summary of research findings]
@@ -267,7 +267,7 @@ Present concise summary to user:
 
 ## 2. Planning Phase ✅
 
-**Document**: docs/plans/plan-YYYY-MM-DD-[feature-name].md
+**Document**: .thoughts/plans/plan-YYYY-MM-DD-[feature-name].md
 
 **Plan Highlights**:
 - [Implementation approach]
@@ -348,8 +348,8 @@ Implementation encountered critical issues:
 
 All workflow artifacts saved:
 
-**Research**: docs/research/research-YYYY-MM-DD-[feature-name].md
-**Plan**: docs/plans/plan-YYYY-MM-DD-[feature-name].md
+**Research**: .thoughts/research/research-YYYY-MM-DD-[feature-name].md
+**Plan**: .thoughts/plans/plan-YYYY-MM-DD-[feature-name].md
 **Workflow Report**: .thoughts/YYYY-MM-DD-oneshot-[feature-name].md (comprehensive audit trail)
 
 Review these documents for complete context.
@@ -404,13 +404,13 @@ If you prefer more control:
 1. **Research** (5-10 min):
    - Find similar plugins (credo, dialyzer)
    - Analyze security scanning patterns
-   - Document findings → `docs/research/research-2025-10-26-sobelow-plugin.md`
+   - Document findings → `.thoughts/research/research-2025-10-26-sobelow-plugin.md`
 
 2. **Plan** (5 min):
    - Design plugin structure
    - Plan hook implementations
    - Define test strategy
-   - Write plan → `docs/plans/plan-2025-10-26-sobelow-plugin.md`
+   - Write plan → `.thoughts/plans/plan-2025-10-26-sobelow-plugin.md`
 
 3. **Implement** (10-15 min):
    - Create `plugins/sobelow/` structure

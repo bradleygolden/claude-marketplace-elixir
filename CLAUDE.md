@@ -254,6 +254,93 @@ exit 0
 - Command filtering: Check for specific commands like `grep -q 'git commit'`
 - Exit code handling: Check if variable is empty with `[[ -z "$VAR" ]]`, not `$?` after command substitution
 
+## TodoWrite Best Practices
+
+When using TodoWrite in slash commands and workflows:
+
+**When to use**:
+- Multi-step tasks with 3+ discrete actions
+- Complex workflows requiring progress tracking
+- User-requested lists of tasks
+- Immediately when starting a complex command execution
+
+**Required fields**:
+- `content`: Imperative form describing what needs to be done (e.g., "Run tests")
+- `activeForm`: Present continuous form shown during execution (e.g., "Running tests")
+- `status`: One of `pending`, `in_progress`, `completed`
+
+**Best practices**:
+- Create todos at the START of command execution, not after
+- Mark ONE task as `in_progress` at a time
+- Mark tasks as `completed` IMMEDIATELY after finishing (don't batch)
+- Break complex tasks into specific, actionable items
+- Use clear, descriptive task names
+- Update status in real-time as work progresses
+
+**Example pattern**:
+```javascript
+[
+  {"content": "Parse user input", "status": "completed", "activeForm": "Parsing user input"},
+  {"content": "Research existing patterns", "status": "in_progress", "activeForm": "Researching existing patterns"},
+  {"content": "Generate implementation plan", "status": "pending", "activeForm": "Generating implementation plan"}
+]
+```
+
+## Agent Pattern for Token Efficiency
+
+The marketplace uses specialized agents for token-efficient workflows:
+
+**Finder Agent** (`.claude/agents/finder.md`):
+- **Role**: Fast file location without reading (uses haiku model)
+- **Tools**: Grep, Glob, Bash, Skill (NO Read tool)
+- **Purpose**: Creates maps of WHERE files are, organized by purpose
+- **Output**: File paths and locations, no code analysis
+
+**Analyzer Agent** (`.claude/agents/analyzer.md`):
+- **Role**: Deep code analysis with file reading (uses sonnet model)
+- **Tools**: Read, Grep, Glob, Bash, Skill
+- **Purpose**: Explains HOW things work by reading specific files
+- **Output**: Execution flows, technical analysis with file:line references
+
+**Token-Efficient Workflow Pattern**:
+```
+Step 1: Spawn finder → Locates relevant files (cheap, fast)
+Step 2: Spawn analyzer → Reads files found by finder (expensive but targeted)
+```
+
+This pattern reduces token usage by 30-50% compared to having analyzer explore and read everything.
+
+**When to Use**:
+- Use **parallel** when researching independent aspects (no dependency)
+- Use **sequential** (finder first, then analyzer) when analyzer needs file paths from finder
+
+See `.claude/commands/qa.md` (lines 807-844) and `.claude/commands/research.md` (lines 56-73) for examples.
+
+## Workflow System
+
+The marketplace includes a comprehensive workflow system for development:
+
+**Commands**:
+- `/interview` - Gather context through interactive questioning
+- `/research` - Research codebase with parallel agents
+- `/plan` - Create detailed implementation plans
+- `/implement` - Execute plans with verification
+- `/qa` - Validate implementation quality
+- `/oneshot` - Complete workflow (research → plan → implement → qa)
+
+**Documentation Location**: All workflow artifacts saved to `.thoughts/`
+```
+.thoughts/
+├── interview/          # Interview context documents
+├── research/           # Research documents
+├── plans/              # Implementation plans
+└── [date]-*.md        # QA and oneshot reports
+```
+
+See `.claude/WORKFLOWS.md` for complete workflow documentation.
+
+**Meta Plugin**: The `meta` plugin can generate customized workflow commands for other Elixir projects via `/meta:workflow-generator`. Templates use `{{DOCS_LOCATION}}` variable (default: `.thoughts`) for configurability.
+
 ## Quality Gates
 
 Before pushing changes, run:

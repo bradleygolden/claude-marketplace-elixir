@@ -133,12 +133,13 @@ jq -e '.suppressOutput == true'
 3. Pass JSON input to `pre-commit-check.sh`
 
 **Expected Behavior**:
-- Exit code: `2` (blocks the commit)
+- Exit code: `0` with JSON permissionDecision: "deny" (blocks the commit)
 - Output: Contains "sobelow" and security findings
 - Should provide guidance on fixing or suppressing
 
 **Validation**:
-- Exit code is `2`
+- Exit code is `0`
+- JSON output contains `permissionDecision: "deny"`
 - Output contains "sobelow" string (case-insensitive)
 
 ---
@@ -314,7 +315,7 @@ Overall result: PASS
 
 ```
 [TEST] Pre-commit check: Blocks on security violations
-  ❌ FAIL: Expected exit code 2, got 0
+  ❌ FAIL: Expected JSON with permissionDecision: "deny", got suppressOutput
   Output:
     {"suppressOutput": true}
 ```
