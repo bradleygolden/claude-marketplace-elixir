@@ -355,3 +355,17 @@ This validates:
 - Documentation completeness
 - Test coverage
 - Comment quality (removes unnecessary, keeps critical)
+
+## Git Commit Configuration
+
+**Configured**: 2025-10-28
+
+### Commit Message Format
+
+**Format**: imperative-mood
+
+#### Imperative Mood Template
+```
+<description>
+```
+Start with imperative verb: Add, Update, Fix, Remove, etc.
