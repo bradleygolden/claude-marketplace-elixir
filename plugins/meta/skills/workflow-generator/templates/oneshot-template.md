@@ -122,65 +122,399 @@ SlashCommand(command="/qa PLAN_FILENAME")
 
 **Wait for QA to complete** before proceeding.
 
-Mark step 5 completed, mark step 6 in_progress.
+**After QA completes, check for critical issues:**
+
+**5.1 Read QA Report and Parse Status**
+
+Find and read the most recent QA report:
+```bash
+ls -t {{DOCS_LOCATION}}/qa-reports/*-qa.md 2>/dev/null | head -1
+```
+
+Read the QA report file and parse the "Overall Status" from the Executive Summary section.
+
+Possible statuses:
+- ✅ ALL PASS or ✅ PASS
+- ⚠️ NEEDS ATTENTION or ⚠️ PASS WITH WARNINGS
+- ❌ CRITICAL ISSUES or ❌ FAIL
+
+**5.2 Handle QA Results Conditionally**
+
+**IF status is ❌ CRITICAL ISSUES or ❌ FAIL:**
+
+  **5.2.1 Extract Critical Issue Count**
+
+  Parse the QA report to count critical issues listed.
+
+  **5.2.2 Prompt User for Auto-Fix**
+
+  Use AskUserQuestion tool:
+  ```
+  Question: "QA detected [N] critical issues. Generate and execute fix plan automatically?"
+  Header: "Auto-Fix"
+  Options (multiSelect: false):
+    Option 1:
+      Label: "Yes, auto-fix and re-validate"
+      Description: "Automatically create fix plan, implement fixes, and re-run QA"
+    Option 2:
+      Label: "No, stop for manual fixes"
+      Description: "Stop oneshot workflow, fix manually, then re-run /qa"
+  ```
+
+  **5.2.3 If User Selects "Yes, auto-fix and re-validate":**
+
+  Report: "Generating fix plan for [N] critical issues..."
+
+  Add dynamic todos to track fix cycle:
+  ```
+  TodoWrite: Add new todos:
+  5a. [in_progress] Generate fix plan for critical issues
+  5b. [pending] Execute fix implementation
+  5c. [pending] Re-run QA validation
+  ```
+
+  Mark step 5a in_progress.
+
+  **Get QA Report Path:**
+  ```bash
+  ls -t {{DOCS_LOCATION}}/qa-reports/*-qa.md 2>/dev/null | head -1
+  ```
+
+  **Generate Fix Plan:**
+  ```
+  SlashCommand(command="/plan Fix critical issues from QA report: [QA_REPORT_PATH]")
+  ```
+
+  Wait for plan generation to complete.
+
+  **Extract fix plan filename** from output (e.g., "plan-2025-10-27-fix-*").
+  Store plan name without path/extension in variable: FIX_PLAN_NAME
+
+  Report: "Fix plan created at: {{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]"
+
+  Mark step 5a completed, mark step 5b in_progress.
+
+  **Execute Fix Implementation:**
+  ```
+  SlashCommand(command="/implement [FIX_PLAN_NAME]")
+  ```
+
+  Wait for implementation to complete.
+
+  Report: "Fixes applied. Re-running QA..."
+
+  Mark step 5b completed, mark step 5c in_progress.
+
+  **Re-run QA Validation:**
+  ```
+  SlashCommand(command="/qa PLAN_FILENAME")
+  ```
+
+  Note: Use original PLAN_FILENAME, not the fix plan name.
+
+  Wait for QA to complete.
+
+  **Read New QA Report:**
+  ```bash
+  ls -t {{DOCS_LOCATION}}/qa-reports/*-qa.md 2>/dev/null | head -1
+  ```
+
+  Parse new status from report.
+
+  **Evaluate Re-validation Results:**
+
+  IF new status is ✅ ALL PASS or ✅ PASS:
+    Report: "✅ Auto-fix successful! QA passed after fixes."
+    Mark step 5c completed with note: "Passed after auto-fix"
+    Mark step 5 completed with note: "Completed with auto-fix"
+    Mark step 6 in_progress
+    Set workflow_status = "SUCCESS_WITH_AUTOFIX"
+    Continue to Step 6
+
+  ELSE IF new status is ⚠️ NEEDS ATTENTION or ⚠️ PASS WITH WARNINGS:
+    Report: "⚠️ Auto-fix partially successful. QA passed with warnings."
+    Mark step 5c completed with note: "Passed with warnings after auto-fix"
+    Mark step 5 completed with note: "Completed with warnings after auto-fix"
+    Mark step 6 in_progress
+    Set workflow_status = "SUCCESS_WITH_WARNINGS_AFTER_AUTOFIX"
+    Continue to Step 6
+
+  ELSE IF new status is ❌ CRITICAL ISSUES or ❌ FAIL:
+    Report: "❌ Auto-fix incomplete. Critical issues remain."
+    Report: "Fix plan: {{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]"
+    Report: "Final QA report: [NEW_QA_REPORT_PATH]"
+    Report: "Manual intervention required. Review reports and fix remaining issues."
+    Mark step 5c completed with note: "Failed after auto-fix attempt"
+    Mark step 5 completed with note: "Failed - auto-fix incomplete"
+    Mark step 6 in_progress
+    Set workflow_status = "FAILED_AUTOFIX_INCOMPLETE"
+    Continue to Step 6 (summary will show failure details)
+
+  **5.2.4 If User Selects "No, stop for manual fixes":**
+
+  Report: "Workflow stopped for manual fixes."
+  Report: "QA report: [QA_REPORT_PATH]"
+  Report: "After fixing, continue with: /qa PLAN_FILENAME"
+
+  Mark step 5 completed with note: "Stopped for manual fixes"
+  Mark step 6 in_progress
+  Set workflow_status = "PAUSED_MANUAL_FIXES_REQUIRED"
+  Continue to Step 6 (summary will show paused status)
+
+**ELSE IF status is ⚠️ NEEDS ATTENTION or ⚠️ PASS WITH WARNINGS:**
+
+  Report: "QA passed with warnings (non-blocking)"
+  Mark step 5 completed with note: "Passed with warnings"
+  Mark step 6 in_progress
+  Set workflow_status = "SUCCESS_WITH_WARNINGS"
+  Continue to Step 6
+
+**ELSE IF status is ✅ ALL PASS or ✅ PASS:**
+
+  Report: "QA passed successfully"
+  Mark step 5 completed
+  Mark step 6 in_progress
+  Set workflow_status = "SUCCESS"
+  Continue to Step 6
 
 ### Step 6: Final Summary
 
-Present comprehensive workflow summary:
+Present comprehensive workflow summary based on workflow_status:
+
+**IF workflow_status is "SUCCESS":**
 
 ```markdown
-✅ Oneshot Workflow Complete!
+# ✅ Oneshot Workflow Complete - Success
 
-## Feature: {{FEATURE_DESCRIPTION}}
+**Feature**: [Feature Description]
+**Status**: ✅ SUCCESS
 
-### Workflow Results
+## Phases Executed
 
-**Research Phase** ✓
-- Document: `{{DOCS_LOCATION}}/research-YYYY-MM-DD-topic.md`
-- Key findings: [Summarize 2-3 key patterns discovered]
+1. ✅ Research - Codebase patterns analyzed
+2. ✅ Planning - Implementation plan created
+3. ✅ Implementation - All phases completed
+4. ✅ QA Validation - All quality gates passed
 
-**Planning Phase** ✓
-- Plan: `{{DOCS_LOCATION}}/plans/YYYY-MM-DD-feature.md`
-- Phases: [N phases defined]
-- Success criteria: [N automated, M manual checks]
+## Final QA Status
 
-**Implementation Phase** ✓
-- All phases completed: [X/X]
-- Verification passed: ✓ Compile, ✓ Tests, ✓ Format
+✅ ALL PASS - All quality gates passed
+
+**Automated Checks**:
+- Compilation: ✅
+- Tests: ✅ [N/M passed]
+- Formatting: ✅
 {{#if QUALITY_TOOLS}}
-- Quality checks: {{QUALITY_TOOLS_STATUS}}
+- Quality tools: {{QUALITY_TOOLS_STATUS}}
 {{/if}}
 
-**QA Phase** ✓
-- Automated checks: [PASS/FAIL summary]
-- Manual validation: [Items remaining]
-- Overall status: [Ready for review / Needs attention]
-
----
+**Code Quality**:
+- Code review: No issues
+- Test coverage: Adequate
+- Documentation: Complete
 
 ## Next Steps
 
-{{#if QA_PASSED}}
-1. Review the implementation
-2. Complete manual success criteria checks
-3. Create pull request
-4. Deploy when ready
-{{else}}
-1. Address QA feedback:
-   [List actionable items from QA report]
-2. Re-run: `/qa PLAN_FILENAME`
-3. Iterate until all checks pass
+Your implementation is ready!
+
+1. **Review changes**: `git diff`
+2. **Create commit**:
+   ```bash
+   git add -A
+   git commit -m "[Feature description]"
+   ```
+3. **Push**: `git push origin $(git branch --show-current)`
+
+## Documentation
+
+- **Research**: `{{DOCS_LOCATION}}/research-YYYY-MM-DD-topic.md`
+- **Plan**: `{{DOCS_LOCATION}}/plans/YYYY-MM-DD-feature.md`
+- **QA Report**: `{{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+```
+
+**IF workflow_status is "SUCCESS_WITH_AUTOFIX":**
+
+```markdown
+# ✅ Oneshot Workflow Complete - Success (with Auto-Fix)
+
+**Feature**: [Feature Description]
+**Status**: ✅ SUCCESS (auto-fixes applied)
+
+## Phases Executed
+
+1. ✅ Research - Codebase patterns analyzed
+2. ✅ Planning - Implementation plan created
+3. ✅ Implementation - All phases completed
+4. ⚠️ QA Validation (initial) - Critical issues detected
+5. ✅ Fix Plan Generation - Issues analyzed and fix plan created
+6. ✅ Fix Implementation - Automated fixes applied
+7. ✅ QA Re-validation - All quality gates passed
+
+## Fix Details
+
+**Initial QA**: ❌ FAILED ([N] critical issues)
+**Fix Plan**: `{{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]`
+**Fix Result**: ✅ All issues resolved
+**Final QA**: ✅ ALL PASS
+
+**Issues Fixed**:
+[List top 3-5 issues that were fixed automatically]
+
+## Next Steps
+
+Your implementation is ready (with auto-fixes applied)!
+
+1. **Review changes including fixes**: `git diff`
+2. **Review fix plan**: `cat {{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]`
+3. **Create commit**:
+   ```bash
+   git add -A
+   git commit -m "[Feature description]"
+   ```
+4. **Push**: `git push origin $(git branch --show-current)`
+
+## Documentation
+
+- **Research**: `{{DOCS_LOCATION}}/research-YYYY-MM-DD-topic.md`
+- **Plan**: `{{DOCS_LOCATION}}/plans/YYYY-MM-DD-feature.md`
+- **Fix Plan**: `{{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]`
+- **QA Report**: `{{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+```
+
+**IF workflow_status is "SUCCESS_WITH_WARNINGS" or "SUCCESS_WITH_WARNINGS_AFTER_AUTOFIX":**
+
+```markdown
+# ⚠️ Oneshot Workflow Complete - Success with Warnings
+
+**Feature**: [Feature Description]
+**Status**: ⚠️ SUCCESS WITH WARNINGS
+
+## Phases Executed
+
+1. ✅ Research
+2. ✅ Planning
+3. ✅ Implementation
+4. ⚠️ QA Validation - Passed with warnings
+{{#if workflow_status equals "SUCCESS_WITH_WARNINGS_AFTER_AUTOFIX"}}
+5. ✅ Fix Plan Generation (for critical issues)
+6. ✅ Fix Implementation
+7. ⚠️ QA Re-validation - Passed with warnings
 {{/if}}
 
----
+## QA Status
 
-## Generated Artifacts
+⚠️ PASS WITH WARNINGS - Core functionality validated, warnings present
 
-- Research: `{{DOCS_LOCATION}}/research-YYYY-MM-DD-topic.md`
-- Plan: `{{DOCS_LOCATION}}/plans/YYYY-MM-DD-feature.md`
-- QA Report: [Embedded in plan document]
+**Warnings**:
+[List warnings from QA report]
 
-**Feature is {{#if QA_PASSED}}ready for review{{else}}in progress{{/if}}!**
+## Next Steps
+
+Implementation complete, but review warnings:
+
+1. **Review warnings**: `cat {{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+2. **Address warnings** (optional but recommended)
+3. **Review changes**: `git diff`
+4. **Create commit**:
+   ```bash
+   git add -A
+   git commit -m "[Feature description]"
+   ```
+
+## Documentation
+
+- **Research**: `{{DOCS_LOCATION}}/research-YYYY-MM-DD-topic.md`
+- **Plan**: `{{DOCS_LOCATION}}/plans/YYYY-MM-DD-feature.md`
+{{#if workflow_status equals "SUCCESS_WITH_WARNINGS_AFTER_AUTOFIX"}}
+- **Fix Plan**: `{{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]`
+{{/if}}
+- **QA Report**: `{{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+```
+
+**IF workflow_status is "PAUSED_MANUAL_FIXES_REQUIRED":**
+
+```markdown
+# ⚠️ Oneshot Workflow Paused - Manual Fixes Required
+
+**Feature**: [Feature Description]
+**Status**: ⚠️ PAUSED
+
+## Phases Executed
+
+1. ✅ Research
+2. ✅ Planning
+3. ✅ Implementation
+4. ❌ QA Validation - Failed with critical issues
+
+## QA Failure Details
+
+**Status**: ❌ CRITICAL ISSUES ([N] issues found)
+**QA Report**: `{{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+
+**Critical Issues**:
+[List top 3-5 critical issues from report]
+
+## Next Steps
+
+Workflow paused for manual fixes:
+
+1. **Review QA report**: `cat {{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+2. **Fix critical issues manually**
+3. **Re-run QA**: `/qa [PLAN_NAME]`
+4. **Or generate fix plan**: `/qa` (will offer fix plan generation)
+
+## Documentation
+
+- **Research**: `{{DOCS_LOCATION}}/research-YYYY-MM-DD-topic.md`
+- **Plan**: `{{DOCS_LOCATION}}/plans/YYYY-MM-DD-feature.md`
+- **QA Report**: `{{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+```
+
+**IF workflow_status is "FAILED_AUTOFIX_INCOMPLETE":**
+
+```markdown
+# ❌ Oneshot Workflow Failed - Auto-Fix Incomplete
+
+**Feature**: [Feature Description]
+**Status**: ❌ FAILED (auto-fix incomplete)
+
+## Phases Executed
+
+1. ✅ Research
+2. ✅ Planning
+3. ✅ Implementation
+4. ❌ QA Validation (initial) - Failed with critical issues
+5. ✅ Fix Plan Generation - Fix strategy created
+6. ✅ Fix Implementation - Fixes attempted
+7. ❌ QA Re-validation - Still failing
+
+## Fix Attempt Details
+
+**Initial Issues**: [N] critical issues
+**Fix Plan**: `{{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]`
+**Fixes Applied**: [M] fixes attempted
+**Remaining Issues**: [P] critical issues remain
+
+**Remaining Critical Issues**:
+[List remaining issues from final QA report]
+
+## Next Steps
+
+Auto-fix was incomplete, manual intervention required:
+
+1. **Review final QA report**: `cat {{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+2. **Review fix plan**: `cat {{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]`
+3. **Fix remaining issues manually**
+4. **Re-run QA**: `/qa [ORIGINAL_PLAN_NAME]`
+5. **Or generate new fix plan**: `/qa` (will offer new plan generation)
+
+## Documentation
+
+- **Research**: `{{DOCS_LOCATION}}/research-YYYY-MM-DD-topic.md`
+- **Plan**: `{{DOCS_LOCATION}}/plans/YYYY-MM-DD-feature.md`
+- **Fix Plan**: `{{DOCS_LOCATION}}/plans/[FIX_PLAN_FILENAME]`
+- **QA Report** (initial): `{{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md`
+- **QA Report** (after fix): `{{DOCS_LOCATION}}/qa-reports/YYYY-MM-DD-qa.md` (most recent)
 ```
 
 Mark step 6 completed.

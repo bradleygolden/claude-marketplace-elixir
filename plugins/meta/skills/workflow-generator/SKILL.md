@@ -485,6 +485,66 @@ Validate implementation against success criteria and project quality standards.
 - {{this}}
 {{/each}}
 
+**Fix Workflow** (automatic): When critical issues are detected, `/qa` offers to automatically generate and execute a fix plan.
+
+---
+
+### Fix Workflow (Automatic)
+
+When `/qa` detects critical issues, it automatically offers to generate a fix plan and execute it.
+
+**Automatic Fix Flow**:
+```
+/qa → ❌ Critical issues detected
+    ↓
+"Generate fix plan?" → Yes
+    ↓
+/plan "Fix critical issues from QA report: ..."
+    ↓
+Fix plan created at {{DOCS_LOCATION}}/plans/plan-YYYY-MM-DD-fix-*.md
+    ↓
+"Execute fix plan?" → Yes
+    ↓
+/implement fix-plan-name
+    ↓
+/qa → Re-validation
+    ↓
+✅ Pass or iterate
+```
+
+**Manual Fix Flow**:
+```
+/qa → ❌ Critical issues detected → Decline auto-fix
+    ↓
+Review QA report manually
+    ↓
+Fix issues manually or create plan: /plan "Fix [specific issue]"
+    ↓
+/qa → Re-validation
+```
+
+**Oneshot with Auto-Fix**:
+
+The `/oneshot` command automatically attempts fix workflows when QA fails:
+```
+/oneshot "Feature" → Research → Plan → Implement → QA
+                                                     ↓
+                                          ❌ Fails with critical issues
+                                                     ↓
+                                    "Auto-fix and re-validate?" → Yes
+                                                     ↓
+                        /plan "Fix..." → /implement fix → /qa
+                                                     ↓
+                                          ✅ Pass → Complete oneshot
+```
+
+**Benefits of Fix Workflow**:
+- ✅ Reuses existing plan/implement infrastructure
+- ✅ Fix plans documented like feature plans
+- ✅ Handles complex multi-step fixes
+- ✅ Full audit trail in `{{DOCS_LOCATION}}/plans/`
+- ✅ Iterative: Can re-run `/qa` to generate new fix plans
+
 ---
 
 ## Workflow Sequence
