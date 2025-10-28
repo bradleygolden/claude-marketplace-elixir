@@ -286,6 +286,61 @@ When using TodoWrite in slash commands and workflows:
 ]
 ```
 
+## Agent Pattern for Token Efficiency
+
+The marketplace uses specialized agents for token-efficient workflows:
+
+**Finder Agent** (`.claude/agents/finder.md`):
+- **Role**: Fast file location without reading (uses haiku model)
+- **Tools**: Grep, Glob, Bash, Skill (NO Read tool)
+- **Purpose**: Creates maps of WHERE files are, organized by purpose
+- **Output**: File paths and locations, no code analysis
+
+**Analyzer Agent** (`.claude/agents/analyzer.md`):
+- **Role**: Deep code analysis with file reading (uses sonnet model)
+- **Tools**: Read, Grep, Glob, Bash, Skill
+- **Purpose**: Explains HOW things work by reading specific files
+- **Output**: Execution flows, technical analysis with file:line references
+
+**Token-Efficient Workflow Pattern**:
+```
+Step 1: Spawn finder → Locates relevant files (cheap, fast)
+Step 2: Spawn analyzer → Reads files found by finder (expensive but targeted)
+```
+
+This pattern reduces token usage by 30-50% compared to having analyzer explore and read everything.
+
+**When to Use**:
+- Use **parallel** when researching independent aspects (no dependency)
+- Use **sequential** (finder first, then analyzer) when analyzer needs file paths from finder
+
+See `.claude/commands/qa.md` (lines 807-844) and `.claude/commands/research.md` (lines 56-73) for examples.
+
+## Workflow System
+
+The marketplace includes a comprehensive workflow system for development:
+
+**Commands**:
+- `/interview` - Gather context through interactive questioning
+- `/research` - Research codebase with parallel agents
+- `/plan` - Create detailed implementation plans
+- `/implement` - Execute plans with verification
+- `/qa` - Validate implementation quality
+- `/oneshot` - Complete workflow (research → plan → implement → qa)
+
+**Documentation Location**: All workflow artifacts saved to `.thoughts/`
+```
+.thoughts/
+├── interview/          # Interview context documents
+├── research/           # Research documents
+├── plans/              # Implementation plans
+└── [date]-*.md        # QA and oneshot reports
+```
+
+See `.claude/WORKFLOWS.md` for complete workflow documentation.
+
+**Meta Plugin**: The `meta` plugin can generate customized workflow commands for other Elixir projects via `/meta:workflow-generator`. Templates use `{{DOCS_LOCATION}}` variable (default: `.thoughts`) for configurability.
+
 ## Quality Gates
 
 Before pushing changes, run:
