@@ -16,6 +16,7 @@
     "ex_doc@elixir": true,
     "mix_audit@elixir": true,
     "ex_unit@elixir": true,
-    "meta@elixir": true
+    "meta@elixir": true,
+    "git@elixir": true
   }
 }
