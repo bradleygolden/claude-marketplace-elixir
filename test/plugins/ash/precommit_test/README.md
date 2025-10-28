@@ -40,7 +40,7 @@ mix ash.setup
 
 When the pre-commit hook runs before `git commit` commands:
 
-1. **If codegen is needed**: Hook **blocks the commit** with exit code 2, sends error output to stderr showing what codegen tasks are pending
+1. **If codegen is needed**: Hook **blocks the commit** with exit 0 and JSON output (`permissionDecision: "deny"`), sends error details in `systemMessage` via stdout showing what codegen tasks are pending
 2. **If codegen is current**: Hook allows the commit to proceed (exit code 0)
 3. **If not a git commit command**: Hook silently exits (doesn't run validation for other git operations)
 4. **If not an Ash project**: Hook silently exits

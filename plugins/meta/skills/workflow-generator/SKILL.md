@@ -114,8 +114,9 @@ Use TodoWrite to track progress:
 5. [pending] Generate /implement command
 6. [pending] Generate /qa command
 7. [pending] Generate /oneshot command
-8. [pending] Create documentation
-9. [pending] Present usage instructions
+8. [pending] Generate /interview command
+9. [pending] Create documentation
+10. [pending] Present usage instructions
 ```
 
 Mark step 1 completed, step 2 in progress.
@@ -363,11 +364,35 @@ Mark step 7 completed in TodoWrite.
 
 ---
 
-## Step 8: Create Documentation
+## Step 8: Generate /interview Command
 
 Mark step 8 as in_progress in TodoWrite.
 
-### 8.1 Create Workflow README
+**Read the template:**
+- Use Read tool to read `plugins/meta/skills/workflow-generator/templates/interview-template.md`
+- This contains the full command structure with placeholders
+
+**Perform variable substitution:**
+
+Replace these variables in the template:
+- `{{PROJECT_TYPE}}` → Answer from Question 1 (e.g., "Phoenix Application")
+- `{{DOCS_LOCATION}}` → Answer from Question 3 (e.g., ".thoughts")
+
+The interview command is designed to be project-agnostic with dynamic question generation, so it needs minimal customization compared to other commands.
+
+**Write customized command:**
+- Use Write tool to create `.claude/commands/interview.md`
+- Content is the template with variables substituted
+
+Mark step 8 completed in TodoWrite.
+
+---
+
+## Step 9: Create Documentation
+
+Mark step 9 as in_progress in TodoWrite.
+
+### 9.1 Create Workflow README
 
 Create WORKFLOWS.md file at the location specified in Question 6.
 
@@ -460,6 +485,66 @@ Validate implementation against success criteria and project quality standards.
 - {{this}}
 {{/each}}
 
+**Fix Workflow** (automatic): When critical issues are detected, `/qa` offers to automatically generate and execute a fix plan.
+
+---
+
+### Fix Workflow (Automatic)
+
+When `/qa` detects critical issues, it automatically offers to generate a fix plan and execute it.
+
+**Automatic Fix Flow**:
+```
+/qa → ❌ Critical issues detected
+    ↓
+"Generate fix plan?" → Yes
+    ↓
+/plan "Fix critical issues from QA report: ..."
+    ↓
+Fix plan created at {{DOCS_LOCATION}}/plans/plan-YYYY-MM-DD-fix-*.md
+    ↓
+"Execute fix plan?" → Yes
+    ↓
+/implement fix-plan-name
+    ↓
+/qa → Re-validation
+    ↓
+✅ Pass or iterate
+```
+
+**Manual Fix Flow**:
+```
+/qa → ❌ Critical issues detected → Decline auto-fix
+    ↓
+Review QA report manually
+    ↓
+Fix issues manually or create plan: /plan "Fix [specific issue]"
+    ↓
+/qa → Re-validation
+```
+
+**Oneshot with Auto-Fix**:
+
+The `/oneshot` command automatically attempts fix workflows when QA fails:
+```
+/oneshot "Feature" → Research → Plan → Implement → QA
+                                                     ↓
+                                          ❌ Fails with critical issues
+                                                     ↓
+                                    "Auto-fix and re-validate?" → Yes
+                                                     ↓
+                        /plan "Fix..." → /implement fix → /qa
+                                                     ↓
+                                          ✅ Pass → Complete oneshot
+```
+
+**Benefits of Fix Workflow**:
+- ✅ Reuses existing plan/implement infrastructure
+- ✅ Fix plans documented like feature plans
+- ✅ Handles complex multi-step fixes
+- ✅ Full audit trail in `{{DOCS_LOCATION}}/plans/`
+- ✅ Iterative: Can re-run `/qa` to generate new fix plans
+
 ---
 
 ## Workflow Sequence
@@ -511,20 +596,21 @@ To regenerate: `/meta:workflow-generator`
 
 Use Write tool to create the file at the location determined above.
 
-### 8.2 Create Documentation Directory
+### 9.2 Create Documentation Directory
 
 ```bash
 mkdir -p {{DOCS_LOCATION}}/research
 mkdir -p {{DOCS_LOCATION}}/plans
+mkdir -p {{DOCS_LOCATION}}/interview
 ```
 
-Mark step 8 completed in TodoWrite.
+Mark step 9 completed in TodoWrite.
 
 ---
 
-## Step 9: Present Usage Instructions
+## Step 10: Present Usage Instructions
 
-Mark step 9 as in_progress in TodoWrite.
+Mark step 10 as in_progress in TodoWrite.
 
 Present a comprehensive summary to the user:
 
@@ -536,6 +622,7 @@ Present a comprehensive summary to the user:
 ```
 .claude/
 ├── commands/
+│   ├── interview.md    # Interactive context gathering
 │   ├── research.md     # Research and document codebase
 │   ├── plan.md         # Create implementation plans
 │   ├── implement.md    # Execute plans with verification
@@ -550,6 +637,7 @@ Present a comprehensive summary to the user:
 
 ```
 {{DOCS_LOCATION}}/
+├── interview/          # Interview context documents
 ├── research/           # Research documents
 └── plans/              # Implementation plans
 ```
@@ -688,7 +776,7 @@ Full workflow documentation: `{{WORKFLOWS_MD_LOCATION}}`
 **Need help?** Each command has detailed instructions in its markdown file.
 ```
 
-Mark step 9 completed in TodoWrite.
+Mark step 10 completed in TodoWrite.
 
 Mark all todos as completed and present final summary to user.
 

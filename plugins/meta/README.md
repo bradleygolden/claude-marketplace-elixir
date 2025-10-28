@@ -4,7 +4,13 @@ Meta plugin for generating Elixir project-specific workflow commands.
 
 ## Overview
 
-The meta plugin provides a skill that generates a complete workflow system for Elixir projects. It creates customized `/research`, `/plan`, `/implement`, and `/qa` commands by asking questions about your Elixir project (Phoenix, Library, CLI, or Umbrella).
+The meta plugin provides a **workflow-generator skill** that generates a complete, customized workflow system for Elixir projects by creating:
+- `/interview` - Interactive context gathering through dynamic questioning
+- `/research` - Research and document codebase
+- `/plan` - Create detailed implementation plans
+- `/implement` - Execute plans with automated verification
+- `/qa` - Validate implementation against quality standards
+- `/oneshot` - Complete workflow in one command
 
 ## Purpose
 
@@ -32,11 +38,13 @@ Instead of creating workflow commands manually for each Elixir project, the meta
 This will:
 1. Detect your project type and tech stack
 2. Ask customization questions via interactive prompts
-3. Generate four workflow commands:
+3. Generate five workflow commands:
+   - `/interview` - Interactive context gathering before research/planning
    - `/research` - Research and document codebase
    - `/plan` - Create implementation plans with success criteria
    - `/implement` - Execute plans with automated verification
    - `/qa` - Validate implementation against quality gates
+   - `/oneshot` - Complete workflow automation
 4. Create supporting documentation
 5. Set up documentation directories
 
@@ -45,17 +53,18 @@ This will:
 ```
 .claude/
 ├── commands/
+│   ├── interview.md         # Context gathering before workflows
 │   ├── research.md          # Customized for your file patterns
 │   ├── plan.md              # Uses your build/test commands
 │   ├── implement.md         # Includes your verification steps
 │   ├── qa.md                # Enforces your quality gates
 │   └── oneshot.md           # Complete workflow in one command
 
-[WORKFLOWS.md location]      # Complete workflow documentation
-                             # (You choose the location during generation)
+.claude/WORKFLOWS.md         # Complete workflow documentation
+                             # (or your chosen location during generation)
 ```
 
-Plus documentation directories at your chosen location (e.g., `.thoughts/`, `docs/`).
+Plus documentation directories at your chosen location (e.g., `.thoughts/`, `docs/`), including `interview/` for context documents.
 
 ## Features
 
@@ -80,10 +89,20 @@ Plus documentation directories at your chosen location (e.g., `.thoughts/`, `doc
 - **Customized**: Adapted to your specific test commands and quality tools
 - **Editable**: Full markdown files you can modify
 - **Best-practice**: Follow Elixir and Phoenix conventions
+- **Context-aware**: Generated `/interview` command provides dynamic question generation; `/research` and `/plan` can invoke it when needed
 
 ## Workflow System
 
-The generated workflow follows a proven four-phase pattern:
+The generated workflow follows a proven pattern with optional context gathering:
+
+### 0. Interview (`/interview`) - Optional
+Gather context before research or planning through dynamic questioning. Claude analyzes your query and asks relevant questions to focus subsequent workflow steps.
+
+**Features**:
+- Auto-detects workflow phase
+- Generates contextual questions (not hardcoded)
+- Creates interview documents for persistent context
+- Can be invoked by `/research` and `/plan` when needed
 
 ### 1. Research (`/research`)
 Document existing code without evaluation. Spawns parallel agents to:

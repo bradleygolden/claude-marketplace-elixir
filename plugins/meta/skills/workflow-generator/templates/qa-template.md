@@ -55,6 +55,7 @@ git diff main...HEAD --stat
 3. [pending] Spawn validation agents
 4. [pending] Check manual criteria
 5. [pending] Generate validation report
+6. [pending] Offer fix plan generation if critical issues found
 ```
 
 ### Step 3: Run Automated Quality Checks
@@ -434,6 +435,133 @@ Fix these and re-run: `/qa "[plan-name]"`
 [IF PASS]
 **Ready to merge!** ✅
 ```
+
+### Step 9: Offer Fix Plan Generation (Conditional)
+
+**Only execute this step if overall status is ❌ FAIL**
+
+If QA detected critical issues:
+
+**9.1 Count Critical Issues**
+
+Count issues from validation report that are marked as ❌ CRITICAL or blocking.
+
+**9.2 Prompt User for Fix Plan Generation**
+
+Use AskUserQuestion tool:
+```
+Question: "QA detected [N] critical issues. Generate a fix plan to address them?"
+Header: "Fix Plan"
+Options (multiSelect: false):
+  Option 1:
+    Label: "Yes, generate fix plan"
+    Description: "Create a detailed plan to address all critical issues using /plan command"
+  Option 2:
+    Label: "No, I'll fix manually"
+    Description: "Exit QA and fix issues manually, then re-run /qa"
+```
+
+**9.3 If User Selects "Yes, generate fix plan":**
+
+**9.3.1 Extract QA Report Filename**
+
+Get the most recent QA report generated in Step 7:
+```bash
+ls -t {{DOCS_LOCATION}}/qa-reports/*-qa.md 2>/dev/null | head -1
+```
+
+Store filename in variable: QA_REPORT_PATH
+
+**9.3.2 Invoke Plan Command**
+
+Use SlashCommand tool:
+```
+Command: /plan "Fix critical issues from QA report: [QA_REPORT_PATH]"
+```
+
+Wait for plan generation to complete.
+
+**9.3.3 Extract Plan Filename**
+
+Parse the output from /plan command to find the generated plan filename.
+Typical format: `{{DOCS_LOCATION}}/plans/plan-YYYY-MM-DD-fix-*.md`
+
+Store plan name without path/extension in variable: FIX_PLAN_NAME
+
+Report to user:
+```
+Fix plan created at: [PLAN_FILENAME]
+```
+
+**9.3.4 Prompt User for Plan Execution**
+
+Use AskUserQuestion tool:
+```
+Question: "Fix plan created. Execute the fix plan now?"
+Header: "Execute Plan"
+Options (multiSelect: false):
+  Option 1:
+    Label: "Yes, execute fix plan"
+    Description: "Run /implement to apply fixes, then re-run /qa for validation"
+  Option 2:
+    Label: "No, I'll review first"
+    Description: "Exit and review the plan manually before implementing"
+```
+
+**9.3.5 If User Selects "Yes, execute fix plan":**
+
+Use SlashCommand tool:
+```
+Command: /implement "[FIX_PLAN_NAME]"
+```
+
+Wait for implementation to complete.
+
+Report:
+```
+Fix implementation complete. Re-running QA for validation...
+```
+
+Use SlashCommand tool:
+```
+Command: /qa
+```
+
+Wait for QA to complete.
+
+Report:
+```
+Fix cycle complete. Check QA results above.
+```
+
+**9.3.6 If User Selects "No, I'll review first":**
+
+Report:
+```
+Fix plan saved at: [PLAN_FILENAME]
+
+When ready to implement:
+  /implement "[FIX_PLAN_NAME]"
+
+After implementing, re-run QA:
+  /qa
+```
+
+**9.4 If User Selects "No, I'll fix manually":**
+
+Report:
+```
+Manual fixes required.
+
+Critical issues documented in: [QA_REPORT_PATH]
+
+After fixing, re-run QA:
+  /qa
+```
+
+**9.5 If QA Status is NOT ❌ FAIL:**
+
+Skip this step entirely (no fix plan offer needed).
 
 ## Quality Tool Integration
 

@@ -76,7 +76,7 @@ The core plugin implements three hooks:
 3. **Pre-commit validation** (`scripts/pre-commit-check.sh`)
    - Trigger: Before `git commit` commands
    - Action: Validates formatting, compilation, and unused deps
-   - Blocking: Yes (exit code 2 on failures)
+   - Blocking: Yes (exit 0 with JSON permissionDecision: "deny" on failures)
 
 ## Prerequisites
 
