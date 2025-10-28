@@ -47,14 +47,14 @@ When this command is invoked, the user provides a feature description as an argu
 5. **Gather metadata:**
    - Get current date/time: `date -u +"%Y-%m-%d %H:%M:%S %Z"`
    - Get git info: `git log -1 --format="%H" && git branch --show-current && git config user.name`
-   - Determine filename: `docs/plans/plan-YYYY-MM-DD-feature-name.md`
-     - Format: `docs/plans/plan-YYYY-MM-DD-feature-name.md` where:
+   - Determine filename: `.thoughts/plans/plan-YYYY-MM-DD-feature-name.md`
+     - Format: `.thoughts/plans/plan-YYYY-MM-DD-feature-name.md` where:
        - YYYY-MM-DD is today's date
        - feature-name is a brief kebab-case description
      - Examples:
-       - `docs/plans/plan-2025-10-26-monitoring-plugin.md`
-       - `docs/plans/plan-2025-10-26-hook-timeout-support.md`
-       - `docs/plans/plan-2025-10-26-parallel-hook-execution.md`
+       - `.thoughts/plans/plan-2025-10-26-monitoring-plugin.md`
+       - `.thoughts/plans/plan-2025-10-26-hook-timeout-support.md`
+       - `.thoughts/plans/plan-2025-10-26-parallel-hook-execution.md`
 
 6. **Write the plan document:**
    - Create file at determined path with structure:

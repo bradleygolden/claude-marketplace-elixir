@@ -13,8 +13,8 @@ You are tasked with implementing plugin marketplace features according to a deta
 When this command is invoked, the user provides a plan name as an argument (e.g., `/implement monitoring-plugin`). Begin implementation immediately.
 
 1. **Load the implementation plan:**
-   - If plan name provided: Read `docs/plans/plan-*-[plan-name].md`
-   - If no plan name: List available plans in docs/plans/ and ask user to choose
+   - If plan name provided: Read `.thoughts/plans/plan-*-[plan-name].md`
+   - If no plan name: List available plans in .thoughts/plans/ and ask user to choose
    - Parse the plan document frontmatter and sections
    - Extract implementation steps, file changes, and validation checklist
 
@@ -278,7 +278,7 @@ run_test "Hook triggers on matching file" test_hook_on_matching_file
 **User**: `/implement monitoring-plugin`
 
 **Process**:
-1. Read `docs/plans/plan-2025-10-26-monitoring-plugin.md`
+1. Read `.thoughts/plans/plan-2025-10-26-monitoring-plugin.md`
 2. Create TodoWrite with all implementation steps
 3. Create `plugins/monitoring/.claude-plugin/plugin.json`
 4. Create `plugins/monitoring/hooks/hooks.json`
@@ -295,7 +295,7 @@ run_test "Hook triggers on matching file" test_hook_on_matching_file
 **User**: `/implement` (no plan name)
 
 **Process**:
-1. List available plans in docs/plans/
+1. List available plans in .thoughts/plans/
 2. Show user the options
 3. Ask which plan to implement
 4. Proceed with selected plan
