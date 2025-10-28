@@ -41,11 +41,11 @@ test/plugins/ex_unit/
 **Test Steps**:
 1. Simulate git commit command via hook input
 2. Hook runs `mix test --stale` in the test project
-3. Verify hook exits with code 2 (blocking)
-4. Verify stderr contains test failure output
+3. Verify hook exits with code 0 and outputs JSON with permissionDecision: "deny" (blocking)
+4. Verify stdout contains test failure details in JSON permissionDecisionReason field
 
 **Expected Behavior**:
-- Exit code: 2 (blocks commit)
+- Exit code: 0 with JSON output (blocks commit via permissionDecision)
 - Output: Contains "test will fail" or failure information
 - Commit: Should be blocked
 
@@ -179,7 +179,7 @@ echo '{"tool_input":{"command":"git commit -m test"},"cwd":"/tmp"}' | \
 - Tests simulate hook invocation by piping JSON to stdin
 - Each test validates exit codes and output patterns
 - Test project has intentional failures to verify blocking behavior
-- Tests verify both blocking (exit 2) and non-blocking (exit 0) scenarios
+- Tests verify both blocking (exit 0 with JSON permissionDecision: deny) and non-blocking (exit 0 with suppressOutput: true) scenarios
 
 ## Success Criteria
 

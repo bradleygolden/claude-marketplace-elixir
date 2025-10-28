@@ -123,7 +123,7 @@
     {
       "name": "meta",
       "source": "./plugins/meta",
-      "description": "Meta plugin for generating project-specific workflow commands (research, plan, implement, qa)",
+      "description": "Meta plugin for generating project-specific workflow commands (research, plan, implement, qa) and interactive context gathering (interview)",
       "keywords": [
         "meta",
         "workflow",
@@ -133,7 +133,10 @@
         "research",
         "planning",
         "implementation",
-        "qa"
+        "qa",
+        "interview",
+        "context-gathering",
+        "interactive"
       ],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",

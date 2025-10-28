@@ -53,12 +53,13 @@ The ex_doc plugin implements one hook:
 - Hook detects ExDoc dependency in mix.exs
 - Runs `mix docs --warnings-as-errors`
 - Documentation validation fails (undefined reference warnings)
-- Commit is BLOCKED (exit code 2)
-- Error output shows documentation warnings to stderr
+- Commit is BLOCKED (exit 0 with JSON permissionDecision: "deny")
+- Error output shows documentation warnings in JSON systemMessage via stdout
 
 #### Validation
-- Exit code is `2`
-- Output contains `"warning:"` text
+- Exit code is `0`
+- JSON output contains `permissionDecision: "deny"`
+- Output contains `"warning:"` text in systemMessage
 
 ---
 
@@ -269,8 +270,8 @@ Check that:
 ### Hook Doesn't Block Commits
 
 Verify:
-1. Hook uses `exit 2` for blocking (not `exit 1`)
-2. Output is sent to stderr: `2>&1 >&2`
+1. Hook exits with `0` and uses JSON output with `permissionDecision: "deny"` for blocking
+2. Output is sent to stdout as structured JSON with `systemMessage` field
 3. PreToolUse matcher is "Bash" in hooks.json
 
 ---

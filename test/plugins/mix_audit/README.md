@@ -44,8 +44,8 @@ The test suite validates mix_audit pre-commit hook behavior:
 - Hook should find Mix project root
 - Hook should detect mix_audit in dependencies
 - Hook should run `mix deps.audit`
-- Hook should **block the commit** (exit code 2)
-- Hook should output vulnerability details to stderr
+- Hook should **block the commit** (exit 0 with JSON permissionDecision: "deny")
+- Hook should output vulnerability details in JSON `systemMessage` field via stdout
 - Output should be truncated if longer than 30 lines
 - Commit should NOT complete
 

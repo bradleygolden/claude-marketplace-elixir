@@ -64,7 +64,7 @@ The credo plugin implements two hooks:
 2. **Pre-commit check** (`scripts/pre-commit-check.sh`)
    - Trigger: Before `git commit` commands
    - Action: Runs `mix credo --strict`
-   - Blocking: Yes (exit code 2 on violations)
+   - Blocking: Yes (exit 0 with JSON permissionDecision: "deny" on violations)
 
 ## Credo vs Compilation
 

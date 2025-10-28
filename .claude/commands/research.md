@@ -17,7 +17,7 @@ You are tasked with conducting comprehensive research across the repository to a
 
 ## Steps to Execute:
 
-When this command is invoked, the user provides their research query as an argument (e.g., `/research How does authentication work?`). Begin research immediately.
+When this command is invoked, the user provides their research query as an argument (e.g., `/research How does the plugin system work?`). Begin research immediately.
 
 1. **Read any directly mentioned files first:**
    - If the user mentions specific files, read them FULLY first
@@ -27,7 +27,7 @@ When this command is invoked, the user provides their research query as an argum
 
 2. **Analyze and decompose the research question:**
    - Break down the user's query into composable research areas
-   - Identify specific components, patterns, or concepts to investigate
+   - Identify specific components to investigate (plugins, hooks, marketplace, tests, scripts)
    - Create a research plan using TodoWrite to track all subtasks
    - Use concrete TodoWrite structure:
      ```
@@ -37,13 +37,16 @@ When this command is invoked, the user provides their research query as an argum
      4. [pending] Synthesize findings
      5. [pending] Write research document
      ```
+   - Mark first todo as completed, second as in_progress before spawning agents
    - Consider which components are relevant:
-     - Configuration files (JSON, YAML, TOML, etc.)
-     - Source code (application logic, modules, classes)
-     - Scripts (automation, build, deployment)
-     - Tests (unit, integration, e2e)
-     - Documentation (README, guides, API docs)
-     - Infrastructure (Docker, CI/CD, deployment configs)
+     - Marketplace structure (marketplace.json)
+     - Plugin metadata (plugin.json files)
+     - Hook definitions (hooks.json)
+     - Hook scripts (bash scripts in plugins/*/scripts/)
+     - Test infrastructure (test/plugins/*/test-*-hooks.sh)
+     - Documentation (README.md, CLAUDE.md, plugin docs)
+     - JSON schemas and validation
+     - Integration patterns with Claude Code
 
 3. **Spawn parallel sub-agent tasks for comprehensive research:**
    - Create multiple Task agents to research different aspects concurrently
@@ -51,26 +54,17 @@ When this command is invoked, the user provides their research query as an argum
 
    **For finding files and patterns:**
    - Use the **finder** agent (subagent_type="general-purpose") to:
-     - Locate relevant files (WHERE)
-     - Show code patterns (WHAT)
-     - Extract implementation examples
-     - Example prompt: "Find all API endpoint definitions in the codebase and show their implementation patterns"
+     - Locate relevant files (JSON configs, bash scripts, markdown docs)
+     - Show implementation patterns
+     - Extract examples
+     - Example prompt: "Find all plugin.json files and show their structure and metadata patterns"
 
    **For deep analysis:**
    - Use the **analyzer** agent (subagent_type="general-purpose") to:
-     - Trace execution flows (HOW)
+     - Trace execution flows (how hooks trigger and execute)
      - Analyze technical implementation details
      - Explain step-by-step processing
-     - Example prompt: "Analyze how the authentication middleware works, tracing the complete flow from request to response"
-
-   **For package and framework documentation:**
-   - Use the **Skill** tool (core:hex-docs-search) to:
-     - Research Hex packages (Phoenix, Ecto, Ash, Credo, Sobelow, etc.)
-     - Find module and function documentation
-     - Understand integration patterns
-     - Example: "Research Phoenix.Router plug pipelines in hex docs"
-   - Use Skill when you need official package documentation vs code search
-   - Combine Skill research with finder/analyzer for comprehensive understanding
+     - Example prompt: "Analyze how the core plugin's post-edit hook works, tracing the flow from file edit to hook execution"
 
    **IMPORTANT**: All agents are documentarians, not critics. They will describe what exists without suggesting improvements or identifying issues.
 
@@ -83,6 +77,7 @@ When this command is invoked, the user provides their research query as an argum
 
 4. **Wait for all sub-agents to complete and synthesize findings:**
    - IMPORTANT: Wait for ALL sub-agent tasks to complete before proceeding
+   - Mark second todo as completed, third as in_progress
    - Compile all sub-agent results
    - Connect findings across different components
    - Include specific file paths and line numbers for reference
@@ -97,16 +92,17 @@ When this command is invoked, the user provides their research query as an argum
    - Include error details in a "Research Limitations" section if significant
 
 5. **Gather metadata for the research document:**
+   - Mark third todo as completed, fourth as in_progress
    - Get current date/time: `date -u +"%Y-%m-%d %H:%M:%S %Z"`
    - Get git info: `git log -1 --format="%H" && git branch --show-current && git config user.name`
-   - Determine filename: `docs/research/research-YYYY-MM-DD-topic-description.md`
-     - Format: `docs/research/research-YYYY-MM-DD-topic-description.md` where:
+   - Determine filename: `.thoughts/research/research-YYYY-MM-DD-topic-description.md`
+     - Format: `.thoughts/research/research-YYYY-MM-DD-topic-description.md` where:
        - YYYY-MM-DD is today's date
        - topic-description is a brief kebab-case description
      - Examples:
-       - `docs/research/research-2025-01-23-hook-architecture.md`
-       - `docs/research/research-2025-01-23-plugin-structure.md`
-       - `docs/research/research-2025-01-23-testing-patterns.md`
+       - `.thoughts/research/research-2025-10-27-hook-architecture.md`
+       - `.thoughts/research/research-2025-10-27-plugin-structure.md`
+       - `.thoughts/research/research-2025-10-27-testing-patterns.md`
 
 6. **Generate research document:**
    - Use the metadata gathered in step 5
@@ -119,7 +115,7 @@ When this command is invoked, the user provides their research query as an argum
      branch: [Current branch name]
      repository: [Repository name from git remote]
      topic: "[User's Question/Topic]"
-     tags: [research, relevant-topics]
+     tags: [research, marketplace, plugins]
      status: complete
      ---
 
@@ -130,6 +126,7 @@ When this command is invoked, the user provides their research query as an argum
      **Git Commit**: [Current commit hash]
      **Branch**: [Current branch name]
      **Repository**: [Repository name]
+     **Project Type**: Claude Code Plugin Marketplace
 
      ## Research Question
      [Original user query]
@@ -188,12 +185,14 @@ When this command is invoked, the user provides their research query as an argum
      ```
 
 7. **Write the research document:**
+   - Mark fourth todo as completed, fifth as in_progress
    - Create the file at the determined path
    - Use the Write tool to create the document with all gathered information
    - Ensure all file references include line numbers
    - Include code snippets for key patterns
 
 8. **Present findings:**
+   - Mark fifth todo as completed
    - Present a concise summary of findings to the user
    - Include key file references for easy navigation
    - Highlight discovered patterns and implementations
@@ -207,7 +206,7 @@ When this command is invoked, the user provides their research query as an argum
    - Spawn new sub-agents as needed for additional investigation
    - Continue updating the document
 
-## Plugin Marketplace Research Considerations:
+## Marketplace-Specific Research Considerations:
 
 - **Marketplace Structure**: marketplace.json, plugin metadata, versioning
 - **Plugin Components**: plugin.json files, hook definitions (hooks.json), scripts
@@ -224,9 +223,9 @@ When this command is invoked, the user provides their research query as an argum
 - **Testing Patterns**: Hook testing approach, exit code validation, output verification
 - **Marketplace Patterns**: Plugin registration, namespace management, version control
 - **Script Patterns**: File filtering, command matching, context passing, error handling
-- **Validation Patterns**: JSON validation with jq, structure verification, dependency detection
+- **Validation Patterns**: JSON validation with jq, structure verification
 - **Blocking vs Non-Blocking**: permissionDecision vs additionalContext patterns
-- **Integration Patterns**: How plugins integrate with Claude Code, tool matching, parameter extraction
+- **Integration Patterns**: How plugins integrate with Claude Code, tool matching
 
 ## Important notes:
 - Always use parallel Task agents to maximize efficiency
@@ -255,32 +254,32 @@ When this command is invoked, the user provides their research query as an argum
 
 ## Example Usage:
 
-**User**: `/research` then "How does authentication work in this application?"
+**User**: `/research` then "How does the plugin hook system work?"
 
 **Process**:
 1. Read any mentioned files
 2. Create TodoWrite with research subtasks
 3. Spawn parallel agents:
-   - finder: "Find all authentication-related files and show their implementation patterns"
-   - analyzer: "Analyze the authentication middleware, tracing the execution flow from request to verification"
+   - finder: "Find all hooks.json files and show their structure and hook definitions"
+   - analyzer: "Analyze how hooks trigger and execute, tracing the flow from Claude Code event to hook script"
 4. Wait for completion
 5. Synthesize findings into research document
 6. Present summary with key patterns and file references
 
-**User**: "How is the database configured?"
+**User**: "How is the marketplace structured?"
 
 **Process**:
 1. Spawn parallel agents:
-   - finder: "Find all database configuration files and connection setup code"
-   - analyzer: "Analyze how the database connection is established and configured"
-2. Synthesize findings about config patterns, connection pooling, and initialization
+   - finder: "Find marketplace.json and all plugin.json files showing the marketplace structure"
+   - analyzer: "Analyze how plugins are registered and organized in the marketplace"
+2. Synthesize findings about marketplace patterns and plugin organization
 3. Present comprehensive documentation with examples
 
-**User**: "What testing frameworks are used and how are tests structured?"
+**User**: "What testing patterns are used for hook validation?"
 
 **Process**:
 1. Spawn parallel agents:
-   - finder: "Find all test files and identify testing frameworks in use"
-   - analyzer: "Analyze test structure, setup/teardown patterns, and assertion styles"
+   - finder: "Find all test scripts and identify testing patterns"
+   - analyzer: "Analyze how hooks are tested, including exit code validation and output verification"
 2. Synthesize findings about testing approach and conventions
 3. Present documentation with test examples
