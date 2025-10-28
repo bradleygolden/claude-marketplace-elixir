@@ -88,6 +88,16 @@ Mark this step complete in TodoWrite.
 
 ### Step 4: Spawn Validation Agents
 
+**Agent Strategy**:
+
+This template uses `subagent_type="general-purpose"` agents since generated QA commands
+are project-agnostic. For token-efficient specialized validation, consider defining:
+
+- **finder**: Fast file location without reading (token-efficient for discovery)
+- **analyzer**: Deep code analysis with file reading (for technical tracing)
+
+For standard Elixir projects, general-purpose agents provide flexibility.
+
 Use Task tool to spawn parallel validation agents:
 
 **Agent 1: Code Review** (subagent_type="general-purpose"):
@@ -106,14 +116,22 @@ Focus on:
 - GenServer/Agent usage
 - Supervisor tree organization
 
+Note: This agent will both locate and read files. For token-efficient workflows,
+consider splitting into a finder (locate) + analyzer (read) pattern.
+
 Provide file:line references for all observations.
 Document current implementation (not suggestions for improvement).
 ```
 
 **Agent 2: Test Coverage** (subagent_type="general-purpose"):
 ```
-Analyze test coverage for the implementation:
+Find and analyze test coverage for the implementation:
+
+First, locate test files:
 - Find all test files related to changes
+- Identify test directory structure
+
+Then, analyze coverage:
 - Check if all public functions have tests
 - Verify both success and error cases are tested
 - Check for edge case coverage
@@ -125,13 +143,23 @@ ExUnit-specific:
 - setup/teardown patterns
 - assertion quality
 
+Note: This agent combines finding and reading. For token-efficient workflows,
+first use finder to locate test files, then use analyzer to read and evaluate them.
+
 Provide file:line references.
 Document what is tested, not what should be tested.
 ```
 
 **Agent 3: Documentation Review** (subagent_type="general-purpose"):
 ```
-Review documentation completeness:
+Find and review documentation completeness:
+
+First, locate documentation:
+- README files
+- Module documentation files
+- Inline documentation
+
+Then, analyze quality:
 - @moduledoc present and descriptive
 - @doc on all public functions
 - @typedoc on public types
@@ -142,6 +170,9 @@ Check for:
 - Code examples in docs
 - Clear explanations
 - Accurate descriptions
+
+Note: This agent combines finding and reading. For token-efficient workflows,
+first use finder to locate docs, then use analyzer to evaluate quality.
 
 Provide file:line references.
 Document current documentation state.

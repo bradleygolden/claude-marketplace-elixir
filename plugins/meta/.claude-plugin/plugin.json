@@ -1,6 +1,6 @@
 {
   "name": "meta",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0-rc.5",
   "description": "Meta plugin for generating project-specific workflow commands (research, plan, implement, qa) and interactive context gathering (interview)",
   "author": {
     "name": "Bradley Golden",
