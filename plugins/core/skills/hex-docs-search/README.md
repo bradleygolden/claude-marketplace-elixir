@@ -6,9 +6,11 @@ A comprehensive skill for searching Elixir and Erlang package documentation usin
 
 This skill helps Claude search for Hex package documentation intelligently by:
 1. First checking local dependencies in `deps/`
-2. Then searching the codebase for real usage examples
-3. Querying the hex.pm API for official docs
-4. Falling back to web search if needed
+2. Then checking previously fetched documentation and source in `.hex-docs/` and `.hex-packages/`
+3. Automatically fetching missing documentation or source code when needed (with version prompting)
+4. Searching the codebase for real usage examples
+5. Querying the hex.pm API for official docs
+6. Falling back to web search if needed
 
 ## Usage
 
@@ -34,7 +36,27 @@ Uses Grep and Glob tools to search installed packages for BOTH code and docs:
 
 **Advantage**: Matches the exact version used in the project
 
-### 2. Codebase Usage Search
+### 2. Fetched Cache Search (.hex-docs/ and .hex-packages/)
+
+Checks for previously fetched documentation and source code:
+- **Documentation**: Searches `.hex-docs/docs/hexpm/<package>/<version>/` for HTML docs
+- **Source code**: Searches `.hex-packages/<package>-<version>/` for unpacked source
+- Uses same search patterns as deps/ directory
+
+**Advantage**: Fast, offline-capable access to packages not in project dependencies
+
+### 3. Progressive Fetch (NEW)
+
+When packages aren't found locally, automatically fetches them:
+- **Version detection**: Checks mix.lock, mix.exs, or hex.pm for version
+- **User prompting**: Asks user to choose version when ambiguous (latest vs specific)
+- **Documentation first**: Fetches HTML docs with `mix hex.docs fetch` to `.hex-docs/`
+- **Source if needed**: Fetches source code with `mix hex.package fetch --unpack` to `.hex-packages/`
+- **Cached for future**: All fetched content reusable in subsequent queries
+
+**Advantage**: Builds a local knowledge base of documentation and source code over time
+
+### 4. Codebase Usage Search
 
 Searches the project's `lib/` and `test/` directories:
 - Finds `alias` and `import` statements
@@ -43,7 +65,7 @@ Searches the project's `lib/` and `test/` directories:
 
 **Advantage**: Context-aware examples from your actual codebase
 
-### 3. HexDocs Search API
+### 5. HexDocs Search API
 
 Uses the HexDocs search API at `https://search.hexdocs.pm/`:
 - Full-text search across documentation content
@@ -53,7 +75,7 @@ Uses the HexDocs search API at `https://search.hexdocs.pm/`:
 
 **Advantage**: Searches actual documentation content, not just package metadata
 
-### 4. Web Search Fallback
+### 6. Web Search Fallback
 
 Uses WebSearch with targeted queries:
 - `site:hexdocs.pm <package> <module>` for specific docs
@@ -75,16 +97,24 @@ Claude will:
 4. Read @moduledoc from the source
 ```
 
-### Example 2: Unknown package
+### Example 2: Unknown package with progressive fetch
 
 ```
 User: "What is the Timex library?"
 
 Claude will:
 1. Check deps/timex (not found)
-2. Query hex.pm API for package info
-3. Provide link: https://hexdocs.pm/timex
-4. Show description and offer to add to mix.exs
+2. Check .hex-docs/docs/hexpm/timex/ (not found)
+3. Detect no version in project dependencies
+4. Query hex.pm for latest version
+5. Prompt: "Fetch latest (3.7.11) or specific version?"
+6. User selects "Latest"
+7. Fetch: HEX_HOME=.hex-docs mix hex.docs fetch timex 3.7.11
+8. Search fetched HTML documentation
+9. Present findings with link to cached docs
+10. Suggest adding to .gitignore if not present
+
+Future queries: Instant access to cached documentation
 ```
 
 ### Example 3: Specific function lookup
@@ -103,7 +133,20 @@ Claude will:
 
 - `curl` - For hex.pm API queries
 - `jq` - For JSON parsing (recommended)
-- Internet access - For API and web search
+- `mix` - For fetching packages and documentation
+- Internet access - For API, web search, and fetching packages/docs
+
+## Recommended .gitignore Entries
+
+Add these to your `.gitignore` to exclude fetched content:
+
+```gitignore
+# Fetched Hex documentation and packages
+/.hex-docs/
+/.hex-packages/
+```
+
+These directories can be large and are easily re-fetched on demand.
 
 ## Integration
 
