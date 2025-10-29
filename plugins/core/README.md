@@ -29,11 +29,14 @@ claude
 
 ### Skills
 
-**hex-docs-search** - Intelligent Hex package documentation search:
+**hex-docs-search** - Intelligent Hex package documentation search with progressive fetching:
 - 🔍 **Local deps search** - Searches installed packages in `deps/` directory for code and docs
+- 💾 **Fetched cache** - Checks previously fetched documentation and source in `.hex-docs/` and `.hex-packages/`
+- ⬇️ **Progressive fetch** - Automatically fetches missing documentation or source code locally (with version prompting)
 - 📚 **Codebase usage** - Finds real-world usage examples from your project
 - 🌐 **HexDocs API** - Queries hex.pm API for official documentation
 - 🔎 **Web fallback** - Uses web search when other methods don't provide enough information
+- 🚀 **Offline-capable** - Once fetched, documentation and source available without network access
 
 See [skills/hex-docs-search/SKILL.md](skills/hex-docs-search/SKILL.md) for details.
 
