@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.0.0-rc.9"
+    "version": "1.0.0-rc.10"
   },
   "pluginRoot": "../plugins",
   "plugins": [
@@ -46,12 +46,7 @@
       "name": "dialyzer",
       "source": "./plugins/dialyzer",
       "description": "Dialyzer static type analysis for Elixir projects",
-      "keywords": [
-        "elixir",
-        "dialyzer",
-        "type-checking",
-        "static-analysis"
-      ],
+      "keywords": ["elixir", "dialyzer", "type-checking", "static-analysis"],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
@@ -138,6 +133,15 @@
         "context-gathering",
         "interactive"
       ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
+      "name": "git",
+      "source": "./plugins/git",
+      "description": "Intelligent git commit workflow automation",
+      "keywords": ["git", "commit", "workflow", "version-control"],
       "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
       "license": "MIT",
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
