@@ -316,6 +316,80 @@ This pattern reduces token usage by 30-50% compared to having analyzer explore a
 
 See `.claude/commands/qa.md` (lines 807-844) and `.claude/commands/research.md` (lines 56-73) for examples.
 
+## Proactive Workflow Command Usage
+
+**CRITICAL**: When a user's request could be addressed by one of the workflow commands below, ALWAYS suggest or directly use the appropriate command, even if the user doesn't explicitly mention it.
+
+### When to Use Workflow Commands
+
+**Match user intent to commands:**
+
+**Use `/research`** when user asks:
+- "How does [component] work?"
+- "Where is [feature] implemented?"
+- "Can you explain [system/pattern]?"
+- "What does [code/file] do?"
+- "Help me understand [topic]"
+- Any exploratory question about the codebase
+
+**Use `/plan`** when user asks:
+- "Add [new feature/plugin]"
+- "Create [new functionality]"
+- "I want to implement [feature]"
+- "Help me build [component]"
+- "Modify [existing feature] to [new behavior]"
+- Any request to create or modify functionality
+
+**Use `/implement`** when user asks:
+- "Execute the plan for [feature]"
+- "Implement the [plan-name] plan"
+- "Build what we planned"
+- User has already created a plan and wants implementation
+
+**Use `/qa`** when user asks:
+- "Review my changes"
+- "Validate the marketplace"
+- "Run tests"
+- "Check if everything is working"
+- "Is this ready to push?"
+- Before any git push operation
+
+**Use `/interview`** when user asks:
+- Questions that require clarification before proceeding
+- Requests with ambiguous scope or multiple valid approaches
+- Before starting research, planning, or implementation if context is unclear
+
+**Use `/oneshot`** when user asks:
+- "Implement [feature] end-to-end"
+- "Build [feature] from scratch"
+- User wants complete automation without separate phases
+
+### Proactive Usage Pattern
+
+```
+User: "How do the hooks work in the core plugin?"
+Claude: I'll use the /research command to conduct comprehensive research on the core plugin hooks.
+[Executes /research command]
+
+User: "Add a sobelow security plugin"
+Claude: I'll use the /plan command to create a detailed implementation plan for the sobelow plugin.
+[Executes /plan command]
+
+User: "I want to understand the testing framework and then add coverage for ash plugin"
+Claude: I'll break this into two steps:
+1. First, I'll use /research to understand the testing framework
+2. Then, I'll use /plan to create a plan for adding ash plugin test coverage
+[Executes /research, then /plan]
+```
+
+### Important Notes
+
+- **Proactive, not reactive**: Don't wait for users to know these commands exist - use them when appropriate
+- **Combine commands**: Some requests need multiple commands (e.g., research then plan, plan then implement)
+- **Explain what you're doing**: Tell the user which command you're using and why
+- **Reference command docs**: The commands themselves have detailed instructions on execution
+- **Default to workflow**: When in doubt between manual execution and a workflow command, prefer the workflow command
+
 ## Workflow System
 
 The marketplace includes a comprehensive workflow system for development:
