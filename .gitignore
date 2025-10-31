@@ -19,3 +19,6 @@ Thumbs.db
 
 # Ignore thoughts
 .thoughts/
+
+# Fetched usage rules
+/.usage-rules/

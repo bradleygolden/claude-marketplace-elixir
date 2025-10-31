@@ -101,6 +101,38 @@ Each plugin implements workflows through hooks:
 
 Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands. Output is sent to Claude (the LLM) via JSON with either `additionalContext` (non-blocking) or `permissionDecision: "deny"` (blocking).
 
+### Skills
+
+Skills provide specialized capabilities for Claude to use on demand, complementing automated hooks with user-invoked research and guidance.
+
+**Core plugin** - Research and best practices skills:
+1. **hex-docs-search** (core@elixir): Searches Hex package documentation with progressive fetch strategy
+   - Searches local deps → fetched cache → fetches if needed → HexDocs API → web search
+   - Stores fetched docs in `.hex-docs/` and source in `.hex-packages/`
+   - Provides API documentation, function signatures, and usage examples
+   - See `plugins/core/skills/hex-docs-search/SKILL.md`
+
+2. **usage-rules** (core@elixir): Searches package-specific usage rules and best practices
+   - Searches local deps → fetched cache → fetches if needed
+   - Stores fetched rules in `.usage-rules/<package>-<version>/`
+   - Provides coding conventions, patterns, and good/bad examples
+   - Context-aware section extraction based on coding context
+   - See `plugins/core/skills/usage-rules/SKILL.md`
+
+**Meta plugin** - Workflow generation skill:
+1. **workflow-generator** (meta@elixir): Generates project-specific workflow commands
+   - Creates customized research, plan, implement, and QA commands
+   - Asks questions about project structure and preferences
+   - Outputs slash commands tailored to project needs
+   - See `plugins/meta/skills/workflow-generator/SKILL.md`
+
+**Skill Composition**:
+Skills are designed to be **single-purpose** and **composed by agents/commands**:
+- `usage-rules` provides conventions and patterns (how to use correctly)
+- `hex-docs-search` provides API documentation (what's available)
+- Agents can invoke both for comprehensive guidance ("best practices + API")
+- Skills remain independent, composition happens through higher-level constructs
+
 ## Development Commands
 
 ### Testing the Marketplace Locally

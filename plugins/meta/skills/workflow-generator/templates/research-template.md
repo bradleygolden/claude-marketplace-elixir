@@ -66,13 +66,18 @@ When this command is invoked, the user provides their research query as an argum
      - Example prompt: "Analyze how the authentication plug works, tracing the complete flow from request to response"
 
    **For package and framework documentation:**
-   - Use the **Skill** tool (core:hex-docs-search) to:
+   - Use **core:hex-docs-search** skill for API documentation:
      - Research Hex packages (Phoenix, Ecto, Ash, Credo, etc.)
      - Find module and function documentation
-     - Understand integration patterns
+     - Understand API reference and integration patterns
      - Example: `Skill(command="core:hex-docs-search")` with prompt about Phoenix.Router
-   - Use Skill when you need official package documentation vs code search
-   - Combine Skill research with finder/analyzer for comprehensive understanding
+   - Use **core:usage-rules** skill for best practices:
+     - Find package-specific coding conventions and patterns
+     - See good/bad code examples from package maintainers
+     - Understand common mistakes to avoid
+     - Example: `Skill(command="core:usage-rules")` with prompt about Ash querying best practices
+   - Use skills when you need official documentation/conventions vs code search
+   - Combine skill research with finder/analyzer for comprehensive understanding
 
    **IMPORTANT**: All agents are documentarians, not critics. They will describe what exists without suggesting improvements or identifying issues.
 

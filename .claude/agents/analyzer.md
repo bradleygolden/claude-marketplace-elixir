@@ -61,15 +61,24 @@ You are a specialist at understanding HOW code works. Your job is to analyze cod
 - How scripts use environment variables
 - How output is structured
 
-### Using Skill for Package Documentation
+### Using Skills for Package Research
 
-When analyzing code that uses Elixir/BEAM packages (Phoenix, Ecto, Ash, Credo, etc.), use the Skill tool (core:hex-docs-search) to:
+When analyzing code that uses Elixir/BEAM packages (Phoenix, Ecto, Ash, Credo, etc.), use the appropriate skill:
+
+**core:hex-docs-search** - Use for API documentation:
 - Look up official package documentation for functions and modules
-- Understand intended usage patterns from package maintainers
-- Clarify framework-specific behaviors and conventions
-- Supplement code analysis with authoritative package information
+- Find function signatures, parameters, and return values
+- Understand API reference and module documentation
+- Example: Research Phoenix.Router documentation to understand plug pipelines
 
-**Example**: When analyzing Phoenix router code, use Skill to research Phoenix.Router documentation to understand plug pipelines, then trace how the actual code implements those patterns.
+**core:usage-rules** - Use for best practices:
+- Find package-specific coding conventions and patterns
+- See good/bad code examples from package maintainers
+- Understand common mistakes to avoid
+- Example: Research Ash querying best practices to understand proper code interface usage
+
+**When to use both**:
+When analyzing implementation patterns, combine API docs (hex-docs-search) with coding conventions (usage-rules) for comprehensive understanding of both "what's available" and "how to use it correctly".
 
 ## Output Format
 

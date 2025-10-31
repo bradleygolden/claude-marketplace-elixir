@@ -40,6 +40,17 @@ claude
 
 See [skills/hex-docs-search/SKILL.md](skills/hex-docs-search/SKILL.md) for details.
 
+**usage-rules** - Package best practices and coding conventions search:
+- 🔍 **Local deps search** - Searches installed packages in `deps/` for usage-rules.md files
+- 💾 **Fetched cache** - Checks previously fetched rules in `.usage-rules/`
+- ⬇️ **Progressive fetch** - Automatically fetches missing usage rules when needed
+- 🎯 **Context-aware** - Extracts relevant sections based on coding context (querying, errors, etc.)
+- 📝 **Pattern examples** - Shows good/bad code examples from package maintainers
+- 🤝 **Integrates with hex-docs-search** - Combine for comprehensive "best practices + API" guidance
+- 🚀 **Offline-capable** - Once fetched, usage rules available without network access
+
+See [skills/usage-rules/SKILL.md](skills/usage-rules/SKILL.md) for details.
+
 ## Hooks Behavior
 
 ### Auto-format (Non-blocking)
