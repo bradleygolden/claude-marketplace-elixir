@@ -1,6 +1,6 @@
 {
   "name": "ex_unit",
-  "version": "1.0.0-rc.3",
+  "version": "1.0.0",
   "description": "ExUnit testing automation with pre-commit test validation",
   "author": {
     "name": "Bradley Golden",
