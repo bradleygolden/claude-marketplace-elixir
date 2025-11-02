@@ -1,6 +1,6 @@
 {
   "name": "ash",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0",
   "description": "Ash Framework code generation validation and automation",
   "author": {
     "name": "Bradley Golden",
