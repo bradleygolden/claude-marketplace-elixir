@@ -42,7 +42,7 @@ claude
 * [ash](./plugins/ash/README.md) - Ash Framework code generation validation
 * [credo](./plugins/credo/README.md) - Static code analysis for code quality and style
 * [dialyzer](./plugins/dialyzer/README.md) - Static type analysis and discrepancy detection
-* [ex_doc](./plugins/ex_doc/README.md) - Documentation quality validation
+* [ex_doc](./plugins/ex_doc/README.md) - Documentation quality validation (This is still pre-release, it might be buggy!)
 * [ex_unit](./plugins/ex_unit/README.md) - ExUnit testing automation with smart pre-commit test validation
 * [meta](./plugins/meta/README.md) - Generates project-specific workflow commands (research, plan, implement, qa)
 * [mix_audit](./plugins/mix_audit/README.md) - Dependency security audit for known vulnerabilities
