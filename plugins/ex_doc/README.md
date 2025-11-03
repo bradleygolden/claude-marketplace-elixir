@@ -37,6 +37,19 @@ The plugin uses a single PreToolUse hook that:
 4. Blocks the commit (via JSON permissionDecision: "deny") if validation fails
 5. Allows the commit to proceed if validation passes
 
+### Concurrent Execution Protection
+
+When multiple plugins run in parallel during commits, the ExDoc plugin uses atomic directory-based locking to prevent race conditions:
+
+- **Serialized execution** - Only one `mix docs` process runs at a time per project
+- **Automatic locking** - Uses atomic `mkdir` to acquire an exclusive lock before generating documentation
+- **Cross-platform** - Works on both macOS and Linux without requiring external dependencies
+- **Prevents conflicts** - Eliminates "file already exists" errors when multiple hooks trigger simultaneously
+- **Lock directory location** - Stored in `/tmp` with project-specific name (automatically cleaned up)
+- **Timeout handling** - Waits up to 60 seconds for lock acquisition, prevents indefinite blocking
+
+This is necessary because `mix docs` removes and recreates the `doc/` directory, which would conflict if multiple instances ran concurrently.
+
 ### Why Pre-Commit Only?
 
 Unlike other plugins that provide post-edit feedback, the ExDoc plugin only validates at commit time because:
