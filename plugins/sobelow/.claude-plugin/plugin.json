@@ -1,6 +1,6 @@
 {
   "name": "sobelow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sobelow security-focused static analysis for Phoenix and Elixir projects",
   "author": {
     "name": "Bradley Golden",
@@ -8,6 +8,5 @@
   },
   "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
   "license": "MIT",
-  "keywords": ["elixir", "phoenix", "sobelow", "security", "static-analysis", "vulnerability-scanning"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["elixir", "phoenix", "sobelow", "security", "static-analysis", "vulnerability-scanning"]
 }
