@@ -15,6 +15,16 @@
             "timeout": 20
           }
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/recommend-docs-on-read.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreToolUse": [

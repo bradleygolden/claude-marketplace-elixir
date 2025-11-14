@@ -127,4 +127,28 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.additionalContext | contains("hex-docs-search")'
 
+# Test 16: Read hook detects dependencies from direct module usage
+test_hook_json \
+  "Read hook: Detects dependencies from direct module usage (Jason.decode)" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/test_file.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("jason")) and (.hookSpecificOutput.additionalContext | contains("ecto"))'
+
+# Test 17: Read hook ignores non-Elixir files
+test_hook_json \
+  "Read hook: Ignores non-Elixir files" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/README.md\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '. == {}'
+
+# Test 18: Read hook returns empty when file has no dependency references
+test_hook_json \
+  "Read hook: Returns empty when no dependency references found" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/broken_code.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '. == {}'
+
 print_summary
