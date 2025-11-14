@@ -18,6 +18,9 @@ defmodule CompileTest.MixProject do
   end
 
   defp deps do
-    []
+    [
+      {:ecto, "~> 3.11"},
+      {:jason, "~> 1.4"}
+    ]
   end
 end

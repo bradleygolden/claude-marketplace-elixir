@@ -42,7 +42,7 @@ The core plugin has three test projects with intentional issues to verify hook b
 
 ## Test Coverage
 
-The automated test suite includes 9 tests:
+The automated test suite includes 15 tests:
 
 **Auto-format hook**:
 - ✅ Formats .ex files
@@ -59,9 +59,17 @@ The automated test suite includes 9 tests:
 - ✅ Ignores non-commit git commands
 - ✅ Ignores non-git commands
 
+**Documentation recommendation hook**:
+- ✅ Detects capitalized dependency names ("Ecto")
+- ✅ Detects lowercase dependency names ("jason")
+- ✅ Detects multiple dependencies in one prompt
+- ✅ Returns empty JSON when no dependencies mentioned
+- ✅ Handles non-Elixir projects gracefully
+- ✅ Recommends using hex-docs-search skill
+
 ## Hook Implementation
 
-The core plugin implements three hooks:
+The core plugin implements four hooks:
 
 1. **Auto-format** (`scripts/auto-format.sh`)
    - Trigger: After Edit/Write tools on .ex/.exs files
@@ -77,6 +85,12 @@ The core plugin implements three hooks:
    - Trigger: Before `git commit` commands
    - Action: Validates formatting, compilation, and unused deps
    - Blocking: Yes (exit 0 with JSON permissionDecision: "deny" on failures)
+
+4. **Documentation recommendation** (`scripts/recommend-docs-lookup.sh`)
+   - Trigger: On user prompt submission
+   - Action: Detects dependencies mentioned in prompt, recommends using hex-docs-search or usage-rules skills
+   - Blocking: No (provides helpful context)
+   - Caching: Dependency list cached in `.hex-docs/deps-cache.txt`, invalidates when `mix.lock` changes
 
 ## Prerequisites
 

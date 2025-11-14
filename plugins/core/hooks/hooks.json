@@ -28,6 +28,18 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/recommend-docs-lookup.sh",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

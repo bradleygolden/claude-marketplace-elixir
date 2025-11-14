@@ -79,4 +79,52 @@ test_hook \
   0 \
   ""
 
+# Test 10: Docs recommendation detects dependency mentions (capitalized)
+test_hook_json \
+  "Docs recommendation: Detects 'Ecto' in prompt" \
+  "plugins/core/scripts/recommend-docs-lookup.sh" \
+  "{\"prompt\":\"Help me write an Ecto query\",\"cwd\":\"$REPO_ROOT/test/plugins/core/compile-test\",\"hook_event_name\":\"UserPromptSubmit\"}" \
+  0 \
+  '.hookSpecificOutput.hookEventName == "UserPromptSubmit" and (.hookSpecificOutput.additionalContext | contains("ecto"))'
+
+# Test 11: Docs recommendation detects lowercase dependency names
+test_hook_json \
+  "Docs recommendation: Detects 'jason' (lowercase) in prompt" \
+  "plugins/core/scripts/recommend-docs-lookup.sh" \
+  "{\"prompt\":\"I need to parse json with jason\",\"cwd\":\"$REPO_ROOT/test/plugins/core/compile-test\",\"hook_event_name\":\"UserPromptSubmit\"}" \
+  0 \
+  '.hookSpecificOutput.additionalContext | contains("jason")'
+
+# Test 12: Docs recommendation detects multiple dependencies
+test_hook_json \
+  "Docs recommendation: Detects multiple dependencies" \
+  "plugins/core/scripts/recommend-docs-lookup.sh" \
+  "{\"prompt\":\"Use Ecto and Jason together\",\"cwd\":\"$REPO_ROOT/test/plugins/core/compile-test\",\"hook_event_name\":\"UserPromptSubmit\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("ecto")) and (.hookSpecificOutput.additionalContext | contains("jason"))'
+
+# Test 13: Docs recommendation returns empty when no dependencies mentioned
+test_hook_json \
+  "Docs recommendation: Returns empty JSON when no dependencies mentioned" \
+  "plugins/core/scripts/recommend-docs-lookup.sh" \
+  "{\"prompt\":\"Help me refactor this code\",\"cwd\":\"$REPO_ROOT/test/plugins/core/compile-test\",\"hook_event_name\":\"UserPromptSubmit\"}" \
+  0 \
+  '. == {}'
+
+# Test 14: Docs recommendation works in non-Elixir projects (exits cleanly)
+test_hook_json \
+  "Docs recommendation: Handles non-Elixir projects gracefully" \
+  "plugins/core/scripts/recommend-docs-lookup.sh" \
+  "{\"prompt\":\"Some prompt\",\"cwd\":\"$REPO_ROOT\",\"hook_event_name\":\"UserPromptSubmit\"}" \
+  0 \
+  '. == {}'
+
+# Test 15: Docs recommendation recommends skills in output
+test_hook_json \
+  "Docs recommendation: Recommends using hex-docs-search skill" \
+  "plugins/core/scripts/recommend-docs-lookup.sh" \
+  "{\"prompt\":\"How do I use Ecto?\",\"cwd\":\"$REPO_ROOT/test/plugins/core/compile-test\",\"hook_event_name\":\"UserPromptSubmit\"}" \
+  0 \
+  '.hookSpecificOutput.additionalContext | contains("hex-docs-search")'
+
 print_summary
