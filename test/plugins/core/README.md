@@ -42,7 +42,7 @@ The core plugin has three test projects with intentional issues to verify hook b
 
 ## Test Coverage
 
-The automated test suite includes 15 tests:
+The automated test suite includes 18 tests:
 
 **Auto-format hook**:
 - ✅ Formats .ex files
@@ -67,9 +67,14 @@ The automated test suite includes 15 tests:
 - ✅ Handles non-Elixir projects gracefully
 - ✅ Recommends using hex-docs-search skill
 
+**Documentation recommendation on Read hook**:
+- ✅ Detects dependencies from direct module usage (Jason.decode, Ecto.Query.from)
+- ✅ Ignores non-Elixir files
+- ✅ Returns empty when file has no dependency references
+
 ## Hook Implementation
 
-The core plugin implements four hooks:
+The core plugin implements five hooks:
 
 1. **Auto-format** (`scripts/auto-format.sh`)
    - Trigger: After Edit/Write tools on .ex/.exs files
@@ -91,6 +96,12 @@ The core plugin implements four hooks:
    - Action: Detects dependencies mentioned in prompt, recommends using hex-docs-search or usage-rules skills
    - Blocking: No (provides helpful context)
    - Caching: Dependency list cached in `.hex-docs/deps-cache.txt`, invalidates when `mix.lock` changes
+
+5. **Documentation recommendation on Read** (`scripts/recommend-docs-on-read.sh`)
+   - Trigger: After reading .ex/.exs files
+   - Action: Detects dependency module references in file, recommends using hex-docs-search or usage-rules skills
+   - Blocking: No (provides helpful context)
+   - Caching: Shares dependency cache with UserPromptSubmit hook
 
 ## Prerequisites
 

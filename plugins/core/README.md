@@ -24,6 +24,9 @@ claude
 - ✅ **Auto-format** - Automatically runs `mix format` on edited .ex/.exs files
 - ✅ **Compile check** - Runs `mix compile --warnings-as-errors` to catch errors immediately
 
+**PostToolUse - After reading files:**
+- ✅ **Documentation recommendation on read** - Detects dependency usage in files and suggests documentation lookup
+
 **PreToolUse - Before git commits:**
 - ✅ **Pre-commit validation** - Ensures code is formatted, compiles, and has no unused deps before committing
 
@@ -92,3 +95,10 @@ mix deps.unlock --check-unused
 - Uses fuzzy matching to handle case variations and naming conventions
 - Caches dependency list in `.hex-docs/deps-cache.txt` for performance
 - Cache invalidates when `mix.lock` changes
+
+### Documentation Recommendation on Read (Non-blocking)
+- Runs when reading .ex or .exs files
+- Detects dependency module references in the file (e.g., `Jason.decode()`, `Ecto.Query.from()`)
+- Extracts modules from both aliased (`alias Ecto.Query`) and direct usage (`Jason.decode()`)
+- Recommends using hex-docs-search or usage-rules skills for matched dependencies
+- Shares dependency cache with UserPromptSubmit hook for efficiency
