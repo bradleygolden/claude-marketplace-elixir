@@ -27,6 +27,9 @@ claude
 **PreToolUse - Before git commits:**
 - ✅ **Pre-commit validation** - Ensures code is formatted, compiles, and has no unused deps before committing
 
+**UserPromptSubmit - On user input:**
+- ✅ **Documentation recommendation** - Suggests using documentation skills when prompt mentions project dependencies
+
 ### Skills
 
 **hex-docs-search** - Intelligent Hex package documentation search with progressive fetching:
@@ -81,3 +84,11 @@ mix deps.unlock --check-unused
   1. All files are formatted
   2. Code compiles without warnings
   3. No unused dependencies
+
+### Documentation Recommendation (Non-blocking)
+- Runs when user submits a prompt
+- Detects when prompt mentions project dependencies (e.g., "Ash", "Ecto", "Phoenix")
+- Recommends using hex-docs-search or usage-rules skills for documentation lookup
+- Uses fuzzy matching to handle case variations and naming conventions
+- Caches dependency list in `.hex-docs/deps-cache.txt` for performance
+- Cache invalidates when `mix.lock` changes
