@@ -42,7 +42,7 @@ The core plugin has three test projects with intentional issues to verify hook b
 
 ## Test Coverage
 
-The automated test suite includes 18 tests:
+The automated test suite includes 27 tests:
 
 **Auto-format hook**:
 - ✅ Formats .ex files
@@ -71,6 +71,10 @@ The automated test suite includes 18 tests:
 - ✅ Detects dependencies from direct module usage (Jason.decode, Ecto.Query.from)
 - ✅ Ignores non-Elixir files
 - ✅ Returns empty when file has no dependency references
+- ✅ Matches exact dependency names (Jason → jason)
+- ✅ Excludes unrelated dependencies (Jason used but not ecto, decimal, telemetry)
+- ✅ Matches both base and specific dependencies (Phoenix.LiveView → phoenix, phoenix_live_view)
+- ✅ Excludes unrelated dependencies with similar names (Phoenix.LiveView used but not phoenix_html, phoenix_pubsub, phoenix_template)
 
 ## Hook Implementation
 

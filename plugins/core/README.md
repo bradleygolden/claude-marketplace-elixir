@@ -100,5 +100,7 @@ mix deps.unlock --check-unused
 - Runs when reading .ex or .exs files
 - Detects dependency module references in the file (e.g., `Jason.decode()`, `Ecto.Query.from()`)
 - Extracts modules from both aliased (`alias Ecto.Query`) and direct usage (`Jason.decode()`)
+- Smart matching: Reports both base and specific dependencies (e.g., `Phoenix.LiveView` → `phoenix, phoenix_live_view`)
+- Excludes unrelated dependencies with similar names (e.g., won't report `phoenix_html` when only `Phoenix.LiveView` is used)
 - Recommends using hex-docs-search or usage-rules skills for matched dependencies
 - Shares dependency cache with UserPromptSubmit hook for efficiency

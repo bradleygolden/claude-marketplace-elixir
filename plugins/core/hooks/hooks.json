@@ -21,8 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/recommend-docs-on-read.sh",
-            "timeout": 5
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/recommend-docs-on-read.sh"
           }
         ]
       }
@@ -45,8 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/recommend-docs-lookup.sh",
-            "timeout": 5
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/recommend-docs-lookup.sh"
           }
         ]
       }
