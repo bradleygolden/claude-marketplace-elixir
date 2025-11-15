@@ -161,7 +161,7 @@ if [ ${#MATCHED_DEPS[@]} -gt 0 ]; then
   DEPS_LIST=${DEPS_LIST:2}  # Remove leading comma and space
 
   # Create recommendation message
-  CONTEXT="The file uses these project dependencies: $DEPS_LIST. Consider using the hex-docs-search skill (for API documentation) or usage-rules skill (for best practices) to look up relevant information."
+  CONTEXT="This file uses these project dependencies: $DEPS_LIST. To understand these dependencies, use the hex-docs-search skill to look up API documentation and function signatures, or use the usage-rules skill to find coding patterns and best practices."
 
   # Output JSON with additionalContext
   jq -n \
