@@ -151,4 +151,76 @@ test_hook_json \
   0 \
   '. == {}'
 
+# Test 19: File using Jason.decode() matches jason dependency
+test_hook_json \
+  "Read hook: Matches jason when file uses Jason.decode()" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/specific_deps_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '.hookSpecificOutput.additionalContext | contains("jason")'
+
+# Test 20: File using Jason does not match unrelated ecto dependency
+test_hook_json \
+  "Read hook: Excludes ecto when file only uses Jason" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/specific_deps_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("ecto")) | not'
+
+# Test 21: File using Jason does not match unrelated decimal dependency
+test_hook_json \
+  "Read hook: Excludes decimal when file only uses Jason" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/specific_deps_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("decimal")) | not'
+
+# Test 22: File using Jason does not match unrelated telemetry dependency
+test_hook_json \
+  "Read hook: Excludes telemetry when file only uses Jason" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/specific_deps_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("telemetry")) | not'
+
+# Test 23: File importing Phoenix.LiveView matches both phoenix and phoenix_live_view
+test_hook_json \
+  "Read hook: Matches phoenix_live_view when file imports Phoenix.LiveView" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/phoenix_liveview_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '.hookSpecificOutput.additionalContext | contains("phoenix_live_view")'
+
+# Test 24: File importing Phoenix.LiveView also matches base phoenix dependency
+test_hook_json \
+  "Read hook: Matches phoenix when file imports Phoenix.LiveView" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/phoenix_liveview_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '.hookSpecificOutput.additionalContext | test("\\bphoenix[,.]")'
+
+# Test 25: File importing Phoenix.LiveView does not match unrelated phoenix_html
+test_hook_json \
+  "Read hook: Excludes phoenix_html when file imports Phoenix.LiveView" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/phoenix_liveview_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("phoenix_html")) | not'
+
+# Test 26: File importing Phoenix.LiveView does not match unrelated phoenix_pubsub
+test_hook_json \
+  "Read hook: Excludes phoenix_pubsub when file imports Phoenix.LiveView" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/phoenix_liveview_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("phoenix_pubsub")) | not'
+
+# Test 27: File importing Phoenix.LiveView does not match unrelated phoenix_template
+test_hook_json \
+  "Read hook: Excludes phoenix_template when file imports Phoenix.LiveView" \
+  "plugins/core/scripts/recommend-docs-on-read.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/compile-test/lib/phoenix_liveview_test.ex\"},\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Read\"}" \
+  0 \
+  '(.hookSpecificOutput.additionalContext | contains("phoenix_template")) | not'
+
 print_summary

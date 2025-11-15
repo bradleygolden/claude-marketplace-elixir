@@ -90,12 +90,8 @@ MODULES=$(
     # From alias/import/use statements
     grep -oE '(alias|import|use)\s+[A-Z][a-zA-Z0-9.]*' "$FILE_PATH" 2>/dev/null | awk '{print $2}'
     # From direct module calls (capitalized identifier followed by dot)
-    grep -oE '\b[A-Z][a-zA-Z0-9]*\.' "$FILE_PATH" 2>/dev/null | sed 's/\.$//'
+    grep -oE '\b[A-Z][a-zA-Z0-9.]*\.' "$FILE_PATH" 2>/dev/null | sed 's/\.$//'
   } | \
-  # Extract first segment (top-level module name)
-  awk -F. '{print $1}' | \
-  # Convert to lowercase for matching
-  tr '[:upper:]' '[:lower:]' | \
   # Remove duplicates
   sort -u
 )
@@ -106,28 +102,56 @@ if [[ -z "$MODULES" ]]; then
   exit 0
 fi
 
+# Helper function to normalize module/dependency names for comparison
+# Converts "Phoenix.LiveView" or "phoenix_live_view" to "phoenixliveview"
+normalize_name() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | tr -d '._-'
+}
+
 # Match modules against dependencies
 MATCHED_DEPS=()
 while IFS= read -r module; do
   # Skip if empty
   [[ -z "$module" ]] && continue
 
-  # Check if module matches any dependency (case-insensitive)
+  # Normalize the full module name (e.g., "Phoenix.LiveView" -> "phoenixliveview")
+  module_normalized=$(normalize_name "$module")
+
+  # Extract first segment (e.g., "Phoenix.LiveView" -> "Phoenix" -> "phoenix")
+  first_segment=$(echo "$module" | awk -F. '{print $1}' | tr '[:upper:]' '[:lower:]')
+
+  matched=false
+
+  # First pass: Try to match full normalized module path (for compound deps like phoenix_live_view)
   while IFS= read -r dep; do
     [[ -z "$dep" ]] && continue
 
-    # Normalize dependency name for comparison
-    dep_normalized=$(echo "$dep" | tr '[:upper:]' '[:lower:]' | tr '_' ' ')
-    module_normalized=$(echo "$module" | tr '_' ' ')
+    dep_normalized=$(normalize_name "$dep")
 
-    # Check for match
-    if echo "$dep_normalized" | grep -qiE "\b$module_normalized\b"; then
-      # Avoid duplicates
+    if [[ "$module_normalized" == "$dep_normalized" ]]; then
       if [[ ! " ${MATCHED_DEPS[@]} " =~ " ${dep} " ]]; then
         MATCHED_DEPS+=("$dep")
+        matched=true
       fi
     fi
   done <<< "$DEPS"
+
+  # Second pass: If no full match, try matching first segment (for base deps like ecto)
+  # Only do this if the first segment is different from the full normalized path
+  if [[ "$matched" == "false" ]] && [[ "$first_segment" != "$module_normalized" ]]; then
+    while IFS= read -r dep; do
+      [[ -z "$dep" ]] && continue
+
+      dep_normalized=$(normalize_name "$dep")
+
+      # Match first segment exactly
+      if [[ "$first_segment" == "$dep_normalized" ]]; then
+        if [[ ! " ${MATCHED_DEPS[@]} " =~ " ${dep} " ]]; then
+          MATCHED_DEPS+=("$dep")
+        fi
+      fi
+    done <<< "$DEPS"
+  fi
 done <<< "$MODULES"
 
 # If matches found, recommend skill usage

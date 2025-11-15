@@ -20,7 +20,10 @@ defmodule CompileTest.MixProject do
   defp deps do
     [
       {:ecto, "~> 3.11"},
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+      {:phoenix, "~> 1.7"},
+      {:phoenix_live_view, "~> 0.20"},
+      {:phoenix_html, "~> 4.0"}
     ]
   end
 end
