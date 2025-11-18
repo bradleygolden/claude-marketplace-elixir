@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Essential Elixir development support with hooks and automation",
   "author": {
     "name": "Bradley Golden",

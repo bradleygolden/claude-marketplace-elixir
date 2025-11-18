@@ -1,6 +1,6 @@
 {
   "name": "dialyzer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Dialyzer static type analysis for Elixir projects",
   "author": {
     "name": "Bradley Golden",

@@ -31,6 +31,22 @@ test_hook \
   0 \
   ""
 
+# Test 3.1: Auto-format hook processes .heex files
+test_hook \
+  "Auto-format hook: Processes .heex template files" \
+  "plugins/core/scripts/auto-format.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/autoformat-test/lib/test_template.heex\"},\"cwd\":\"$REPO_ROOT/test/plugins/core/autoformat-test\"}" \
+  0 \
+  ""
+
+# Test 3.2: Auto-format hook processes .leex files
+test_hook \
+  "Auto-format hook: Processes .leex template files" \
+  "plugins/core/scripts/auto-format.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/autoformat-test/lib/test_template.leex\"},\"cwd\":\"$REPO_ROOT/test/plugins/core/autoformat-test\"}" \
+  0 \
+  ""
+
 # Test 4: Compile check on broken code provides context
 test_hook_json \
   "Compile check: Detects compilation errors" \
@@ -44,6 +60,22 @@ test_hook \
   "Compile check: Ignores non-Elixir files" \
   "plugins/core/scripts/compile-check.sh" \
   "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/README.md\"},\"cwd\":\"$REPO_ROOT\"}" \
+  0 \
+  ""
+
+# Test 5.1: Compile check processes .heex files
+test_hook \
+  "Compile check: Processes .heex template files" \
+  "plugins/core/scripts/compile-check.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/autoformat-test/lib/test_template.heex\"},\"cwd\":\"$REPO_ROOT/test/plugins/core/autoformat-test\"}" \
+  0 \
+  ""
+
+# Test 5.2: Compile check processes .leex files
+test_hook \
+  "Compile check: Processes .leex template files" \
+  "plugins/core/scripts/compile-check.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/core/autoformat-test/lib/test_template.leex\"},\"cwd\":\"$REPO_ROOT/test/plugins/core/autoformat-test\"}" \
   0 \
   ""
 

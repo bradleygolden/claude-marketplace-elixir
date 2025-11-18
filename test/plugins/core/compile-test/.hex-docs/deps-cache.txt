@@ -1,0 +1,15 @@
+castore
+decimal
+ecto
+jason
+mime
+phoenix
+phoenix_html
+phoenix_live_view
+phoenix_pubsub
+phoenix_template
+plug
+plug_crypto
+telemetry
+websock
+websock_adapter
