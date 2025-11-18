@@ -31,6 +31,22 @@ test_hook \
   0 \
   ""
 
+# Test 3.1: Post-edit check processes .heex files
+test_hook \
+  "Post-edit check: Processes .heex template files" \
+  "plugins/credo/scripts/post-edit-check.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/credo/postedit-test/lib/test_template.heex\"},\"cwd\":\"$REPO_ROOT/test/plugins/credo/postedit-test\"}" \
+  0 \
+  ""
+
+# Test 3.2: Post-edit check processes .leex files
+test_hook \
+  "Post-edit check: Processes .leex template files" \
+  "plugins/credo/scripts/post-edit-check.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/credo/postedit-test/lib/test_template.leex\"},\"cwd\":\"$REPO_ROOT/test/plugins/credo/postedit-test\"}" \
+  0 \
+  ""
+
 # Test 4: Pre-commit check blocks on Credo violations with structured JSON
 test_hook_json \
   "Pre-commit check: Blocks on Credo violations with structured JSON" \

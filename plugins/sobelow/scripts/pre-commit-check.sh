@@ -17,6 +17,13 @@ if ! echo "$COMMAND" | grep -q 'git commit'; then
   exit 0
 fi
 
+# Check if any Elixir-related files are staged
+STAGED_FILES=$(cd "$CWD" && git diff --cached --name-only 2>/dev/null)
+if ! echo "$STAGED_FILES" | grep -qE '\.(ex|exs|heex|leex)$'; then
+  # No Elixir files staged, skip validation
+  exit 0
+fi
+
 # Find Mix project root by traversing upward from current working directory
 find_mix_project_root() {
   local dir="$1"
@@ -34,6 +41,33 @@ PROJECT_ROOT=$(find_mix_project_root "$CWD")
 
 if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
+fi
+
+# Check .claude-elixir.config for ignore patterns
+find_repo_root() {
+  local dir="$1"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.git" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+REPO_ROOT=$(find_repo_root "$PROJECT_ROOT")
+if [[ -n "$REPO_ROOT" ]] && [[ -f "$REPO_ROOT/.claude-elixir.config" ]]; then
+  while IFS= read -r pattern || [[ -n "$pattern" ]]; do
+    # Skip comments and empty lines
+    [[ "$pattern" =~ ^[[:space:]]*# ]] || [[ -z "${pattern// }" ]] && continue
+
+    # Convert glob pattern to regex and check if PROJECT_ROOT matches
+    regex_pattern=$(echo "$pattern" | sed 's|/\*\*/|/.*|g' | sed 's|\*|[^/]*|g')
+    if echo "$PROJECT_ROOT" | grep -qE "$regex_pattern"; then
+      exit 0
+    fi
+  done < "$REPO_ROOT/.claude-elixir.config"
 fi
 
 if ! grep -qE '\{:sobelow' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then

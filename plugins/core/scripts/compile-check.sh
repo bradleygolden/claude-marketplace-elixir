@@ -13,8 +13,8 @@ if [[ "$FILE_PATH" == "null" ]] || [[ -z "$FILE_PATH" ]]; then
   exit 0
 fi
 
-# Only process .ex and .exs files
-if ! echo "$FILE_PATH" | grep -qE '\.(ex|exs)$'; then
+# Only process Elixir-related files (.ex, .exs, .heex, .leex)
+if ! echo "$FILE_PATH" | grep -qE '\.(ex|exs|heex|leex)$'; then
   exit 0
 fi
 
