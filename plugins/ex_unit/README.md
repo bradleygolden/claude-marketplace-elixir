@@ -44,6 +44,7 @@ The key to performance is ExUnit's `--stale` flag, which only runs tests for mod
 **Hook Type**: PreToolUse (blocks before bash commands execute)
 **Matcher**: Filters for `git commit` commands only
 **Timeout**: 60 seconds
+**Note**: Skips if project has a `precommit` alias (defers to precommit plugin)
 **Blocking Behavior**:
 - Hook always exits with `0` (success)
 - Blocking decision communicated via JSON output with `permissionDecision: "deny"`

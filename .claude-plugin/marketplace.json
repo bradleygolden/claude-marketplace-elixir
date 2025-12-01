@@ -116,6 +116,21 @@
       "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
     },
     {
+      "name": "precommit",
+      "source": "./plugins/precommit",
+      "description": "Phoenix precommit alias automation - runs mix precommit before git commits if alias exists",
+      "keywords": [
+        "elixir",
+        "phoenix",
+        "precommit",
+        "validation",
+        "testing"
+      ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir"
+    },
+    {
       "name": "meta",
       "source": "./plugins/meta",
       "description": "Meta plugin for generating project-specific workflow commands (research, plan, implement, qa) and interactive context gathering (interview)",

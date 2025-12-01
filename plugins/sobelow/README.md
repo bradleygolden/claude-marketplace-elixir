@@ -63,6 +63,8 @@ Before `git commit` commands, the plugin:
 
 **Default behavior**: Blocks on any findings. Use `.sobelow-conf` to customize (e.g., `--threshold medium` to only report medium/high confidence issues).
 
+**Note**: Skips if project has a `precommit` alias (defers to precommit plugin)
+
 ## Managing False Positives
 
 Sobelow provides multiple ways to handle false positives:

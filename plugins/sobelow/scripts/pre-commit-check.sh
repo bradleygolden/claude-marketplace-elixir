@@ -36,6 +36,12 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
+# Defer to precommit alias if it exists (Phoenix 1.8+ standard)
+if cd "$PROJECT_ROOT" && mix help precommit >/dev/null 2>&1; then
+  jq -n '{"suppressOutput": true}'
+  exit 0
+fi
+
 if ! grep -qE '\{:sobelow' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then
   exit 0
 fi

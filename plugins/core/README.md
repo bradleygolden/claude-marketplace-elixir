@@ -87,6 +87,7 @@ mix deps.unlock --check-unused
   1. All files are formatted
   2. Code compiles without warnings
   3. No unused dependencies
+- **Note**: Skips if project has a `precommit` alias (defers to precommit plugin)
 
 ### Documentation Recommendation (Non-blocking)
 - Runs when user submits a prompt

@@ -1,0 +1,17 @@
+{
+  "description": "Phoenix precommit alias automation for git commit validation",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pre-commit-check.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

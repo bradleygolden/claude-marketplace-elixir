@@ -30,6 +30,12 @@ test_hook_json \
   "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/ash/precommit_test\"}" \
   0 \
   '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Ash")) and .systemMessage != null'
+test_hook_json \
+  "Pre-commit check: Skips when precommit alias exists (defers to precommit plugin)" \
+  "plugins/ash/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/precommit/precommit-test-pass\"}" \
+  0 \
+  ".suppressOutput == true"
 test_hook \
   "Pre-commit check: Ignores non-commit git commands" \
   "plugins/ash/scripts/pre-commit-check.sh" \

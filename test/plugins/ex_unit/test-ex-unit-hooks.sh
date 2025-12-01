@@ -15,7 +15,15 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("ExUnit")) and .systemMessage != null'
 
-# Test 2: Pre-commit hook ignores non-commit git commands
+# Test 2: Pre-commit hook skips when precommit alias exists
+test_hook_json \
+  "Pre-commit: Skips when precommit alias exists (defers to precommit plugin)" \
+  "plugins/ex_unit/scripts/pre-commit-test.sh" \
+  "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/precommit/precommit-test-pass\"}" \
+  0 \
+  ".suppressOutput == true"
+
+# Test 3: Pre-commit hook ignores non-commit git commands
 test_hook \
   "Pre-commit: Ignores non-commit git commands" \
   "plugins/ex_unit/scripts/pre-commit-test.sh" \

@@ -39,6 +39,12 @@ fi
 
 cd "$PROJECT_ROOT"
 
+# Defer to precommit alias if it exists (Phoenix 1.8+ standard)
+if mix help precommit >/dev/null 2>&1; then
+  jq -n '{"suppressOutput": true}'
+  exit 0
+fi
+
 if ! grep -qE '\{:ex_doc' mix.exs 2>/dev/null; then
   exit 0
 fi
