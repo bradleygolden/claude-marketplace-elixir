@@ -34,6 +34,7 @@ claude
 /plugin install ex_unit@elixir
 /plugin install meta@elixir
 /plugin install mix_audit@elixir
+/plugin install precommit@elixir
 /plugin install sobelow@elixir
 ```
 ## Available Plugins
@@ -46,6 +47,7 @@ claude
 * [ex_unit](./plugins/ex_unit/README.md) - ExUnit testing automation with smart pre-commit test validation
 * [meta](./plugins/meta/README.md) - Generates project-specific workflow commands (research, plan, implement, qa)
 * [mix_audit](./plugins/mix_audit/README.md) - Dependency security audit for known vulnerabilities
+* [precommit](./plugins/precommit/README.md) - Phoenix 1.8+ precommit alias runner (coordinates with other plugins)
 * [sobelow](./plugins/sobelow/README.md) - Security-focused static analysis for Phoenix applications
 
 ## License
