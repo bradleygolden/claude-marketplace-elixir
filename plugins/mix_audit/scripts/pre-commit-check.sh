@@ -15,7 +15,7 @@ if [[ -z "$CWD" ]] || [[ "$CWD" == "null" ]]; then
   exit 0
 fi
 
-if ! echo "$COMMAND" | grep -q 'git commit'; then
+if ! echo "$COMMAND" | grep -qE 'git\b.*\bcommit\b'; then
   exit 0
 fi
 
