@@ -21,6 +21,15 @@ if ! echo "$COMMAND" | grep -qE 'git\b.*\bcommit\b'; then
   exit 0
 fi
 
+# Extract directory from git -C flag if present, otherwise use CWD
+GIT_DIR="$CWD"
+if echo "$COMMAND" | grep -qE 'git\s+-C\s+'; then
+  GIT_DIR=$(echo "$COMMAND" | sed -n 's/.*git[[:space:]]*-C[[:space:]]*\([^[:space:]]*\).*/\1/p')
+  if [[ -z "$GIT_DIR" ]] || [[ ! -d "$GIT_DIR" ]]; then
+    GIT_DIR="$CWD"
+  fi
+fi
+
 # Find Mix project root by traversing upward from current working directory
 find_mix_project_root() {
   local dir="$1"
@@ -34,7 +43,7 @@ find_mix_project_root() {
   return 1
 }
 
-PROJECT_ROOT=$(find_mix_project_root "$CWD")
+PROJECT_ROOT=$(find_mix_project_root "$GIT_DIR")
 
 if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0

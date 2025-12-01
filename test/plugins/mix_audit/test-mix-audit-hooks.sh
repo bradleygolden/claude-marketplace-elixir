@@ -49,4 +49,20 @@ test_hook_json \
   0 \
   '.suppressOutput == true or .hookSpecificOutput.permissionDecision == "deny"'
 
+# Test: Pre-commit uses -C flag directory instead of CWD
+test_hook_json \
+  "Pre-commit check: Uses git -C directory instead of CWD" \
+  "plugins/mix_audit/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git -C $REPO_ROOT/test/plugins/mix_audit/precommit-test commit -m 'test'\"},\"cwd\":\"$REPO_ROOT\"}" \
+  0 \
+  '.suppressOutput == true or .hookSpecificOutput.permissionDecision == "deny"'
+
+# Test: Pre-commit falls back to CWD when -C path is invalid
+test_hook_json \
+  "Pre-commit check: Falls back to CWD when -C path is invalid" \
+  "plugins/mix_audit/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git -C /nonexistent/path commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/mix_audit/precommit-test\"}" \
+  0 \
+  '.suppressOutput == true or .hookSpecificOutput.permissionDecision == "deny"'
+
 print_summary

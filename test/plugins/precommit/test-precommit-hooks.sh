@@ -55,4 +55,20 @@ test_hook_json \
   0 \
   ".suppressOutput == true"
 
+# Test 7: Pre-commit uses -C flag directory instead of CWD
+test_hook_json \
+  "Pre-commit: Uses git -C directory instead of CWD" \
+  "plugins/precommit/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git -C $REPO_ROOT/test/plugins/precommit/precommit-test-pass commit -m 'test'\"},\"cwd\":\"$REPO_ROOT\"}" \
+  0 \
+  ".suppressOutput == true"
+
+# Test 8: Pre-commit falls back to CWD when -C path is invalid
+test_hook_json \
+  "Pre-commit: Falls back to CWD when -C path is invalid" \
+  "plugins/precommit/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git -C /nonexistent/path commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/precommit/precommit-test-pass\"}" \
+  0 \
+  ".suppressOutput == true"
+
 print_summary

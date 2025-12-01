@@ -57,5 +57,21 @@ test_hook \
   0 \
   ""
 
+# Test: Pre-commit uses -C flag directory instead of CWD
+test_hook_json \
+  "Pre-commit check: Uses git -C directory instead of CWD" \
+  "plugins/sobelow/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git -C $REPO_ROOT/test/plugins/sobelow/precommit-test commit -m 'test'\"},\"cwd\":\"$REPO_ROOT\"}" \
+  0 \
+  '.hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Sobelow"))'
+
+# Test: Pre-commit falls back to CWD when -C path is invalid
+test_hook_json \
+  "Pre-commit check: Falls back to CWD when -C path is invalid" \
+  "plugins/sobelow/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git -C /nonexistent/path commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/sobelow/precommit-test\"}" \
+  0 \
+  '.hookSpecificOutput.permissionDecision == "deny"'
+
 echo "========================================"
 print_summary

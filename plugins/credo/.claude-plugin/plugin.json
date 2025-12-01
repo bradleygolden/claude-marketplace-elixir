@@ -1,6 +1,6 @@
 {
   "name": "credo",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Credo static code analysis for Elixir projects",
   "author": {
     "name": "Bradley Golden",

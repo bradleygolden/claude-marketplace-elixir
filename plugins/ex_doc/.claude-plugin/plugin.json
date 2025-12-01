@@ -1,6 +1,6 @@
 {
   "name": "ex_doc",
-  "version": "1.0.0-rc.6",
+  "version": "1.0.0-rc.7",
   "description": "ExDoc documentation validation plugin that checks for documentation issues before commits",
   "author": {
     "name": "Bradley Golden",
