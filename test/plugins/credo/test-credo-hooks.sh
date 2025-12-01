@@ -39,7 +39,15 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Credo")) and .systemMessage != null'
 
-# Test 5: Pre-commit check ignores non-commit commands
+# Test 5: Pre-commit check skips when precommit alias exists
+test_hook_json \
+  "Pre-commit check: Skips when precommit alias exists (defers to precommit plugin)" \
+  "plugins/credo/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/precommit/precommit-test-pass\"}" \
+  0 \
+  ".suppressOutput == true"
+
+# Test 6: Pre-commit check ignores non-commit commands
 test_hook \
   "Pre-commit check: Ignores non-commit git commands" \
   "plugins/credo/scripts/pre-commit-check.sh" \

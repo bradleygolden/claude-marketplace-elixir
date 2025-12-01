@@ -60,6 +60,8 @@ When you or Claude attempt to create a git commit, the plugin:
 5. **Blocks the commit** if vulnerabilities are found (via JSON permissionDecision: "deny")
 6. Provides vulnerability details to Claude for context
 
+**Note**: Skips if project has a `precommit` alias (defers to precommit plugin)
+
 ### Example Output
 
 When vulnerabilities are detected:

@@ -63,7 +63,15 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.permissionDecisionReason | contains("Compilation failed")'
 
-# Test 8: Pre-commit validation ignores non-commit commands
+# Test 8: Pre-commit validation skips when precommit alias exists
+test_hook_json \
+  "Pre-commit: Skips when precommit alias exists (defers to precommit plugin)" \
+  "plugins/core/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/precommit/precommit-test-pass\"}" \
+  0 \
+  ".suppressOutput == true"
+
+# Test 9: Pre-commit validation ignores non-commit commands
 test_hook \
   "Pre-commit: Ignores non-commit git commands" \
   "plugins/core/scripts/pre-commit-check.sh" \

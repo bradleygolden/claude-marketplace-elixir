@@ -38,6 +38,12 @@ fi
 
 cd "$PROJECT_ROOT"
 
+# Defer to precommit alias if it exists (Phoenix 1.8+ standard)
+if mix help precommit >/dev/null 2>&1; then
+  jq -n '{"suppressOutput": true}'
+  exit 0
+fi
+
 FORMAT_OUTPUT=$(mix format --check-formatted 2>&1)
 FORMAT_EXIT=$?
 

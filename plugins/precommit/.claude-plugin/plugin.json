@@ -1,0 +1,13 @@
+{
+  "name": "precommit",
+  "version": "1.0.0",
+  "description": "Phoenix precommit alias automation - runs mix precommit before git commits if alias exists",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "license": "MIT",
+  "keywords": ["elixir", "phoenix", "precommit", "validation", "testing"],
+  "hooks": "./hooks/hooks.json"
+}

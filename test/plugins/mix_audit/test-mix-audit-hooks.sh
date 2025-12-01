@@ -7,6 +7,13 @@ echo "Testing mix_audit Plugin Hooks"
 echo "================================"
 echo ""
 
+test_hook_json \
+  "Pre-commit check: Skips when precommit alias exists (defers to precommit plugin)" \
+  "plugins/mix_audit/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/plugins/precommit/precommit-test-pass\"}" \
+  0 \
+  ".suppressOutput == true"
+
 test_hook \
   "Pre-commit check: Ignores non-commit git commands (git status)" \
   "plugins/mix_audit/scripts/pre-commit-check.sh" \

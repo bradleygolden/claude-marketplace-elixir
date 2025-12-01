@@ -39,6 +39,7 @@ mix dialyzer
 - **Pattern**: Uses JSON permissionDecision with deny status to block commits
 - **Context Detection**: Automatically finds Mix project root by traversing upward from current directory
 - **Timeout**: 120 seconds (Dialyzer can take longer than other checks)
+- **Note**: Skips if project has a `precommit` alias (defers to precommit plugin)
 
 ## Why Pre-commit Only?
 

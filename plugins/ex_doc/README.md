@@ -37,6 +37,8 @@ The plugin uses a single PreToolUse hook that:
 4. Blocks the commit (via JSON permissionDecision: "deny") if validation fails
 5. Allows the commit to proceed if validation passes
 
+**Note**: Skips if project has a `precommit` alias (defers to precommit plugin)
+
 ### Concurrent Execution Protection
 
 When multiple plugins run in parallel during commits, the ExDoc plugin uses atomic directory-based locking to prevent race conditions:
