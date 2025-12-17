@@ -6,6 +6,9 @@
 
 # Claude Code Plugins for Elixir
 
+[![Run in Smithery](https://smithery.ai/badge/skills/bradleygolden)](https://smithery.ai/skills?ns=bradleygolden&utm_source=github&utm_medium=badge)
+
+
 Unofficial Claude Code plugin marketplace for Elixir and BEAM ecosystem development.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
