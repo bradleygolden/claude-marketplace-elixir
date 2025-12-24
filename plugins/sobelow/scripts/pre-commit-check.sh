@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Get plugins directory for sourcing shared libraries from core plugin
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGINS_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+source "${PLUGINS_DIR}/core/scripts/lib/version-manager.sh"
+
 INPUT=$(cat) || exit 1
 
 COMMAND=$(echo "$INPUT" | jq -e -r '.tool_input.command' 2>/dev/null) || exit 1
@@ -54,6 +59,9 @@ fi
 if ! grep -qE '\{:sobelow' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then
   exit 0
 fi
+
+# Setup version manager (asdf/mise) for correct Elixir version
+setup_version_manager "$PROJECT_ROOT"
 
 cd "$PROJECT_ROOT"
 

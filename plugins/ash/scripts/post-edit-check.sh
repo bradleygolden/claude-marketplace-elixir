@@ -4,6 +4,11 @@
 # Runs after editing .ex/.exs files to detect when ash.codegen is needed
 # Provides informational context to Claude (non-blocking)
 
+# Get plugins directory for sourcing shared libraries from core plugin
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGINS_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+source "${PLUGINS_DIR}/core/scripts/lib/version-manager.sh"
+
 # Read and validate stdin
 INPUT=$(cat) || exit 1
 
@@ -39,6 +44,9 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   }'
   exit 0
 fi
+
+# Setup version manager (asdf/mise) for correct Elixir version
+setup_version_manager "$PROJECT_ROOT"
 
 cd "$PROJECT_ROOT"
 

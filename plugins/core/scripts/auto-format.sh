@@ -2,6 +2,10 @@
 
 # Auto-format Elixir files on edit
 
+# Get script directory for sourcing shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/version-manager.sh"
+
 # Read and validate stdin
 INPUT=$(cat) || exit 1
 
@@ -38,6 +42,9 @@ PROJECT_ROOT=$(find_mix_project_root "$FILE_PATH")
 if [ $? -ne 0 ]; then
   exit 0
 fi
+
+# Setup version manager (asdf/mise) for correct Elixir version
+setup_version_manager "$PROJECT_ROOT"
 
 # Run mix format
 cd "$PROJECT_ROOT" && mix format "$FILE_PATH"
