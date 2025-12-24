@@ -2,10 +2,6 @@
 
 # Check compilation after file edits
 
-# Get script directory for sourcing shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/version-manager.sh"
-
 # Read and validate stdin
 INPUT=$(cat) || exit 1
 
@@ -46,8 +42,9 @@ if [ $? -ne 0 ]; then
   exit 0
 fi
 
-# Setup version manager (asdf/mise) for correct Elixir version
-setup_version_manager "$PROJECT_ROOT"
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
 
 # Run compilation
 cd "$PROJECT_ROOT"

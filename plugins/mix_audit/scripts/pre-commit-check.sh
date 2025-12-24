@@ -2,11 +2,6 @@
 
 # Pre-commit validation for mix_audit dependency security scanner
 
-# Get plugins directory for sourcing shared libraries from core plugin
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGINS_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-source "${PLUGINS_DIR}/core/scripts/lib/version-manager.sh"
-
 INPUT=$(cat) || exit 1
 
 COMMAND=$(echo "$INPUT" | jq -e -r '.tool_input.command' 2>/dev/null) || exit 1
@@ -51,8 +46,9 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
-# Setup version manager (asdf/mise) for correct Elixir version
-setup_version_manager "$PROJECT_ROOT"
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
 
 # Defer to precommit alias if it exists (Phoenix 1.8+ standard)
 if cd "$PROJECT_ROOT" && mix help precommit >/dev/null 2>&1; then

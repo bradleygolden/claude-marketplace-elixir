@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Get plugins directory for sourcing shared libraries from core plugin
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGINS_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-source "${PLUGINS_DIR}/core/scripts/lib/version-manager.sh"
-
 INPUT=$(cat) || exit 1
 
 FILE_PATH=$(echo "$INPUT" | jq -e -r '.tool_input.file_path' 2>/dev/null) || exit 1
@@ -40,8 +35,9 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
-# Setup version manager (asdf/mise) for correct Elixir version
-setup_version_manager "$PROJECT_ROOT"
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
 
 CREDO_OUTPUT=$(cd "$PROJECT_ROOT" && mix credo "$FILE_PATH" 2>&1)
 CREDO_EXIT_CODE=$?
