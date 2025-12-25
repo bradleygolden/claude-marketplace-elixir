@@ -39,6 +39,10 @@ if [ $? -ne 0 ]; then
   exit 0
 fi
 
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
+
 # Run mix format
 cd "$PROJECT_ROOT" && mix format "$FILE_PATH"
 

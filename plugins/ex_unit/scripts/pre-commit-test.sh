@@ -50,6 +50,10 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
+
 # Defer to precommit alias if it exists (Phoenix 1.8+ standard)
 if cd "$PROJECT_ROOT" && mix help precommit >/dev/null 2>&1; then
   jq -n '{"suppressOutput": true}'

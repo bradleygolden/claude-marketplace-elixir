@@ -41,6 +41,10 @@ if ! grep -qE '\{:sobelow' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then
   exit 0
 fi
 
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
+
 cd "$PROJECT_ROOT"
 
 # Run Sobelow with --skip flag (respects .sobelow-skips and #sobelow_skip comments)

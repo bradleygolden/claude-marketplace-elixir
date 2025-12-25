@@ -35,6 +35,10 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
+
 CREDO_OUTPUT=$(cd "$PROJECT_ROOT" && mix credo "$FILE_PATH" 2>&1)
 CREDO_EXIT_CODE=$?
 

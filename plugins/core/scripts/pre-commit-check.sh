@@ -45,6 +45,10 @@ if [[ -z "$PROJECT_ROOT" ]]; then
   exit 0
 fi
 
+# Add version manager shims to PATH (mise/asdf support)
+[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
+
 cd "$PROJECT_ROOT"
 
 # Defer to precommit alias if it exists (Phoenix 1.8+ standard)
