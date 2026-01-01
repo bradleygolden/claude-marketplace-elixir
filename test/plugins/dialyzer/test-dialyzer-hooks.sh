@@ -35,6 +35,14 @@ test_hook \
   0 \
   ""
 
+# Test: Pre-commit check skips when Dialyxir not in dependencies
+test_hook \
+  "Pre-commit check: Skips when Dialyxir not in dependencies" \
+  "plugins/dialyzer/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/fixtures/no-deps-project\"}" \
+  0 \
+  ""
+
 # Test: Pre-commit uses -C flag directory instead of CWD
 test_hook_json \
   "Pre-commit check: Uses git -C directory instead of CWD" \

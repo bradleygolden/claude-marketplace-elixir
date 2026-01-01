@@ -47,7 +47,23 @@ test_hook_json \
   0 \
   ".suppressOutput == true"
 
-# Test 6: Pre-commit check ignores non-commit commands
+# Test 6: Pre-commit check skips when Credo not in dependencies
+test_hook \
+  "Pre-commit check: Skips when Credo not in dependencies" \
+  "plugins/credo/scripts/pre-commit-check.sh" \
+  "{\"tool_input\":{\"command\":\"git commit -m 'test'\"},\"cwd\":\"$REPO_ROOT/test/fixtures/no-deps-project\"}" \
+  0 \
+  ""
+
+# Test 7: Post-edit check skips when Credo not in dependencies
+test_hook_json \
+  "Post-edit check: Skips when Credo not in dependencies" \
+  "plugins/credo/scripts/post-edit-check.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/fixtures/no-deps-project/mix.exs\"},\"cwd\":\"$REPO_ROOT/test/fixtures/no-deps-project\"}" \
+  0 \
+  ".suppressOutput == true"
+
+# Test 8: Pre-commit check ignores non-commit commands
 test_hook \
   "Pre-commit check: Ignores non-commit git commands" \
   "plugins/credo/scripts/pre-commit-check.sh" \
@@ -55,7 +71,7 @@ test_hook \
   0 \
   ""
 
-# Test 6: Pre-commit check ignores non-git commands
+# Test 9: Pre-commit check ignores non-git commands
 test_hook \
   "Pre-commit check: Ignores non-git commands" \
   "plugins/credo/scripts/pre-commit-check.sh" \
@@ -63,7 +79,7 @@ test_hook \
   0 \
   ""
 
-# Test 7: Pre-commit uses -C flag directory instead of CWD
+# Test 10: Pre-commit uses -C flag directory instead of CWD
 test_hook_json \
   "Pre-commit check: Uses git -C directory instead of CWD" \
   "plugins/credo/scripts/pre-commit-check.sh" \
@@ -71,7 +87,7 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.permissionDecision == "deny" and (.hookSpecificOutput.permissionDecisionReason | contains("Credo"))'
 
-# Test 8: Pre-commit falls back to CWD when -C path is invalid
+# Test 11: Pre-commit falls back to CWD when -C path is invalid
 test_hook_json \
   "Pre-commit check: Falls back to CWD when -C path is invalid" \
   "plugins/credo/scripts/pre-commit-check.sh" \

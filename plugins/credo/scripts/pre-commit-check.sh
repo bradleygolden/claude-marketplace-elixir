@@ -55,6 +55,11 @@ if cd "$PROJECT_ROOT" && mix help precommit >/dev/null 2>&1; then
   exit 0
 fi
 
+# Check if Credo is a project dependency
+if ! grep -qE '\{:credo' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then
+  exit 0
+fi
+
 CREDO_OUTPUT=$(cd "$PROJECT_ROOT" && mix credo --strict 2>&1)
 CREDO_EXIT_CODE=$?
 

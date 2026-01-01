@@ -39,6 +39,12 @@ fi
 [[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
 [[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
 
+# Check if Credo is a project dependency
+if ! grep -qE '\{:credo' "$PROJECT_ROOT/mix.exs" 2>/dev/null; then
+  jq -n '{"suppressOutput": true}'
+  exit 0
+fi
+
 CREDO_OUTPUT=$(cd "$PROJECT_ROOT" && mix credo "$FILE_PATH" 2>&1)
 CREDO_EXIT_CODE=$?
 
