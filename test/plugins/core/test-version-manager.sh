@@ -38,13 +38,30 @@ test_condition() {
 echo "--- Inline shim pattern tests ---"
 echo ""
 
+# Test: Robust home detection works when HOME is unset
+echo -e "${YELLOW}[TEST]${NC} Robust home detection (_HOME variable)"
+SAVED_HOME="$HOME"
+(
+  unset HOME
+  _HOME="${HOME:-$(eval echo ~${USER:-$(whoami)})}"
+  if [[ -n "$_HOME" ]] && [[ "$_HOME" != "~"* ]]; then
+    echo -e "  ${GREEN}✅ PASS${NC} - _HOME resolved to: $_HOME"
+    exit 0
+  else
+    echo -e "  ${RED}❌ FAIL${NC} - _HOME failed to resolve (got: $_HOME)"
+    exit 1
+  fi
+) && ((++PASSED)) || ((++FAILED))
+
 # Test: The inline pattern adds mise shims to PATH when directory exists
 ORIGINAL_PATH="$PATH"
-if [[ -d "$HOME/.local/share/mise/shims" ]]; then
+_HOME="${HOME:-$(eval echo ~${USER:-$(whoami)})}"
+MISE_SHIMS="${XDG_DATA_HOME:-$_HOME/.local/share}/mise/shims"
+if [[ -d "$MISE_SHIMS" ]]; then
   PATH="$ORIGINAL_PATH"
-  [[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
+  [[ -d "$MISE_SHIMS" ]] && export PATH="$MISE_SHIMS:$PATH"
   test_condition "Mise shims added to PATH when directory exists" \
-    '[[ "$PATH" == *".local/share/mise/shims"* ]]'
+    '[[ "$PATH" == *"mise/shims"* ]]'
 else
   echo -e "${YELLOW}[TEST]${NC} Mise shims: directory not present (skipped)"
   ((PASSED++))
@@ -52,8 +69,9 @@ fi
 
 # Test: The inline pattern adds asdf shims to PATH when directory exists
 PATH="$ORIGINAL_PATH"
-if [[ -d "$HOME/.asdf/shims" ]]; then
-  [[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
+ASDF_SHIMS="$_HOME/.asdf/shims"
+if [[ -d "$ASDF_SHIMS" ]]; then
+  [[ -d "$ASDF_SHIMS" ]] && export PATH="$ASDF_SHIMS:$PATH"
   test_condition "Asdf shims added to PATH when directory exists" \
     '[[ "$PATH" == *".asdf/shims"* ]]'
 else
@@ -68,12 +86,28 @@ FAKE_DIR="/nonexistent/fake/shims"
 test_condition "Non-existent directories not added to PATH" \
   '[[ "$PATH" != *"/nonexistent/fake/shims"* ]]'
 
+# Test: XDG_DATA_HOME is respected for mise
+echo -e "${YELLOW}[TEST]${NC} XDG_DATA_HOME is respected for mise shims"
+(
+  export XDG_DATA_HOME="/tmp/test-xdg-data"
+  _HOME="${HOME:-$(eval echo ~${USER:-$(whoami)})}"
+  MISE_SHIMS="${XDG_DATA_HOME:-$_HOME/.local/share}/mise/shims"
+  if [[ "$MISE_SHIMS" == "/tmp/test-xdg-data/mise/shims" ]]; then
+    echo -e "  ${GREEN}✅ PASS${NC}"
+    exit 0
+  else
+    echo -e "  ${RED}❌ FAIL${NC} - got: $MISE_SHIMS"
+    exit 1
+  fi
+) && ((++PASSED)) || ((++FAILED))
+
 # Test: All hook scripts contain the inline pattern
 echo ""
 echo "--- Hook script verification ---"
 echo ""
 
-INLINE_PATTERN='HOME/.local/share/mise/shims'
+# Check for the robust pattern: _HOME detection line
+INLINE_PATTERN='_HOME=.*eval echo'
 SCRIPTS=(
   "$REPO_ROOT/plugins/core/scripts/auto-format.sh"
   "$REPO_ROOT/plugins/core/scripts/compile-check.sh"
@@ -94,8 +128,8 @@ SCRIPTS=(
 for script in "${SCRIPTS[@]}"; do
   script_name=$(basename "$script")
   plugin_name=$(echo "$script" | sed 's|.*/plugins/\([^/]*\)/.*|\1|')
-  test_condition "$plugin_name/$script_name contains inline shim pattern" \
-    "grep -q '$INLINE_PATTERN' '$script'"
+  test_condition "$plugin_name/$script_name contains robust shim pattern" \
+    "grep -qE '$INLINE_PATTERN' '$script'"
 done
 
 # Restore PATH

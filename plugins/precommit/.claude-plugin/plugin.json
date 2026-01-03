@@ -1,6 +1,6 @@
 {
   "name": "precommit",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Phoenix precommit alias automation - runs mix precommit before git commits if alias exists",
   "author": {
     "name": "Bradley Golden",

@@ -1,6 +1,6 @@
 {
   "name": "sobelow",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Sobelow security-focused static analysis for Phoenix and Elixir projects",
   "author": {
     "name": "Bradley Golden",

@@ -50,8 +50,12 @@ if [[ -z "$PROJECT_ROOT" ]]; then
 fi
 
 # Add version manager shims to PATH (mise/asdf support)
-[[ -d "$HOME/.local/share/mise/shims" ]] && PATH="$HOME/.local/share/mise/shims:$PATH"
-[[ -d "$HOME/.asdf/shims" ]] && PATH="$HOME/.asdf/shims:$PATH"
+# Robust home detection: $HOME, then ~$USER, then ~$(whoami)
+_HOME="${HOME:-$(eval echo ~${USER:-$(whoami)})}"
+MISE_SHIMS="${XDG_DATA_HOME:-$_HOME/.local/share}/mise/shims"
+ASDF_SHIMS="$_HOME/.asdf/shims"
+[[ -d "$MISE_SHIMS" ]] && export PATH="$MISE_SHIMS:$PATH"
+[[ -d "$ASDF_SHIMS" ]] && export PATH="$ASDF_SHIMS:$PATH"
 
 cd "$PROJECT_ROOT"
 
