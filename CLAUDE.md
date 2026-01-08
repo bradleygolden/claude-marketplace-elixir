@@ -179,6 +179,31 @@ The repository includes an automated test suite for plugin hooks:
 
 See `test/README.md` for detailed documentation.
 
+### Integration Testing (Walkthrough Style)
+
+For real-time verification of hook behavior, use the `/integration-test` command which walks through fixture projects manually:
+
+```bash
+/integration-test
+```
+
+**Walkthrough Approach**:
+1. Use TodoWrite to track progress through test scenarios
+2. For each test: edit a file, observe the hook response in system-reminders
+3. Restore files to original state after each test
+4. Report final results as a pass/fail table
+
+**Why this approach**:
+- Hook responses are visible in real-time via `<system-reminder>` tags
+- User can observe exactly what each hook does
+- Issues are caught and understood in context
+- More thorough than automated tests alone
+
+**Fixtures**: Located in `test/integration/fixtures/`
+- `basic-project/` - Format + compile only
+- `credo-project/` - Credo analysis
+- `full-project/` - All tools (credo, dialyxir, ex_doc, sobelow)
+
 ## Important Conventions
 
 ### Marketplace Namespace
