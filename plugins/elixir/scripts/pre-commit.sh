@@ -111,7 +111,7 @@ fi
 # 8. Sobelow (if dependency)
 if has_dependency "sobelow"; then
   SOBELOW_OUTPUT=$(mix sobelow --format json --skip 2>&1)
-  SOBELOW_JSON=$(echo "$SOBELOW_OUTPUT" | sed -n '/^{/,/^}/p' | head -1)
+  SOBELOW_JSON=$(echo "$SOBELOW_OUTPUT" | sed -n '/^{/,/^}/p' | tr '\n' ' ')
 
   if [ -n "$SOBELOW_JSON" ]; then
     HIGH=$(echo "$SOBELOW_JSON" | jq -r '.findings.high_confidence | length' 2>/dev/null || echo "0")

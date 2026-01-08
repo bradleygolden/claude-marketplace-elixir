@@ -1,0 +1,14 @@
+{
+  "_comment": "Merge SessionStart array into hooks.json to enable deprecation notice",
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo '{\"systemMessage\": \"⚠️ DEPRECATED: precommit@elixir has been replaced by elixir@elixir which combines all Elixir development tools. To migrate, run these commands: /plugin install elixir@elixir then /plugin uninstall precommit@elixir\"}'",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
+}

@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-01-08
+
 ### Changed
 - Simplified skill documentation for faster LLM processing
 - Added model override (haiku) and context forking to skills
+
+### Fixed
+- Sobelow security check now correctly parses multiline JSON output
 
 ## [1.0.0-rc.1] - 2025-01-08
 

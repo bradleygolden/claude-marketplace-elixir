@@ -1,6 +1,6 @@
 {
   "name": "elixir",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "description": "Comprehensive Elixir development support with automatic formatting, compilation, testing, and static analysis",
   "author": {
     "name": "Bradley Golden",
