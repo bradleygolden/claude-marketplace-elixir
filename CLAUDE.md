@@ -119,13 +119,6 @@ Skills provide specialized capabilities for Claude to use on demand, complementi
    - Context-aware section extraction based on coding context
    - See `plugins/core/skills/usage-rules/SKILL.md`
 
-**Meta plugin** - Workflow generation skill:
-1. **workflow-generator** (meta@elixir): Generates project-specific workflow commands
-   - Creates customized research, plan, implement, and QA commands
-   - Asks questions about project structure and preferences
-   - Outputs slash commands tailored to project needs
-   - See `plugins/meta/skills/workflow-generator/SKILL.md`
-
 **Skill Composition**:
 Skills are designed to be **single-purpose** and **composed by agents/commands**:
 - `usage-rules` provides conventions and patterns (how to use correctly)
@@ -370,8 +363,6 @@ The marketplace includes a comprehensive workflow system for development:
 ```
 
 See `.claude/WORKFLOWS.md` for complete workflow documentation.
-
-**Meta Plugin**: The `meta` plugin can generate customized workflow commands for other Elixir projects via `/meta:workflow-generator`. Templates use `{{DOCS_LOCATION}}` variable (default: `.thoughts`) for configurability.
 
 ## Quality Gates
 
