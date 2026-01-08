@@ -16,8 +16,11 @@ Test elixir plugin hooks by walking through fixture projects in `test/integratio
 | basic-project | none | Format + compile only |
 | credo-project | credo | Credo analysis |
 | full-project | credo, dialyxir, ex_doc, sobelow, mix_audit + test/ | Most checks |
+| ash-project | ash | Ash codegen checks |
+| precommit-project | none (has precommit alias) | Precommit alias deferral |
+| unused-deps-project | jason (unused) | Unused deps check |
 
-Note: Some capabilities require additional fixtures (ash, precommit alias). Create as needed.
+Setup if deps/ missing: `(cd fixture && mix deps.get)`
 
 ## Test Scenarios
 
@@ -36,8 +39,8 @@ Note: Some capabilities require additional fixtures (ash, precommit alias). Crea
    - Expected: Hook reports `[CREDO]` if issue is serious
    - Note: Post-edit filters to serious issues only, not design [D]
 
-4. **Ash Codegen** (requires ash fixture)
-   - Edit an Ash resource file
+4. **Ash Codegen** (ash-project)
+   - Edit `lib/example.ex` to add new attribute
    - Expected: Hook reports `[ASH CODEGEN]` if codegen needed
 
 5. **Sobelow** (full-project)
@@ -46,8 +49,8 @@ Note: Some capabilities require additional fixtures (ash, precommit alias). Crea
 
 ### Pre-Commit Hook (11 capabilities)
 
-6. **Precommit Alias** (requires phoenix-style fixture with `mix precommit` alias)
-   - Attempt git commit
+6. **Precommit Alias** (precommit-project)
+   - Make code unformatted, attempt git commit
    - Expected: Hook defers to `mix precommit` and blocks on failure
 
 7. **Format Check** (basic-project)
@@ -58,15 +61,15 @@ Note: Some capabilities require additional fixtures (ash, precommit alias). Crea
    - Introduce compile error, attempt commit
    - Expected: Hook blocks with `[COMPILE]`
 
-9. **Unused Deps** (requires fixture with unused dep in mix.exs)
-   - Attempt commit with unused dependency
+9. **Unused Deps** (unused-deps-project)
+   - Attempt commit (jason dep is unused)
    - Expected: Hook blocks with `[DEPS]`
 
 10. **Credo Strict** (credo-project)
     - Introduce any credo issue, attempt commit
     - Expected: Hook blocks with `[CREDO]` (uses --strict mode)
 
-11. **Ash Codegen** (requires ash fixture)
+11. **Ash Codegen** (ash-project)
     - Make Ash codegen out of sync, attempt commit
     - Expected: Hook blocks with `[ASH CODEGEN]`
 
@@ -103,4 +106,3 @@ Note: Some capabilities require additional fixtures (ash, precommit alias). Crea
 - Hook responses appear as `<system-reminder>` after Edit tool calls
 - Pre-commit blocking appears as tool use error when Bash is denied
 - Always restore files to original state after each test
-- Some tests require fixtures that don't exist yet - note which ones need to be created
