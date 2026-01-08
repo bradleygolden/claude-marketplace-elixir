@@ -45,6 +45,10 @@ defp aliases do
 end
 ```
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## License
 
 MIT

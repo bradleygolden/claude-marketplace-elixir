@@ -245,6 +245,10 @@ Or edit the pre-commit script at `plugins/sobelow/scripts/pre-commit-check.sh`.
 - [Sobelow GitHub](https://github.com/nccgroup/sobelow)
 - [Phoenix Security Guide](https://hexdocs.pm/phoenix/security.html)
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## License
 
 MIT

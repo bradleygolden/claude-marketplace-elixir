@@ -7,6 +7,7 @@
     "url": "https://github.com/bradleygolden"
   },
   "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir/tree/main/plugins/mix_audit",
   "license": "MIT",
   "keywords": ["elixir", "mix_audit", "security", "audit", "dependencies", "vulnerability-scanning"]
 }

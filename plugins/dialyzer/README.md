@@ -57,3 +57,7 @@ mix dialyzer --plt
 ```
 
 This is a one-time setup (unless you upgrade Erlang/Elixir or add new dependencies).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

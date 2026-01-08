@@ -86,3 +86,7 @@ Use the `core@elixir` plugin alongside this plugin for comprehensive validation 
   - `{:ash_postgres, "~> 2.0"}` - PostgreSQL data layer
   - Or other Ash data layer packages
 - `mix ash.codegen` task available (provided by Ash data layer extensions)
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

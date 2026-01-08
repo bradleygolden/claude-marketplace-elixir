@@ -218,6 +218,10 @@ mix test.watch --only docs
 
 Issues and pull requests welcome at https://github.com/bradleygolden/claude-marketplace-elixir
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## License
 
 MIT License - see repository LICENSE file

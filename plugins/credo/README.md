@@ -49,3 +49,7 @@ mix credo --strict
 - **Pattern**: Uses JSON permissionDecision with deny status to block commits
 - **Context Detection**: Automatically finds Mix project root by traversing upward from current directory
 - **Note**: Skips if project has a `precommit` alias (defers to precommit plugin)
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

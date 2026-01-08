@@ -7,6 +7,7 @@
     "url": "https://github.com/bradleygolden"
   },
   "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir/tree/main/plugins/credo",
   "license": "MIT",
   "keywords": ["elixir", "credo", "linting", "code-quality", "static-analysis"]
 }

@@ -168,6 +168,10 @@ mix deps.audit --path=/path/to/project
 - **Security advisories**: https://github.com/mirego/elixir-security-advisories
 - **Marketplace**: https://github.com/bradleygolden/claude-marketplace-elixir
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## License
 
 MIT
