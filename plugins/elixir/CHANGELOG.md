@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Simplified skill documentation for faster LLM processing
+- Added model override (haiku) and context forking to skills
+
 ## [1.0.0-rc.1] - 2025-01-08
 
 ### Added

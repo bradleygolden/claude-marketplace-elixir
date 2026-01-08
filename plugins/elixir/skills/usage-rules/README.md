@@ -13,7 +13,7 @@ This skill helps Claude search for package usage rules intelligently by:
 
 ## Usage
 
-This skill is automatically available when the `core@elixir` plugin is installed. Claude will use it when appropriate, for example:
+This skill is automatically available when the `elixir@elixir` plugin is installed. Claude will use it when appropriate, for example:
 
 ```
 User: "What are Ash best practices for querying?"
@@ -244,6 +244,6 @@ See [Ash's usage-rules.md](https://github.com/ash-project/ash/blob/main/usage-ru
 
 ## Integration
 
-This skill is bundled with the `core@elixir` plugin and doesn't require separate installation.
+This skill is bundled with the `elixir@elixir` plugin and doesn't require separate installation.
 
 See [SKILL.md](SKILL.md) for the complete skill prompt and instructions.

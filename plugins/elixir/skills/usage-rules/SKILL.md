@@ -2,6 +2,9 @@
 name: usage-rules
 description: Search for package-specific usage rules and best practices from Elixir packages. Use when you need coding conventions, patterns, common mistakes, or good/bad examples for packages like Ash, Phoenix, Ecto, etc.
 allowed-tools: Read, Grep, Glob, Bash, AskUserQuestion
+model: haiku
+context: fork
+agent: Explore
 ---
 
 # Usage Rules Search

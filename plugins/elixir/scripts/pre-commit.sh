@@ -19,9 +19,7 @@ PROJECT_ROOT=$(find_mix_project_root "$GIT_DIR") || exit 0
 setup_version_managers
 cd "$PROJECT_ROOT" || exit 0
 
-#------------------------------------------------------------------------------
 # Defer to precommit alias if it exists (Phoenix 1.8+ standard)
-#------------------------------------------------------------------------------
 if has_precommit_alias; then
   PRECOMMIT_OUTPUT=$(mix precommit 2>&1)
   PRECOMMIT_EXIT=$?
@@ -37,9 +35,7 @@ fi
 
 FAILURES=""
 
-#------------------------------------------------------------------------------
 # 1. Core checks (format, compile, deps)
-#------------------------------------------------------------------------------
 FORMAT_OUTPUT=$(mix format --check-formatted 2>&1)
 if [ $? -ne 0 ]; then
   FAILURES="${FAILURES}[FORMAT] Code is not formatted.\nRun 'mix format' to fix.\n\n"
@@ -56,9 +52,7 @@ if [ $? -ne 0 ]; then
   FAILURES="${FAILURES}[DEPS] Unused dependencies found.\nRun 'mix deps.unlock --unused' to fix.\n\n"
 fi
 
-#------------------------------------------------------------------------------
 # 2. Credo (if dependency)
-#------------------------------------------------------------------------------
 if has_dependency "credo"; then
   CREDO_OUTPUT=$(mix credo --strict 2>&1)
   if [ $? -ne 0 ]; then
@@ -67,9 +61,7 @@ if has_dependency "credo"; then
   fi
 fi
 
-#------------------------------------------------------------------------------
 # 3. Ash codegen (if dependency)
-#------------------------------------------------------------------------------
 if has_dependency "ash"; then
   ASH_OUTPUT=$(mix ash.codegen --check 2>&1)
   if [ $? -ne 0 ]; then
@@ -78,9 +70,7 @@ if has_dependency "ash"; then
   fi
 fi
 
-#------------------------------------------------------------------------------
 # 4. Dialyzer (if dependency) - can be slow
-#------------------------------------------------------------------------------
 if has_dependency "dialyxir"; then
   DIALYZER_OUTPUT=$(mix dialyzer 2>&1)
   if [ $? -ne 0 ]; then
@@ -89,9 +79,7 @@ if has_dependency "dialyxir"; then
   fi
 fi
 
-#------------------------------------------------------------------------------
 # 5. ExDoc (if dependency) - uses locking to prevent race conditions
-#------------------------------------------------------------------------------
 if has_dependency "ex_doc"; then
   if acquire_lock "mix_docs" 60; then
     DOCS_OUTPUT=$(mix docs --warnings-as-errors 2>&1)
@@ -102,9 +90,7 @@ if has_dependency "ex_doc"; then
   fi
 fi
 
-#------------------------------------------------------------------------------
 # 6. ExUnit tests (if test/ exists)
-#------------------------------------------------------------------------------
 if has_tests; then
   TEST_OUTPUT=$(mix test --stale 2>&1)
   if [ $? -ne 0 ]; then
@@ -113,9 +99,7 @@ if has_tests; then
   fi
 fi
 
-#------------------------------------------------------------------------------
 # 7. Mix Audit (if dependency)
-#------------------------------------------------------------------------------
 if has_dependency "mix_audit"; then
   AUDIT_OUTPUT=$(mix deps.audit 2>&1)
   if [ $? -ne 0 ]; then
@@ -124,9 +108,7 @@ if has_dependency "mix_audit"; then
   fi
 fi
 
-#------------------------------------------------------------------------------
 # 8. Sobelow (if dependency)
-#------------------------------------------------------------------------------
 if has_dependency "sobelow"; then
   SOBELOW_OUTPUT=$(mix sobelow --format json --skip 2>&1)
   SOBELOW_JSON=$(echo "$SOBELOW_OUTPUT" | sed -n '/^{/,/^}/p' | head -1)

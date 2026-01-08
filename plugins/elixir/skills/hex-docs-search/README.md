@@ -14,7 +14,7 @@ This skill helps Claude search for Hex package documentation intelligently by:
 
 ## Usage
 
-This skill is automatically available when the `core@elixir` plugin is installed. Claude will use it when appropriate, for example:
+This skill is automatically available when the `elixir@elixir` plugin is installed. Claude will use it when appropriate, for example:
 
 ```
 User: "How do I use Phoenix.LiveView mount/3?"
@@ -150,6 +150,6 @@ These directories can be large and are easily re-fetched on demand.
 
 ## Integration
 
-This skill is bundled with the `core@elixir` plugin and doesn't require separate installation.
+This skill is bundled with the `elixir@elixir` plugin and doesn't require separate installation.
 
 See [SKILL.md](SKILL.md) for the complete skill prompt and instructions.

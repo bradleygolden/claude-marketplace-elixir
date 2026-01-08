@@ -1,7 +1,10 @@
 ---
 name: hex-docs-search
-description: Research Hex packages (Phoenix, Ecto, Ash, etc). Use when investigating packages, finding module/function docs, or understanding integration patterns.
+description: Research Hex packages (Sobelow, Phoenix, Ecto, Credo, Ash, etc). Use when investigating packages, understanding integration patterns, or finding module/function docs and usage examples. Automatically fetches missing documentation and source code locally.
 allowed-tools: Read, Grep, Glob, Bash, WebSearch, AskUserQuestion
+model: haiku
+context: fork
+agent: Explore
 ---
 
 # Hex Documentation Search
