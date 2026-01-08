@@ -1,0 +1,24 @@
+{
+  "name": "elixir",
+  "version": "1.0.0-rc.1",
+  "description": "Comprehensive Elixir development support with automatic formatting, compilation, testing, and static analysis",
+  "author": {
+    "name": "Bradley Golden",
+    "url": "https://github.com/bradleygolden"
+  },
+  "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+  "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir/tree/main/plugins/elixir",
+  "license": "MIT",
+  "keywords": [
+    "elixir",
+    "erlang",
+    "beam",
+    "phoenix",
+    "ash",
+    "credo",
+    "dialyzer",
+    "sobelow",
+    "testing",
+    "formatting"
+  ]
+}

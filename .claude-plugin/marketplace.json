@@ -5,10 +5,30 @@
   },
   "metadata": {
     "description": "Elixir and BEAM ecosystem development tools for Claude Code",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "pluginRoot": "../plugins",
   "plugins": [
+    {
+      "name": "elixir",
+      "source": "./plugins/elixir",
+      "description": "Comprehensive Elixir development support - formatting, compilation, testing, and static analysis in one plugin (recommended)",
+      "keywords": [
+        "elixir",
+        "erlang",
+        "beam",
+        "phoenix",
+        "ash",
+        "credo",
+        "dialyzer",
+        "sobelow",
+        "testing",
+        "formatting"
+      ],
+      "repository": "https://github.com/bradleygolden/claude-marketplace-elixir",
+      "license": "MIT",
+      "homepage": "https://github.com/bradleygolden/claude-marketplace-elixir/tree/main/plugins/elixir"
+    },
     {
       "name": "core",
       "source": "./plugins/core",
