@@ -200,9 +200,12 @@ For real-time verification of hook behavior, use the `/integration-test` command
 - More thorough than automated tests alone
 
 **Fixtures**: Located in `test/integration/fixtures/`
-- `basic-project/` - Format + compile only
+- `basic-project/` - Format + compile
 - `credo-project/` - Credo analysis
-- `full-project/` - All tools (credo, dialyxir, ex_doc, sobelow)
+- `ash-project/` - Ash codegen (with AshPostgres)
+- `full-project/` - Sobelow security (credo, dialyxir, ex_doc, sobelow, mix_audit)
+
+**Note**: Only post-edit hooks (PostToolUse) can be tested this way. Pre-commit hooks (PreToolUse) require the plugin to be installed in the Claude Code session.
 
 ## Important Conventions
 

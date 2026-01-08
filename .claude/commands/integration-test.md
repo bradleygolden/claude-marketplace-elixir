@@ -1,11 +1,11 @@
-Test elixir plugin hooks by walking through fixture projects in `test/integration/fixtures/`.
+Test elixir plugin post-edit hooks by walking through fixture projects in `test/integration/fixtures/`.
 
 ## Execution Approach
 
 **Walk through each test scenario manually in the main conversation** so hook responses are visible in real-time via system-reminders.
 
 1. Use TodoWrite to track progress through test scenarios
-2. For each test: edit a file or run a command, observe the hook response
+2. For each test: edit a file, observe the hook response
 3. Restore files to original state after each test
 4. Report final results as a table
 
@@ -13,18 +13,14 @@ Test elixir plugin hooks by walking through fixture projects in `test/integratio
 
 | Fixture | Dependencies | Purpose |
 |---------|--------------|---------|
-| basic-project | none | Format + compile only |
+| basic-project | none | Format + compile |
 | credo-project | credo | Credo analysis |
-| full-project | credo, dialyxir, ex_doc, sobelow, mix_audit + test/ | Most checks |
-| ash-project | ash | Ash codegen checks |
-| precommit-project | none (has precommit alias) | Precommit alias deferral |
-| unused-deps-project | jason (unused) | Unused deps check |
+| ash-project | ash, ash_postgres | Ash codegen |
+| full-project | credo, dialyxir, ex_doc, sobelow, mix_audit | Sobelow security |
 
 Setup if deps/ missing: `(cd fixture && mix deps.get)`
 
-## Test Scenarios
-
-### Post-Edit Hook (5 capabilities)
+## Test Scenarios (Post-Edit Hook)
 
 1. **Format** (basic-project)
    - Edit `lib/example.ex` with bad formatting (e.g., `def foo,do: :bar`)
@@ -35,63 +31,17 @@ Setup if deps/ missing: `(cd fixture && mix deps.get)`
    - Expected: Hook reports `[COMPILE ERROR]` in system-reminder
 
 3. **Credo** (credo-project)
-   - Edit file to add serious credo issue ([F|W|C|R] not [D])
-   - Expected: Hook reports `[CREDO]` if issue is serious
-   - Note: Post-edit filters to serious issues only, not design [D]
+   - Edit file to add warning-level issue (e.g., `IO.inspect(:debug)`)
+   - Expected: Hook reports `[CREDO]` with warning
+   - Note: Post-edit filters to serious issues only ([F|W|C|R] not [D])
 
 4. **Ash Codegen** (ash-project)
-   - Edit `lib/example.ex` to add new attribute
-   - Expected: Hook reports `[ASH CODEGEN]` if codegen needed
+   - Edit `lib/example.ex` to add new attribute (e.g., `attribute(:age, :integer, public?: true)`)
+   - Expected: Hook reports `[ASH CODEGEN]` pending code generation
 
 5. **Sobelow** (full-project)
-   - Edit file to introduce security issue (e.g., hardcoded secret)
-   - Expected: Hook reports `[SOBELOW SECURITY]` for high/medium findings
-
-### Pre-Commit Hook (11 capabilities)
-
-6. **Precommit Alias** (precommit-project)
-   - Make code unformatted, attempt git commit
-   - Expected: Hook defers to `mix precommit` and blocks on failure
-
-7. **Format Check** (basic-project)
-   - Make code unformatted, attempt commit
-   - Expected: Hook blocks with `[FORMAT]`
-
-8. **Compile Check** (basic-project)
-   - Introduce compile error, attempt commit
-   - Expected: Hook blocks with `[COMPILE]`
-
-9. **Unused Deps** (unused-deps-project)
-   - Attempt commit (jason dep is unused)
-   - Expected: Hook blocks with `[DEPS]`
-
-10. **Credo Strict** (credo-project)
-    - Introduce any credo issue, attempt commit
-    - Expected: Hook blocks with `[CREDO]` (uses --strict mode)
-
-11. **Ash Codegen** (ash-project)
-    - Make Ash codegen out of sync, attempt commit
-    - Expected: Hook blocks with `[ASH CODEGEN]`
-
-12. **Dialyzer** (full-project)
-    - Introduce type error, attempt commit
-    - Expected: Hook blocks with `[DIALYZER]`
-
-13. **ExDoc** (full-project)
-    - Introduce doc warning, attempt commit
-    - Expected: Hook blocks with `[EXDOC]`
-
-14. **ExUnit** (full-project)
-    - Create failing test in test/, attempt commit
-    - Expected: Hook blocks with `[TESTS]`
-
-15. **Mix Audit** (full-project)
-    - Have vulnerable dependency, attempt commit
-    - Expected: Hook blocks with `[SECURITY AUDIT]`
-
-16. **Sobelow** (full-project)
-    - Introduce security issue, attempt commit
-    - Expected: Hook blocks with `[SOBELOW]`
+   - Edit file to introduce SQL injection (e.g., `Ecto.Adapters.SQL.query(conn, "SELECT * FROM users WHERE id = #{id}")`)
+   - Expected: Hook reports Sobelow findings in JSON format
 
 ## Results Format
 
@@ -99,10 +49,12 @@ Setup if deps/ missing: `(cd fixture && mix deps.get)`
 |---|------|---------|--------|----------|
 | 1 | Format | basic-project | PASS/FAIL | ... |
 | 2 | Compile Error | basic-project | PASS/FAIL | ... |
-| ... | ... | ... | ... | ... |
+| 3 | Credo | credo-project | PASS/FAIL | ... |
+| 4 | Ash Codegen | ash-project | PASS/FAIL | ... |
+| 5 | Sobelow | full-project | PASS/FAIL | ... |
 
-## Important Notes
+## Notes
 
-- Hook responses appear as `<system-reminder>` after Edit tool calls
-- Pre-commit blocking appears as tool use error when Bash is denied
+- Hook responses appear as `<system-reminder>` after Edit/Write tool calls
+- Pre-commit hooks (PreToolUse) require the plugin to be installed and cannot be tested this way
 - Always restore files to original state after each test
