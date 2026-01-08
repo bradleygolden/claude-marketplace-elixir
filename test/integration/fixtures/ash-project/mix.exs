@@ -13,6 +13,7 @@ defmodule AshProject.MixProject do
   defp deps do
     [
       {:ash, "~> 3.0"},
+      {:ash_postgres, "~> 2.0"},
       {:simple_sat, "~> 0.1"}
     ]
   end

@@ -2,11 +2,18 @@ defmodule AshProject.Example do
   @moduledoc "Example Ash resource for testing"
 
   use Ash.Resource,
-    domain: AshProject.Domain
+    domain: AshProject.Domain,
+    data_layer: AshPostgres.DataLayer
+
+  postgres do
+    table("examples")
+    repo(AshProject.Repo)
+  end
 
   attributes do
     uuid_primary_key(:id)
     attribute(:name, :string, allow_nil?: false, public?: true)
+    attribute(:email, :string, public?: true)
   end
 
   actions do
