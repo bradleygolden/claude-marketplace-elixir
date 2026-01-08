@@ -61,6 +61,14 @@ When you run `git commit`:
 2. **Smart Defaults**: Only runs checks relevant to your project
 3. **Precommit Deferral**: If you have a `mix precommit` alias, uses that instead
 4. **Aggregated Feedback**: Collects all issues and reports them together
+5. **Concurrent Execution Protection**: ExDoc uses cross-process locking to prevent race conditions
+
+## Hook Timeouts
+
+| Hook | Timeout | Reason |
+|------|---------|--------|
+| Post-edit | 30s | Quick checks for immediate feedback |
+| Pre-commit | 180s | Comprehensive validation including Dialyzer |
 
 ## Requirements
 

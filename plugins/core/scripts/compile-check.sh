@@ -1,19 +1,12 @@
 #!/bin/bash
 
-# Check compilation after file edits
-
-# Read and validate stdin
 INPUT=$(cat) || exit 1
-
-# Extract file_path with error handling
 FILE_PATH=$(echo "$INPUT" | jq -e -r '.tool_input.file_path' 2>/dev/null) || exit 1
 
-# Validate extracted value is not null
 if [[ "$FILE_PATH" == "null" ]] || [[ -z "$FILE_PATH" ]]; then
   exit 0
 fi
 
-# Only process .ex and .exs files
 if ! echo "$FILE_PATH" | grep -qE '\.(ex|exs)$'; then
   exit 0
 fi
@@ -31,7 +24,6 @@ find_mix_project_root() {
   return 1
 }
 
-# Find project root
 PROJECT_ROOT=$(find_mix_project_root "$FILE_PATH")
 
 # If no project root found, exit silently with suppressOutput
@@ -50,18 +42,14 @@ ASDF_SHIMS="$_HOME/.asdf/shims"
 [[ -d "$MISE_SHIMS" ]] && export PATH="$MISE_SHIMS:$PATH"
 [[ -d "$ASDF_SHIMS" ]] && export PATH="$ASDF_SHIMS:$PATH"
 
-# Run compilation
 cd "$PROJECT_ROOT"
 COMPILE_OUTPUT=$(mix compile --warnings-as-errors 2>&1)
 COMPILE_EXIT=$?
 
-# If compilation failed, send context to Claude
 if [ $COMPILE_EXIT -ne 0 ]; then
-  # Count output lines
   TOTAL_LINES=$(echo "$COMPILE_OUTPUT" | wc -l)
   MAX_LINES=50
-  
-  # Truncate if needed
+
   if [ "$TOTAL_LINES" -gt "$MAX_LINES" ]; then
     TRUNCATED_OUTPUT=$(echo "$COMPILE_OUTPUT" | head -n $MAX_LINES)
     OUTPUT="$TRUNCATED_OUTPUT
@@ -70,11 +58,9 @@ if [ $COMPILE_EXIT -ne 0 ]; then
   else
     OUTPUT="$COMPILE_OUTPUT"
   fi
-  
-  # Escape for JSON
+
   CONTEXT=$(echo "$OUTPUT" | jq -Rs .)
-  
-  # Output JSON with additionalContext
+
   jq -n --arg ctx "$CONTEXT" '{
     "hookSpecificOutput": {
       "hookEventName": "PostToolUse",

@@ -3,22 +3,17 @@
 
 source "${CLAUDE_PLUGIN_ROOT}/lib/utils.sh"
 
-# Parse input
 INPUT=$(cat) || exit 0
 FILE_PATH=$(echo "$INPUT" | jq -e -r '.tool_input.file_path // .tool_input.path' 2>/dev/null) || exit 0
 
-# Validate file
 [[ "$FILE_PATH" == "null" ]] || [[ -z "$FILE_PATH" ]] && exit 0
 is_elixir_file "$FILE_PATH" || exit 0
 
-# Find project root
 PROJECT_ROOT=$(find_mix_project_root "$(dirname "$FILE_PATH")") || exit 0
 
-# Setup environment
 setup_version_managers
 cd "$PROJECT_ROOT" || exit 0
 
-# Collect all issues
 ISSUES=""
 
 #------------------------------------------------------------------------------
@@ -82,9 +77,6 @@ if has_dependency "sobelow"; then
   fi
 fi
 
-#------------------------------------------------------------------------------
-# Output results
-#------------------------------------------------------------------------------
 if [ -n "$ISSUES" ]; then
   output_context "$(echo -e "$ISSUES")"
 else

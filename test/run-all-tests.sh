@@ -44,6 +44,7 @@ run_test_suite() {
 }
 
 
+run_test_suite "Elixir Plugin Tests" "$SCRIPT_DIR/plugins/elixir/test-elixir-hooks.sh" || true
 run_test_suite "Core Plugin Tests" "$SCRIPT_DIR/plugins/core/test-core-hooks.sh" || true
 run_test_suite "Version Manager Library Tests" "$SCRIPT_DIR/plugins/core/test-version-manager.sh" || true
 run_test_suite "Credo Plugin Tests" "$SCRIPT_DIR/plugins/credo/test-credo-hooks.sh" || true

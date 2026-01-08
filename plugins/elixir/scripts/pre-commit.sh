@@ -3,25 +3,19 @@
 
 source "${CLAUDE_PLUGIN_ROOT}/lib/utils.sh"
 
-# Parse input
 INPUT=$(cat) || exit 0
 COMMAND=$(echo "$INPUT" | jq -e -r '.tool_input.command' 2>/dev/null) || exit 0
 CWD=$(echo "$INPUT" | jq -e -r '.cwd' 2>/dev/null) || exit 0
 
-# Validate input
 [[ "$COMMAND" == "null" ]] || [[ -z "$COMMAND" ]] && exit 0
 [[ "$CWD" == "null" ]] || [[ -z "$CWD" ]] && exit 0
 
-# Only run on git commit commands
 is_git_commit "$COMMAND" || exit 0
 
-# Extract git directory (handles git -C flag)
 GIT_DIR=$(extract_git_dir "$COMMAND" "$CWD")
 
-# Find project root
 PROJECT_ROOT=$(find_mix_project_root "$GIT_DIR") || exit 0
 
-# Setup environment
 setup_version_managers
 cd "$PROJECT_ROOT" || exit 0
 
@@ -41,7 +35,6 @@ if has_precommit_alias; then
   exit 0
 fi
 
-# Collect all failures
 FAILURES=""
 
 #------------------------------------------------------------------------------
@@ -148,9 +141,6 @@ if has_dependency "sobelow"; then
   fi
 fi
 
-#------------------------------------------------------------------------------
-# Output results
-#------------------------------------------------------------------------------
 if [ -n "$FAILURES" ]; then
   output_deny "Pre-commit validation failed:\n\n${FAILURES}Fix these issues before committing." "Commit blocked: validation failed"
 else

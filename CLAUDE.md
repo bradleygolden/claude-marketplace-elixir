@@ -15,58 +15,38 @@ This is a **Claude Code plugin marketplace** for Elixir and BEAM ecosystem devel
 └── marketplace.json          # Marketplace metadata and plugin registry
 
 plugins/
-├── core/                     # Core Elixir development plugin
+├── elixir/                   # Combined Elixir plugin (recommended)
 │   ├── .claude-plugin/
 │   │   └── plugin.json       # Plugin metadata
 │   ├── hooks/
 │   │   └── hooks.json        # Hook definitions
-│   └── README.md             # Plugin documentation
-├── credo/                    # Credo static analysis plugin
-│   ├── .claude-plugin/
-│   │   └── plugin.json
-│   ├── hooks/
-│   │   └── hooks.json
+│   ├── lib/
+│   │   └── utils.sh          # Shared utilities
 │   ├── scripts/
-│   │   ├── post-edit-check.sh
-│   │   └── pre-commit-check.sh
+│   │   ├── post-edit.sh      # PostToolUse hook
+│   │   └── pre-commit.sh     # PreToolUse hook
+│   ├── skills/               # Inherited from core
 │   └── README.md
-├── ash/                      # Ash Framework codegen plugin
-│   ├── .claude-plugin/
-│   │   └── plugin.json
-│   ├── hooks/
-│   │   └── hooks.json
-│   ├── scripts/
-│   │   ├── post-edit-check.sh
-│   │   └── pre-commit-check.sh
-│   └── README.md
-└── dialyzer/                 # Dialyzer type analysis plugin
-    ├── .claude-plugin/
-    │   └── plugin.json
-    ├── hooks/
-    │   └── hooks.json
-    ├── scripts/
-    │   └── pre-commit-check.sh
-    └── README.md
+├── core/                     # Legacy: Core Elixir development
+├── credo/                    # Legacy: Credo static analysis
+├── ash/                      # Legacy: Ash Framework codegen
+├── dialyzer/                 # Legacy: Dialyzer type analysis
+├── ex_doc/                   # Legacy: ExDoc documentation
+├── ex_unit/                  # Legacy: ExUnit testing
+├── mix_audit/                # Legacy: Dependency security
+├── precommit/                # Legacy: Phoenix precommit alias
+└── sobelow/                  # Legacy: Security analysis
 
 test/plugins/
-├── core/                     # Core plugin tests
-│   ├── README.md
-│   ├── autoformat-test/
-│   ├── compile-test/
-│   └── precommit-test/
-├── credo/                    # Credo plugin tests
+├── elixir/                   # Elixir combined plugin tests
 │   ├── README.md
 │   ├── postedit-test/
-│   └── precommit-test/
+│   ├── precommit-test/
+│   └── test-elixir-hooks.sh
+├── core/                     # Core plugin tests
+├── credo/                    # Credo plugin tests
 ├── ash/                      # Ash plugin tests
-│   ├── README.md
-│   ├── postedit_test/
-│   ├── precommit_test/
-│   └── test-ash-hooks.sh
-└── dialyzer/                 # Dialyzer plugin tests
-    ├── README.md
-    ├── precommit-test/
-    └── test-dialyzer-hooks.sh
+└── ...                       # Other legacy plugin tests
 ```
 
 ### Key Concepts
@@ -81,23 +61,30 @@ test/plugins/
 
 ### Hook Implementation Details
 
-Each plugin implements workflows through hooks:
+**Elixir plugin** (recommended) - Comprehensive Elixir development:
 
-**Core plugin** - Universal Elixir development:
-1. **Auto-format** (non-blocking, PostToolUse): After editing `.ex`/`.exs` files, runs `mix format {{file_path}}`
-2. **Compile check** (informational, PostToolUse): After editing, runs `mix compile --warnings-as-errors` and provides compilation errors as context to Claude via `additionalContext`
-3. **Pre-commit validation** (blocking, PreToolUse): Before `git commit`, validates formatting, compilation, and unused deps, blocking commits on failures
+1. **Post-edit** (non-blocking, PostToolUse, 30s timeout): After editing `.ex`/`.exs` files:
+   - Auto-formats the file
+   - Checks for compilation errors
+   - Runs Credo (if dependency present)
+   - Checks Ash codegen (if dependency present)
+   - Runs Sobelow security check (if dependency present)
 
-**Credo plugin** - Static code analysis:
-1. **Post-edit check** (non-blocking, PostToolUse): Runs `mix credo suggest --format=json` on edited files
-2. **Pre-commit check** (blocking, PreToolUse): Runs `mix credo --strict` before commits, blocks if issues found
+2. **Pre-commit** (blocking, PreToolUse, 180s timeout): Before `git commit`:
+   - Defers to `mix precommit` alias if present (Phoenix 1.8+)
+   - Otherwise runs: format check, compile, unused deps, Credo, Ash codegen, Dialyzer, ExDoc, tests, mix_audit, Sobelow
+   - Blocks commit on any failure
 
-**Ash plugin** - Ash Framework code generation:
-1. **Post-edit check** (non-blocking, PostToolUse): Runs `mix ash.codegen --check` to detect when generated code is out of sync
-2. **Pre-commit validation** (blocking, PreToolUse): Blocks commits if `mix ash.codegen --check` fails
-
-**Dialyzer plugin** - Static type analysis:
-1. **Pre-commit check** (blocking, PreToolUse): Runs `mix dialyzer` before commits, blocks if type errors found. Uses 120s timeout due to potential analysis time.
+**Legacy plugins** - Individual tool plugins (deprecated):
+- **Core**: Auto-format, compile check, pre-commit validation
+- **Credo**: Static code analysis
+- **Ash**: Ash Framework code generation
+- **Dialyzer**: Static type analysis (120s timeout)
+- **ExDoc**: Documentation quality validation (with locking for concurrent execution)
+- **ExUnit**: Test running
+- **mix_audit**: Dependency security
+- **Precommit**: Phoenix precommit alias runner
+- **Sobelow**: Security-focused static analysis
 
 Hooks use `jq` to extract tool parameters and bash conditionals to match file patterns or commands. Output is sent to Claude (the LLM) via JSON with either `additionalContext` (non-blocking) or `permissionDecision: "deny"` (blocking).
 

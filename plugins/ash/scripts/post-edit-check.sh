@@ -4,7 +4,6 @@
 # Runs after editing .ex/.exs files to detect when ash.codegen is needed
 # Provides informational context to Claude (non-blocking)
 
-# Read and validate stdin
 INPUT=$(cat) || exit 1
 
 FILE_PATH=$(echo "$INPUT" | jq -e -r '.tool_input.file_path' 2>/dev/null) || exit 1
@@ -73,7 +72,6 @@ if [ $CODEGEN_EXIT -ne 0 ]; then
     OUTPUT="$CODEGEN_OUTPUT"
   fi
 
-  # Output JSON with additionalContext
   jq -n --arg context "$OUTPUT" '{
     "hookSpecificOutput": {
       "hookEventName": "PostToolUse",

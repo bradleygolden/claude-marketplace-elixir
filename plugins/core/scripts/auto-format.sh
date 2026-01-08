@@ -1,19 +1,12 @@
 #!/bin/bash
 
-# Auto-format Elixir files on edit
-
-# Read and validate stdin
 INPUT=$(cat) || exit 1
-
-# Extract file_path with error handling
 FILE_PATH=$(echo "$INPUT" | jq -e -r '.tool_input.file_path' 2>/dev/null) || exit 1
 
-# Validate extracted value is not null
 if [[ "$FILE_PATH" == "null" ]] || [[ -z "$FILE_PATH" ]]; then
   exit 0
 fi
 
-# Only process .ex and .exs files
 if ! echo "$FILE_PATH" | grep -qE '\.(ex|exs)$'; then
   exit 0
 fi
@@ -31,7 +24,6 @@ find_mix_project_root() {
   return 1
 }
 
-# Find project root
 PROJECT_ROOT=$(find_mix_project_root "$FILE_PATH")
 
 # If no project root found, exit silently (not an Elixir project)
@@ -47,7 +39,6 @@ ASDF_SHIMS="$_HOME/.asdf/shims"
 [[ -d "$MISE_SHIMS" ]] && export PATH="$MISE_SHIMS:$PATH"
 [[ -d "$ASDF_SHIMS" ]] && export PATH="$ASDF_SHIMS:$PATH"
 
-# Run mix format
 cd "$PROJECT_ROOT" && mix format "$FILE_PATH"
 
 exit 0

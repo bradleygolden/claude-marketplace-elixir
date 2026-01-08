@@ -23,32 +23,30 @@ claude
 /plugin marketplace add bradleygolden/claude-marketplace-elixir
 ```
 
-### Install Plugins
+### Install Plugin
 
 ```bash
-/plugin install core@elixir
-/plugin install ash@elixir
-/plugin install credo@elixir
-/plugin install dialyzer@elixir
-/plugin install ex_doc@elixir
-/plugin install ex_unit@elixir
-/plugin install meta@elixir
-/plugin install mix_audit@elixir
-/plugin install precommit@elixir
-/plugin install sobelow@elixir
+# Recommended: Combined plugin with all features
+/plugin install elixir@elixir
 ```
+
 ## Available Plugins
 
-* [core](./plugins/core/README.md) - Essential Elixir development support (auto-formatting, compilation checks, pre-commit validation)
+* [elixir](./plugins/elixir/README.md) - **Recommended**: Combined plugin with all Elixir development features (auto-formatting, compilation, testing, linting, security)
+
+### Legacy Plugins (Deprecated)
+
+The following plugins are deprecated and will be removed in a future release. Use `elixir@elixir` instead.
+
+* [core](./plugins/core/README.md) - Essential Elixir development support
 * [ash](./plugins/ash/README.md) - Ash Framework code generation validation
-* [credo](./plugins/credo/README.md) - Static code analysis for code quality and style
-* [dialyzer](./plugins/dialyzer/README.md) - Static type analysis and discrepancy detection
-* [ex_doc](./plugins/ex_doc/README.md) - Documentation quality validation (This is still pre-release, it might be buggy!)
-* [ex_unit](./plugins/ex_unit/README.md) - ExUnit testing automation with smart pre-commit test validation
-* [meta](./plugins/meta/README.md) - Generates project-specific workflow commands (research, plan, implement, qa)
-* [mix_audit](./plugins/mix_audit/README.md) - Dependency security audit for known vulnerabilities
-* [precommit](./plugins/precommit/README.md) - Phoenix 1.8+ precommit alias runner (coordinates with other plugins)
-* [sobelow](./plugins/sobelow/README.md) - Security-focused static analysis for Phoenix applications
+* [credo](./plugins/credo/README.md) - Static code analysis
+* [dialyzer](./plugins/dialyzer/README.md) - Static type analysis
+* [ex_doc](./plugins/ex_doc/README.md) - Documentation quality validation
+* [ex_unit](./plugins/ex_unit/README.md) - ExUnit testing automation
+* [mix_audit](./plugins/mix_audit/README.md) - Dependency security audit
+* [precommit](./plugins/precommit/README.md) - Phoenix 1.8+ precommit alias runner
+* [sobelow](./plugins/sobelow/README.md) - Security-focused static analysis
 
 ## License
 
