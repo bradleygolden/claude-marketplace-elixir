@@ -8,15 +8,6 @@
     }
   },
   "enabledPlugins": {
-    "core@elixir": true,
-    "credo@elixir": true,
-    "ash@elixir": true,
-    "dialyzer@elixir": true,
-    "sobelow@elixir": true,
-    "ex_doc@elixir": true,
-    "mix_audit@elixir": true,
-    "ex_unit@elixir": true,
-    "meta@elixir": true,
-    "git@elixir": true
+    "elixir@elixir": true
   }
 }
