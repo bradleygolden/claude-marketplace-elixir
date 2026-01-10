@@ -5,6 +5,7 @@ allowed-tools: Read, Grep, Glob, Bash, WebSearch, AskUserQuestion
 model: haiku
 context: fork
 agent: Explore
+user-invocable: true
 ---
 
 # Hex Documentation Search

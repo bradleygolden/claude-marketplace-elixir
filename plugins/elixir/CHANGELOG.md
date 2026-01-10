@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-01-10
+
+### Added
+- hex-docs-search and usage-rules skills now available as slash commands
+
 ## [1.0.0] - 2025-01-08
 
 ### Changed
