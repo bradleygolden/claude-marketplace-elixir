@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-01-11
+
+### Added
+- Hex audit check for retired dependencies (`mix hex.audit`)
+  - Post-edit: Runs when editing mix.exs, provides immediate feedback
+  - Pre-commit: Runs as first check (before format/compile), blocks on retired deps
+  - No external dependency required (built into Hex)
+
 ## [1.1.0] - 2025-01-10
 
 ### Added

@@ -35,6 +35,13 @@ fi
 
 FAILURES=""
 
+# 0. Hex audit (must run before compile loads app)
+HEX_AUDIT_OUTPUT=$(mix hex.audit 2>&1)
+if [ $? -ne 0 ]; then
+  HEX_AUDIT_OUTPUT=$(truncate_output "$HEX_AUDIT_OUTPUT" 30)
+  FAILURES="${FAILURES}[HEX AUDIT] Retired dependencies found:\n${HEX_AUDIT_OUTPUT}\n\n"
+fi
+
 # 1. Core checks (format, compile, deps)
 FORMAT_OUTPUT=$(mix format --check-formatted 2>&1)
 if [ $? -ne 0 ]; then

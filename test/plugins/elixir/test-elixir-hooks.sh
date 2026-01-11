@@ -17,7 +17,15 @@ test_hook_json \
   0 \
   ".hookSpecificOutput | has(\"additionalContext\")"
 
-# Test 2: Post-edit hook ignores non-Elixir files
+# Test 2: Post-edit hook runs hex.audit when editing mix.exs
+test_hook_json \
+  "Post-edit: Runs hex.audit on mix.exs edit" \
+  "plugins/elixir/scripts/post-edit.sh" \
+  "{\"tool_input\":{\"file_path\":\"$REPO_ROOT/test/plugins/elixir/postedit-test/mix.exs\"},\"cwd\":\"$REPO_ROOT/test/plugins/elixir/postedit-test\"}" \
+  0 \
+  ". | has(\"suppressOutput\") or has(\"hookSpecificOutput\")"
+
+# Test 3: Post-edit hook ignores non-Elixir files
 test_hook \
   "Post-edit: Ignores non-Elixir files" \
   "plugins/elixir/scripts/post-edit.sh" \
@@ -25,7 +33,7 @@ test_hook \
   0 \
   ""
 
-# Test 3: Pre-commit validation blocks on unformatted/broken code
+# Test 4: Pre-commit validation blocks on unformatted/broken code
 test_hook_json \
   "Pre-commit: Blocks on validation failures" \
   "plugins/elixir/scripts/pre-commit.sh" \
@@ -33,7 +41,7 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.hookEventName == "PreToolUse" and .hookSpecificOutput.permissionDecision == "deny"'
 
-# Test 4: Pre-commit validation ignores non-commit commands
+# Test 5: Pre-commit validation ignores non-commit commands
 test_hook \
   "Pre-commit: Ignores non-commit git commands" \
   "plugins/elixir/scripts/pre-commit.sh" \
@@ -41,7 +49,7 @@ test_hook \
   0 \
   ""
 
-# Test 5: Pre-commit validation ignores non-git commands
+# Test 6: Pre-commit validation ignores non-git commands
 test_hook \
   "Pre-commit: Ignores non-git commands" \
   "plugins/elixir/scripts/pre-commit.sh" \
@@ -49,7 +57,7 @@ test_hook \
   0 \
   ""
 
-# Test 6: Pre-commit uses -C flag directory instead of CWD
+# Test 7: Pre-commit uses -C flag directory instead of CWD
 test_hook_json \
   "Pre-commit: Uses git -C directory instead of CWD" \
   "plugins/elixir/scripts/pre-commit.sh" \
@@ -57,7 +65,7 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.permissionDecision == "deny"'
 
-# Test 7: Pre-commit falls back to CWD when -C path is invalid
+# Test 8: Pre-commit falls back to CWD when -C path is invalid
 test_hook_json \
   "Pre-commit: Falls back to CWD when -C path is invalid" \
   "plugins/elixir/scripts/pre-commit.sh" \
@@ -65,7 +73,7 @@ test_hook_json \
   0 \
   '.hookSpecificOutput.permissionDecision == "deny"'
 
-# Test 8: Pre-commit skips when precommit alias exists
+# Test 9: Pre-commit skips when precommit alias exists
 test_hook_json \
   "Pre-commit: Skips when precommit alias exists (defers to precommit plugin)" \
   "plugins/elixir/scripts/pre-commit.sh" \

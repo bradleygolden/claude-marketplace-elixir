@@ -20,6 +20,7 @@ When you edit `.ex` or `.exs` files:
 | Check | When | Behavior |
 |-------|------|----------|
 | **Format** | Always | Auto-formats the file |
+| **Hex Audit** | If editing mix.exs | Reports retired dependencies |
 | **Compile** | Always | Checks for compilation errors |
 | **Credo** | If `{:credo, ...}` in mix.exs | Reports code quality issues |
 | **Ash Codegen** | If `{:ash, ...}` in mix.exs | Checks if codegen is needed |
@@ -32,6 +33,7 @@ When you run `git commit`:
 | Check | When | Behavior |
 |-------|------|----------|
 | **Precommit Alias** | If `mix precommit` exists | Defers to your alias, skips other checks |
+| **Hex Audit** | Always | Blocks on retired dependencies |
 | **Format** | Always | Blocks if code not formatted |
 | **Compile** | Always | Blocks on compilation errors |
 | **Unused Deps** | Always | Blocks if unused dependencies |

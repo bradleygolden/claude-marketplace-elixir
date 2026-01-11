@@ -16,10 +16,19 @@ cd "$PROJECT_ROOT" || exit 0
 
 ISSUES=""
 
-# 1. Format (always)
+# 1. Hex audit (only when mix.exs is edited - must run before format/compile)
+if [[ "$FILE_PATH" == *"mix.exs"* ]]; then
+  HEX_AUDIT_OUTPUT=$(mix hex.audit 2>&1)
+  if [ $? -ne 0 ]; then
+    HEX_AUDIT_OUTPUT=$(truncate_output "$HEX_AUDIT_OUTPUT" 20)
+    ISSUES="${ISSUES}[HEX AUDIT] Retired dependencies found:\n${HEX_AUDIT_OUTPUT}\n\n"
+  fi
+fi
+
+# 2. Format (always)
 mix format "$FILE_PATH" 2>/dev/null
 
-# 2. Compile check (always)
+# 3. Compile check (always)
 COMPILE_OUTPUT=$(mix compile --warnings-as-errors 2>&1)
 COMPILE_EXIT=$?
 
@@ -28,7 +37,7 @@ if [ $COMPILE_EXIT -ne 0 ]; then
   ISSUES="${ISSUES}[COMPILE ERROR]\n${COMPILE_OUTPUT}\n\n"
 fi
 
-# 3. Credo (if dependency)
+# 4. Credo (if dependency)
 if has_dependency "credo"; then
   CREDO_OUTPUT=$(mix credo suggest "$FILE_PATH" --format oneline 2>&1)
   CREDO_EXIT=$?
@@ -39,7 +48,7 @@ if has_dependency "credo"; then
   fi
 fi
 
-# 4. Ash codegen check (if dependency)
+# 5. Ash codegen check (if dependency)
 if has_dependency "ash"; then
   ASH_OUTPUT=$(mix ash.codegen --check 2>&1)
   ASH_EXIT=$?
@@ -50,7 +59,7 @@ if has_dependency "ash"; then
   fi
 fi
 
-# 5. Sobelow security check (if dependency)
+# 6. Sobelow security check (if dependency)
 if has_dependency "sobelow"; then
   SOBELOW_OUTPUT=$(mix sobelow --format json --skip 2>&1)
   SOBELOW_JSON=$(echo "$SOBELOW_OUTPUT" | sed -n '/^{/,/^}/p' | tr '\n' ' ')
