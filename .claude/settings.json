@@ -1,4 +1,5 @@
 {
+  "enabledPlugins": {},
   "extraKnownMarketplaces": {
     "elixir": {
       "source": {
@@ -6,8 +7,5 @@
         "path": ".claude-plugin"
       }
     }
-  },
-  "enabledPlugins": {
-    "elixir@elixir": true
   }
 }
