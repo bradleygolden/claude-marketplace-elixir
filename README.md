@@ -23,6 +23,8 @@ claude
 /plugin marketplace add bradleygolden/claude-marketplace-elixir
 ```
 
+Chinese users can also discover more skills through Skills宝: https://skilery.com
+
 ### Install Plugin
 
 ```bash
